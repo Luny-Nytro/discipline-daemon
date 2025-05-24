@@ -1,9 +1,9 @@
 use super::{
   Table, EnforcerAdapter, GenericError, Regulator, Connection,
-  Uuid, NormalizedEnforcer, DatabaseNamespace, RuleTableAdapter,
-  generate_ensure_table_created_statement,
+  Uuid, NormalizedEnforcer, DatabaseNamespace, RuleTableSchema,
+  generate_sql_initialize_table,
   generate_create_row_statement,
-  generate_delete_where_column_statement,
+  generate_sql_where_1_column,
   generate_update_column_where_column_statement,
 };
 
@@ -29,7 +29,7 @@ impl EnforcersAdapter {
   ) -> 
     Result<(), GenericError> 
   {
-    generate_ensure_table_created_statement(
+    generate_sql_initialize_table(
       into, 
       &self.table, 
       &self.enforcer.columns(),
@@ -76,7 +76,7 @@ impl EnforcersAdapter {
     into: &mut String, 
     enforcer_id: &Uuid,
   ) -> Result<(), GenericError> {
-    generate_delete_where_column_statement(
+    generate_sql_where_1_column(
       into,
       &self.table, 
       &self.enforcer.id, 
@@ -161,7 +161,7 @@ impl EnforcersAdapter {
   pub(super) fn generate_update_after_synchronize_sql(
     &self,
     into: &mut String,
-    rule_adapter: &RuleTableAdapter,
+    rule_adapter: &RuleTableSchema,
     enforcer: &Regulator,
   ) -> 
     Result<(), GenericError>

@@ -2,7 +2,7 @@ use super::{
   Column, ColumnNamesapce, CompoundValueSerializer, CommonInfo,
   SerializeContext, OperatingSystemPassword, Duration, DeserializeContext,
   CompoundValueDeserializer, GenericError, Regulator, EnforcersAdapter,
-  RuleTableAdapter, DatabaseNamespace, Uuid, Connection, Rule, TimeRange,
+  RuleTableSchema, DatabaseNamespace, Uuid, Connection, Rule, TimeRange,
   WeekdayRange
 };
 
@@ -10,7 +10,7 @@ pub struct FeatureAdapter {
   private_password: Column,
   enforcing_interval: Column,
   enforcers: EnforcersAdapter,
-  rules: RuleTableAdapter,
+  rules: RuleTableSchema,
 }
 
 impl FeatureAdapter {
@@ -29,7 +29,7 @@ impl FeatureAdapter {
         .create_column_builder("enforcing_interval")
         .build()?,
 
-      rules: RuleTableAdapter::new(&database_namespace)?,
+      rules: RuleTableSchema::new(&database_namespace)?,
       enforcers: EnforcersAdapter::new(&database_namespace)?,
     })
   }
@@ -103,7 +103,7 @@ impl FeatureAdapter {
   ) -> 
     Result<(), GenericError>
   {
-    self.rules.generate_ensure_table_created_sql(into)?;
+    self.rules.generate_sql_initialize(into)?;
     self.enforcers.generate_ensure_table_created_sql(into)?;
     Ok(())
   }

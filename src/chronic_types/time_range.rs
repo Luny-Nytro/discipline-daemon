@@ -205,8 +205,8 @@ impl TimeRange {
   }
 }
 
-pub mod database_serde {
-  use crate::database::{Column, ColumnNamesapce, CompoundValueSerializer, CompoundValueDeserializer, DeserializeContext, SerializeContext, UpdateStatementSetClause};
+pub mod database {
+  use crate::database::{Column, ColumnNamesapce, CompoundValueSerializer, CompoundValueDeserializer, DeserializeContext, SerializeContext, UpdateStatement};
   use crate::{GenericError, Time};
   use super::TimeRange;
 
@@ -231,41 +231,36 @@ pub mod database_serde {
     pub fn columns(&self) -> Vec<&Column> {
       vec![&self.from, &self.till]
     }
-    
-    pub fn columns_iterator(&self) -> impl Iterator<Item = &Column> {
-      [&self.from, &self.till].into_iter()
-    }
   }
 
-  pub struct Updater<'a> {
-    schema: &'a Schema
-  }
-
-  impl<'a> Updater<'a> {
-    pub fn update_from(
+  impl Schema {
+    pub fn set_from(
       &self, 
-      update_statement_set_clause: &mut UpdateStatementSetClause,
+      statement: &mut UpdateStatement,
       new_value: &Time,
-    ) -> 
-      Result<(), GenericError>
-    {
-
+    ) {
+      statement.set(&self.from, new_value);
     }
 
-    pub fn update_range(
+    pub fn set_till(
       &self, 
-      update_statement_set_clause: &mut UpdateStatementSetClause,
+      statement: &mut UpdateStatement,
+      new_value: &Time,
+    ) {
+      statement.set(&self.from, new_value);
+    }
+
+    pub fn set_range(
+      &self, 
+      statement: &mut UpdateStatement,
       new_value: &TimeRange,
-    ) -> 
-      Result<(), GenericError>
-    {
-      update_statement_set_clause.update_column(&self.from, &new_value.from)?;
-      update_statement_set_clause.update_column(&self.till, &new_value.till)?;
-      Ok(())
+    ) {
+      statement.set(&self.from, &new_value.from);
+      statement.set(&self.till, &new_value.till);
     }
   }
 
-  impl CompoundValueSerializer for Schema {
+  impl<'a> CompoundValueSerializer for Schema {
     type Input = TimeRange;
 
     fn serialize_into(
@@ -278,7 +273,7 @@ pub mod database_serde {
     }
   }
 
-  impl CompoundValueDeserializer for Schema {
+  impl<'a> CompoundValueDeserializer for Schema {
     type Output = TimeRange;
 
     fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {

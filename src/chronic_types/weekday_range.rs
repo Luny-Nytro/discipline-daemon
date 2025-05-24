@@ -188,17 +188,17 @@ impl WeekdayRange {
   }
 }
 
-pub mod database_serde {
-  use crate::database::*;
+pub mod database {
+  use crate::{database::*, Weekday};
   use super::WeekdayRange;
   use crate::GenericError;
 
-  pub struct Adapter {
+  pub struct Schema {
     from: Column,
     till: Column,
   }
 
-  impl Adapter {
+  impl Schema {
     pub fn new(column_namespace: ColumnNamesapce) -> Result<Self, GenericError> {
       Ok(Self {
         from: column_namespace
@@ -214,25 +214,34 @@ pub mod database_serde {
     pub fn columns(&self) -> Vec<&Column> {
       vec![&self.from, &self.till]
     }
-    
-    pub fn columns_iterator(&self) -> impl Iterator<Item = &Column> {
-      [&self.from, &self.till].into_iter()
+
+    pub fn set_from(
+      &self,
+      statement: &mut UpdateStatement,
+      new_value: &Weekday
+    ) {
+      statement.set(&self.from, new_value);
     }
 
-    pub fn update_range(
+    pub fn set_till(
       &self,
-      update_statement_set_clause: &mut UpdateStatementSetClause,
-      new_weekday_range: &WeekdayRange
-    ) 
-      -> Result<(), GenericError> 
-    {
-      update_statement_set_clause.update_column(&self.from, &new_weekday_range.from)?;
-      update_statement_set_clause.update_column(&self.from, &new_weekday_range.till)?;
-      Ok(())
+      statement: &mut UpdateStatement,
+      new_value: &Weekday
+    ) {
+      statement.set(&self.till, new_value);
+    }
+
+    pub fn set_range(
+      &self,
+      statement: &mut UpdateStatement,
+      new_value: &WeekdayRange
+    ) {
+      statement.set(&self.from, &new_value.from);
+      statement.set(&self.till, &new_value.till);
     }
   }
 
-  impl CompoundValueSerializer for Adapter {
+  impl CompoundValueSerializer for Schema {
     type Input = WeekdayRange;
 
     fn serialize_into(
@@ -245,18 +254,24 @@ pub mod database_serde {
     }
   }
 
-  impl CompoundValueDeserializer for Adapter {
+  impl CompoundValueDeserializer for Schema {
     type Output = WeekdayRange;
 
     fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
       let from = context.deserializable_scalar(&self.from).map_err(|error| 
-        error.change_context("Failed to deserialize WeekdayRange: Failed to deserialize 'from' field")
+        error
+          .change_context("Deserialize WeekdayRange")
+          .add_error("Failed to deserialize the 'from' field")
       )?;
       let till = context.deserializable_scalar(&self.till).map_err(|error|
-        error.change_context("Failed to deserialize WeekdayRange: Failed to deserialize 'till' field")
+        error
+          .change_context("Deserialize WeekdayRange")
+          .add_error("Failed to deserialize the 'till' field")
       )?;
       WeekdayRange::from_numbers(from, till).map_err(|error|
-        error.change_context("Failed to deserialize WeekdayRange: deserialized 'from' and 'till' fields violate some invariants")
+        error
+          .change_context("Deserialize WeekdayRange")
+          .add_error("deserialized 'from' and 'till' fields violate some invariants")
       )
     }
   }  

@@ -1,4 +1,4 @@
-use crate::database::{generate_ensure_row_create_statement, generate_ensure_table_created_statement, Column, CompoundValueDeserializer, CompoundValueSerializer, Connection, DatabaseNamespace, DeserializeContext, SerializeContext, Table};
+use crate::database::{generate_ensure_row_create_statement, generate_sql_initialize_table, Column, CompoundValueDeserializer, CompoundValueSerializer, Connection, DatabaseNamespace, DeserializeContext, SerializeContext, Table};
 use crate::GenericError;
 use super::{user_screen_time_regulation, State};
 
@@ -81,7 +81,7 @@ impl StateAdapter {
   fn generate_initialize_statements(&self, sql: &mut String) ->
     Result<(), GenericError>
   {
-    generate_ensure_table_created_statement(
+    generate_sql_initialize_table(
       sql, 
       &self.table, 
       &self.columns(),

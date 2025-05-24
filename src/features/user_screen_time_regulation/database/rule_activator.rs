@@ -1,15 +1,15 @@
 use super::RuleActivatorVariant;
-use crate::{GenericError, TimeRange, WeekdayRange};
+use crate::GenericError;
 use crate::database::{Column, ColumnNamesapce, CompoundValueDeserializer, CompoundValueSerializer, DeserializeContext, SerializeContext, UpdateStatementSetClause};
 use crate::user_screen_time_regulation::RuleActivator;
-use crate::time_range::database_serde as time_range;
-use crate::weekday_range::database_serde as weekday_range;
+use crate::time_range::database as time_range;
+use crate::weekday_range::database as weekday_range;
 
 pub struct RuleActivatorSchema {
   variant: Column,
   weekday: Column,
   in_time_range: time_range::Schema,
-  in_weekday_range: weekday_range::Adapter,
+  in_weekday_range: weekday_range::Schema,
 }
 
 impl RuleActivatorSchema {
@@ -30,27 +30,12 @@ impl RuleActivatorSchema {
           .optional()
       )?,
      
-      in_weekday_range: weekday_range::Adapter::new(
+      in_weekday_range: weekday_range::Schema::new(
         column_namespace
           .create_namespace("in_weekday_range")
           .optional()
       )?,
     })
-  }
-
-  // fn in_time_range(&self) -> &Column {
-  //   &self.in_time_range
-  // }
-
-  // fn in_weekday_range(&self) -> &Column {
-  //   &self.in_weekday_range
-  // }
-  
-  pub fn columns_iterator(&self) -> impl Iterator<Item = &Column> {
-    [&self.variant, &self.weekday]
-      .into_iter()
-      .chain(self.in_time_range.columns_iterator())
-      .chain(self.in_weekday_range.columns_iterator())
   }
 
   pub fn columns(&self) -> Vec<&Column> {
@@ -59,31 +44,13 @@ impl RuleActivatorSchema {
     columns.extend_from_slice(&self.in_weekday_range.columns());
     columns
   }
-}
-
-pub struct RuleActivatorUpdater<'a> {
-  schema: &'a RuleActivatorSchema
-}
-
-impl<'a> RuleActivatorUpdater<'a> {
-  pub(super) fn in_time_range_update_range(
-    &self,
-    update_statement_set_clause: &mut UpdateStatementSetClause,
-    new_time_range: &TimeRange
-  ) 
-    -> Result<(), GenericError> 
-  {
-    self.schema.in_time_range.update_range(update_statement_set_clause, new_time_range)
+  
+  pub fn in_time_range(&self) -> &time_range::Schema {
+    &self.in_time_range
   }
 
-  pub(super) fn in_weekday_range_update_range(
-    &self,
-    update_statement_set_clause: &mut UpdateStatementSetClause,
-    new_weekday_range: &WeekdayRange
-  ) 
-    -> Result<(), GenericError> 
-  {
-    self.in_weekday_range.update_range(update_statement_set_clause, new_weekday_range)
+  pub fn in_weekday_range(&self) -> &weekday_range::Schema {
+    &self.in_weekday_range
   }
 }
 

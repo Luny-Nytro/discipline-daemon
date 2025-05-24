@@ -1,5 +1,6 @@
 use crate::GenericError;
 
+
 pub struct Column {
   pub fully_qualified_name: String,
   pub unique: bool,

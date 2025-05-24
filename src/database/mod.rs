@@ -7,7 +7,7 @@ pub use column_info::{
 };
 
 mod serializable_scalar_value;
-pub use serializable_scalar_value::SerializableScalarValue;
+pub use serializable_scalar_value::{SerializableScalarValue, ToSerializableScalarValue};
 
 mod deserializable_scalar_value;
 pub use deserializable_scalar_value::DeserializableScalarValue;
@@ -20,14 +20,16 @@ pub use serialize_context::{
   DatabaseNamespace,
   Table,
   UpdateByIdStatement,
-  generate_ensure_table_created_statement,
+  UpdateStatement,
+  generate_sql_initialize_table,
   generate_create_row_statement,
-  generate_delete_where_column_statement,
+  generate_sql_where_1_column,
   generate_update_column_where_column_statement,
   generate_find_all_rows_statement,
   generate_update_where_column_statement_given_set_clause,
   generate_delete_rows_where_column_in_statement,
   generate_ensure_row_create_statement,
+  generate_sql_delete_where_3_columns,
   UpdateStatementSetClause,
 };
 
@@ -48,8 +50,6 @@ pub use compound_value_deserialize::CompoundValueDeserializer;
 mod scalar_type_adapter;
 pub use scalar_type_adapter::ScalarTypeAdapter;
 
-pub mod compound_type_adapter;
-
 pub mod scalar_type_adapters;
 pub use scalar_type_adapters::*;
 
@@ -66,7 +66,15 @@ pub struct Connection {
 
 impl Connection {
   pub fn new(path: &str) -> Result<Self, GenericError> {
-    rusqlite::Connection::open(path).map_err(|error|
+    rusqlite::Connection::open(path)
+    .map(|connection| Connection {
+      conn: connection,
+      namespace: DatabaseNamespace {
+        name: "main".into(),
+        path: "main".into(),
+      }
+    })
+    .map_err(|error|
       GenericError::new("Failed to open a connection to a sqlite database file")
         .add_attachment("database file path", path)
         .add_attachment("sqilte error", error.to_string())

@@ -212,6 +212,26 @@ impl<'a> SerializeScalarValueContext<'a> {
   }
 }
 
+pub struct UpdateStatement {
+
+}
+
+impl UpdateStatement {
+  pub fn new_given_three_where_columns(
+    column_1: &Column,
+    column_1_value: &impl SerializableScalarValue,
+    column_2: &Column,
+    column_2_value: &impl SerializableScalarValue,
+    column_3: &Column,
+    column_3_value: &impl SerializableScalarValue,
+  ) -> Self {
+    todo!()
+  }
+
+  pub fn set(&mut self, column: &Column, value: &impl SerializableScalarValue) {
+
+  }
+}
 
 pub struct UpdateStatementSetClause {
   code: String,
@@ -327,7 +347,25 @@ impl Table {
   }
 }
 
-pub fn generate_ensure_table_created_statement(
+pub struct TableInitializer<'a> {
+  into: &'a String,
+}
+
+impl<'a> TableInitializer<'a> {
+  pub fn new(into: &'a String) -> Self {
+    Self { into }
+  }
+
+  pub fn add_column(&mut self, column: &Column) {
+
+  }
+
+  pub fn finalize(self) {
+    
+  }
+}
+
+pub fn generate_sql_initialize_table(
   into: &mut String,
   table: &Table,
   columns: &[&Column],
@@ -415,22 +453,55 @@ where
   Ok(())
 }
 
-pub fn generate_delete_where_column_statement(
+pub fn generate_sql_where_1_column(
   into: &mut String,
   table: &Table,
-  column: &Column,
-  column_value: &impl SerializableScalarValue,
-) ->
-  Result<(), GenericError>
-{
+  column_1: &Column,
+  column_1_value: &impl SerializableScalarValue,
+) {
   into.push_str("DELETE FROM ");
   into.push_str(&table.fully_qualified_name);
   into.push_str(" WHERE ");
-  into.push_str(&column.fully_qualified_name);
+  into.push_str(&column_1.fully_qualified_name);
   into.push_str(" = ");
-  column_value.serialize_into(SerializeScalarValueContext { into });
+  column_1_value.serialize_into(SerializeScalarValueContext { into });
   into.push_str(";");
-  Ok(())
+}
+
+pub fn generate_sql_delete_where_3_columns(
+  into: &mut String,
+  table: &Table,
+  column_1: &Column,
+  column_1_value: &impl SerializableScalarValue,
+  column_2: &Column,
+  column_2_value: &impl SerializableScalarValue,
+  column_3: &Column,
+  column_3_value: &impl SerializableScalarValue,
+) {
+  // Append the initial DELETE FROM clause
+  into.push_str("DELETE FROM ");
+  into.push_str(&table.fully_qualified_name);
+  into.push_str(" WHERE ");
+
+  // Append the first column condition
+  into.push_str(&column_1.fully_qualified_name);
+  into.push_str(" = ");
+  column_1_value.serialize_into(SerializeScalarValueContext { into });
+
+  // Append the second column condition
+  into.push_str(" AND ");
+  into.push_str(&column_2.fully_qualified_name);
+  into.push_str(" = ");
+  column_2_value.serialize_into(SerializeScalarValueContext { into });
+
+  // Append the third column condition
+  into.push_str(" AND ");
+  into.push_str(&column_3.fully_qualified_name);
+  into.push_str(" = ");
+  column_3_value.serialize_into(SerializeScalarValueContext { into });
+
+  // Terminate the SQL statement
+  into.push_str(";");
 }
 
 pub fn generate_update_column_where_column_statement(
