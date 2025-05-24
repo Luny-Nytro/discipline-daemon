@@ -1,0 +1,251 @@
+use serde::{Deserialize, Serialize};
+use super::OperatingSystemCalls;
+use crate::{
+  CountdownTimer, DateTime, Duration, GenericError, 
+  OperatingSystemPassword, 
+  OperatingSystemUsername, TimeRange, 
+  Uuid, Weekday, WeekdayRange
+};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum RuleActivator {
+  AllTheTime,
+  OnWeekday(Weekday),
+  InTimeRange(TimeRange),
+  InWeekdayRange(WeekdayRange),
+}
+
+impl RuleActivator {
+  pub fn is_effective(&mut self, now: DateTime) -> bool {
+    match self {
+      RuleActivator::OnWeekday(weekday) => {
+        now.weekday() == *weekday
+      }
+      RuleActivator::InTimeRange(time_range) => {
+        time_range.contains(now.time())
+      }
+      RuleActivator::InWeekdayRange(weekday_range) => {
+        weekday_range.contains_weekday(now.weekday())
+      }
+      RuleActivator::AllTheTime => {
+        true
+      }
+    }
+  }
+}
+
+/// A Rule may not be made less restrictive after it is created.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Rule {
+  pub id: Uuid,
+  pub activator: RuleActivator,
+}
+
+impl Rule {
+  pub fn is_effective(&mut self, now: DateTime) -> bool {
+    self.activator.is_effective(now)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct PolicyName(String);
+
+impl PolicyName {
+  pub const MIN_LENGTH: usize = 1;
+  pub const MAX_LENGTH: usize = 25;
+
+  pub fn new(name: String) -> Result<Self, GenericError> {
+    if name.len() < Self::MIN_LENGTH {
+      return Err(
+        GenericError::new("Failed to create a PolicyName: Provided name is too short")
+          .add_attachment("name", name)
+          .add_attachment("min length", PolicyName::MIN_LENGTH.to_string())
+      );
+    }
+
+    if name.len() > Self::MAX_LENGTH {
+      return Err(
+        GenericError::new("Failed to create a PolicyName: Provided name is too long")
+          .add_attachment("name", name)
+          .add_attachment("max length", PolicyName::MAX_LENGTH.to_string())
+      );
+    }
+
+    Ok(Self(name))
+  }
+
+  pub fn as_ref(&self) -> &String {
+    &self.0
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PolicyEnabler {
+  pub(super) timer: CountdownTimer
+}
+
+impl PolicyEnabler {
+  pub fn is_effective(&mut self, now: DateTime) -> bool {
+    self.timer.synchronize(now);
+    self.timer.is_finished()
+  }
+
+  pub fn synchronize(&mut self, now: DateTime) {
+    self.timer.synchronize(now);
+  }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Policy {
+  pub(super) id: Uuid,
+  pub(super) name: PolicyName,
+  pub(super) rules: Vec<Rule>,
+  pub(super) enabler: PolicyEnabler,
+}
+
+impl Policy {
+  pub const MAX_RULES: usize = 10;
+
+  pub fn is_enabled(&mut self, now: DateTime) -> bool {
+    self.enabler.is_effective(now)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct Regulator {
+  pub(super) policies: Vec<Policy>,
+  pub(super) is_applying_enabled: bool,
+  pub(super) is_user_screen_access_blocked: bool,
+  pub(super) operating_system_calls: OperatingSystemCalls,
+}
+
+impl Regulator {
+  pub const MAX_POLICIES: usize = 5;
+
+  pub fn new(
+    policies: Vec<Policy>,
+  ) -> Self {
+    Self {
+      policies,
+      is_applying_enabled: false,
+      is_user_screen_access_blocked: false,
+      operating_system_calls: OperatingSystemCalls::new(),
+    }
+  }
+  
+  fn allow_user_access(
+    &mut self,
+    username: &OperatingSystemUsername,
+    password: &OperatingSystemPassword,
+  ) -> 
+    Result<(), GenericError> 
+  {
+    if !self.is_user_screen_access_blocked {
+      return Ok(());
+    }
+
+    match self
+      .operating_system_calls
+      .change_user_password(username, password) 
+    {
+      Ok(_) => {
+        self.is_user_screen_access_blocked = false;
+        Ok(())
+      }
+      Err(error) => {
+        Err(
+          error.change_context("Allow user screen access")
+        )
+      }
+    }
+  }
+
+  fn block_user_access(
+    &mut self, 
+    username: &OperatingSystemUsername,
+    private_password: &OperatingSystemPassword,
+  ) -> 
+    Result<(), GenericError> 
+  {
+    if self.is_user_screen_access_blocked {
+      return Ok(());
+    }
+
+    match self
+      .operating_system_calls
+      .change_user_password(username, private_password) 
+    {
+      Ok(_) => {
+        self.is_user_screen_access_blocked = false;
+      }
+      Err(error) => {
+        return Err(
+          error.change_context("Block user screen access")
+        )
+      }
+    }
+
+    self
+      .operating_system_calls
+      .gracefully_logout_user(username)
+      .map_err(|error| error.change_context("Block user screen access"))
+  }
+
+  pub fn apply(
+    &mut self, 
+    now: DateTime,
+    username: &OperatingSystemUsername,
+    password: &OperatingSystemPassword,
+    private_password: &OperatingSystemPassword,
+  ) -> 
+    Result<(), GenericError> 
+  {
+    if self.is_applying_enabled {
+      for policy in &mut self.policies {
+        if policy.is_enabled(now) {
+          for rule in &mut policy.rules {
+            if rule.is_effective(now) {
+              return self.block_user_access(
+                username,
+                private_password
+              );
+            }
+          }
+        }
+      }
+    }
+
+    self.allow_user_access(
+      username,
+      password
+    )
+  }
+
+  pub fn are_some_policies_enabled(&mut self, now: DateTime) -> bool {
+    self.policies.iter_mut().any(|policy| policy.is_enabled(now))
+  }
+
+  pub fn policies_number(&self) -> u32 {
+    self.policies.len() as u32
+  }
+}
+
+#[derive(Debug)]
+pub struct CommonInfo {
+  pub(super) private_password: OperatingSystemPassword,
+  pub(super) enforcing_interval: Duration,
+}
+
+impl CommonInfo {
+  pub(super) fn generate_private_password() -> OperatingSystemPassword {
+    OperatingSystemPassword::generate_random_password()
+  }
+
+  pub(super) fn default_enforcing_interval() -> Duration {
+    Duration::from_minutes(5).unwrap()
+  }
+
+  pub fn enforcing_interval(&self) -> Duration {
+    self.enforcing_interval
+  }
+}

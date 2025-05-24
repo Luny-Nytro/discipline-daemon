@@ -1,0 +1,15 @@
+{
+  "name": "discipline",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {}
+  },
+  "postCreateCommand": "rustup update && rustup component add rust-analyzer-preview",
+  "customizations": {
+  "vscode": {
+    "extensions": [
+    "matklad.rust-analyzer" // Install Rust Analyzer
+    ]
+  }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "editor.fontFamily": "_Courier Prime Code, _Monaco, _AnonymicePro Nerd Font, Monofur Nerd Font, _SpaceMono Nerd Font, _ProFontWindows Nerd Font, _Comfortaa, Fira Code, JetBrains Mono, Consolas, Courier New, Monaco",
+  "editor.fontSize": 26,
+  "editor.indentSize": 2,
+  "rust-analyzer.linkedProjects": [
+    "./Cargo.toml"
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false,
+  "rust-analyzer.diagnostics.disabled": [
+    "unresolved-import",
+    "unused-variable",
+    "unused-function"
+  ],
+  "editor.inlayHints.enabled": "offUnlessPressed",
+  "git.enabled": true,
+  "rust-analyzer.checkOnSave": true,
+  "files.autoSave": "afterDelay",
+}
