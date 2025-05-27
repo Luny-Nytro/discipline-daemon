@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::{Duration, DateTime, SynchronizeContext};
+use crate::{Duration, DateTime};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CountdownTimer {
@@ -62,18 +62,24 @@ impl CountdownTimer {
 // }
 
 pub mod database_serde {
-  use crate::database::{Column, ColumnNamesapce, CompoundValueSerializer, CompoundValueDeserializer, DeserializeContext, SerializeContext, UpdateStatementSetClause};
+  use crate::database::{
+    Column, ColumnNamespace, CompoundValueSerializer, 
+    CompoundValueDeserializer, DeserializeContext, 
+    SerializeContext, UpdateStatementSetClause,
+    WriteColumns, WriteColumnsContext,
+  };
+
   use crate::{Duration, GenericError};
   use super::CountdownTimer;
 
-  pub struct Adapter {
+  pub struct Schema {
     duration: Column,
     remaining_duration: Column,
     previous_synchronization_time: Column,
   }
 
-  impl Adapter {
-    pub fn new(column_namespace: ColumnNamesapce) -> Result<Self, GenericError> {
+  impl Schema {
+    pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
       Ok(Self {
         duration: column_namespace
           .create_column_builder("duration")
@@ -88,23 +94,7 @@ pub mod database_serde {
           .build()?,
       })
     }
-
-    pub fn columns(&self) -> Vec<&Column> {
-      vec![
-        &self.duration, 
-        &self.remaining_duration, 
-        &self.previous_synchronization_time
-      ]
-    }
-
-    pub fn columns_iterator(&self) -> impl Iterator<Item = &Column> {
-      [
-        &self.duration, 
-        &self.remaining_duration,
-        &self.previous_synchronization_time,
-      ].into_iter()
-    }
-
+    
     pub fn update_remaining_duration(
       &self,
       update_statement_set_clause: &mut UpdateStatementSetClause,
@@ -139,7 +129,7 @@ pub mod database_serde {
     }
   }
 
-  impl CompoundValueSerializer for Adapter {
+  impl CompoundValueSerializer for Schema {
     type Input = CountdownTimer;
 
     fn serialize_into(
@@ -153,7 +143,7 @@ pub mod database_serde {
     }
   }
 
-  impl CompoundValueDeserializer for Adapter {
+  impl CompoundValueDeserializer for Schema {
     type Output = CountdownTimer;
 
     fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
@@ -168,6 +158,15 @@ pub mod database_serde {
           error.change_context("Failed to deserialize CountdownTimer: Failed to deserialize the 'previous_synchronization_time' column")
         )?,
       })
+    }
+  }
+
+  impl WriteColumns for Schema {
+    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
+      context.write(&self.duration)?;
+      context.write(&self.remaining_duration)?;
+      context.write(&self.previous_synchronization_time)?;
+      Ok(())
     }
   }
 }

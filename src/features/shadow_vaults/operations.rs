@@ -181,3 +181,7 @@ impl IsOperation for ProtectorForDurationIncrement {
     Ok(())
   }
 }
+
+pub struct CopyShadowVault {
+  
+}

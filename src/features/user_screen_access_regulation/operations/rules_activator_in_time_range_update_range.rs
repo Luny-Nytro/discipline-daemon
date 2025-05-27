@@ -1,13 +1,13 @@
 use super::{
-  Serialize, Deserialize, App, IsOperation, Uuid, WeekdayRange, RuleActivator
+  Serialize, Deserialize, Daemon, IsOperation, TimeRange, Uuid, RuleActivator
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Error {
-  NoSuchEnforcer,
   NoSuchRule,
-  WrongActivatorType,
+  NoSuchEnforcer,
   WouldMakeRuleLessRestrictive,
+  WrongActivatorType,
   // WouldBlockForTooLong,
   InternalError,
 }
@@ -16,7 +16,7 @@ pub enum Error {
 pub struct Operation {
   rule_id: Uuid,
   enforcer_id: Uuid,
-  new_weekday_range: WeekdayRange,
+  new_time_range: TimeRange,
 }
 
 impl IsOperation for Operation {
@@ -28,9 +28,9 @@ impl IsOperation for Operation {
   // This is crucial for safety to prevent the app user from accidently 
   // blocking himself outside of his account forever or most of the time.
 
-  fn execute(self, app: &mut App) -> Self::Outcome {
+  fn execute(self, app: &mut Daemon) -> Self::Outcome {
     let feature = &mut app.state.user_access;
-    let adapter = &app.state_database_adapter.user_access;
+    let adapter = &app.schema.user_screen_access_regulation_common_info;
 
     let Some(enforcer) = feature
       .enforcers
@@ -48,24 +48,24 @@ impl IsOperation for Operation {
       return Err(Error::NoSuchRule);
     };
 
-    let RuleActivator::InWeekdayRange(weekday_range) = &mut rule.activator else {
+    let RuleActivator::InTimeRange(time_range) = &mut rule.activator else {
       return Err(Error::WrongActivatorType);
     };
-    
-    if self.new_weekday_range.is_narrower_than(weekday_range) {
+
+    if self.new_time_range.is_narrower_than(time_range) {
       // May not make a rule block for less time.
       return Err(Error::WouldMakeRuleLessRestrictive);
     }
 
-    if let Err(_) = adapter.rules_activator_in_weekday_range_update(
+    if let Err(_) = adapter.rules_activator_in_time_range_update(
       &app.database_connection,
       &self.rule_id,
-      &self.new_weekday_range
+      &self.new_time_range
     ) {
       return Err(Error::InternalError);
     }
 
-    *weekday_range = self.new_weekday_range;
+    *time_range = self.new_time_range;
     Ok(())
   }
 }

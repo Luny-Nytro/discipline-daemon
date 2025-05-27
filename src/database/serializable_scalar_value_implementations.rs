@@ -19,6 +19,12 @@ impl SerializableScalarValue for String {
   }
 }
 
+impl<'a> SerializableScalarValue for &'a String {
+  fn serialize_into(&self, ctx: SerializeScalarValueContext) {
+    ctx.as_string(*self);
+  }
+}
+
 impl DeserializableScalarValue for String {
   fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
     value.as_string()

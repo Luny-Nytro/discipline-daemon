@@ -1,19 +1,18 @@
-use super::RuleActivatorVariant;
-use crate::GenericError;
-use crate::database::{Column, ColumnNamesapce, CompoundValueDeserializer, CompoundValueSerializer, DeserializeContext, SerializeContext, UpdateStatementSetClause};
-use crate::user_screen_time_regulation::RuleActivator;
-use crate::time_range::database as time_range;
-use crate::weekday_range::database as weekday_range;
-
+use super::{
+  RuleActivatorVariant, GenericError, Column, ColumnNamespace,
+  CompoundValueDeserializer, CompoundValueSerializer, DeserializeContext, 
+  SerializeContext, RuleActivator, time_range, weekday_range, WriteColumns, 
+  WriteColumnsContext,
+};
 pub struct RuleActivatorSchema {
   variant: Column,
   weekday: Column,
-  in_time_range: time_range::Schema,
-  in_weekday_range: weekday_range::Schema,
+  in_time_range: time_range::database::Schema,
+  in_weekday_range: weekday_range::database::Schema,
 }
 
 impl RuleActivatorSchema {
-  pub(super) fn new(column_namespace: ColumnNamesapce) -> Result<Self, GenericError> {
+  pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
     Ok(Self {
       variant: column_namespace
         .create_column_builder("variant")
@@ -24,32 +23,25 @@ impl RuleActivatorSchema {
         .optional()
         .build()?,
         
-      in_time_range: time_range::Schema::new(
+      in_time_range: time_range::database::Schema::new(
         column_namespace
           .create_namespace("in_time_range")
           .optional()
       )?,
      
-      in_weekday_range: weekday_range::Schema::new(
+      in_weekday_range: weekday_range::database::Schema::new(
         column_namespace
           .create_namespace("in_weekday_range")
           .optional()
       )?,
     })
   }
-
-  pub fn columns(&self) -> Vec<&Column> {
-    let mut columns = vec![&self.variant, &self.weekday];
-    columns.extend_from_slice(&self.in_time_range.columns());
-    columns.extend_from_slice(&self.in_weekday_range.columns());
-    columns
-  }
   
-  pub fn in_time_range(&self) -> &time_range::Schema {
+  pub fn in_time_range(&self) -> &time_range::database::Schema {
     &self.in_time_range
   }
 
-  pub fn in_weekday_range(&self) -> &weekday_range::Schema {
+  pub fn in_weekday_range(&self) -> &weekday_range::database::Schema {
     &self.in_weekday_range
   }
 }
@@ -108,5 +100,15 @@ impl CompoundValueDeserializer for RuleActivatorSchema {
         )
       }
     })
+  }
+}
+
+impl WriteColumns for RuleActivatorSchema {
+  fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
+    context.write(&self.variant)?;
+    context.write(&self.weekday)?;
+    context.write_compound_type(&self.in_time_range)?;
+    context.write_compound_type(&self.in_weekday_range)?;
+    Ok(())
   }
 }

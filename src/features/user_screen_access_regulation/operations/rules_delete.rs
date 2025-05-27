@@ -19,9 +19,9 @@ pub struct Operation {
 impl IsOperation for Operation {
   type Outcome = Result<(), Error>;
 
-  fn execute(self, app: &mut crate::App) -> Self::Outcome {
+  fn execute(self, app: &mut crate::Daemon) -> Self::Outcome {
     let feature = &mut app.state.user_access;
-    let adapter = &app.state_database_adapter.user_access;
+    let adapter = &app.schema.user_screen_access_regulation_common_info;
     let synchronize_context = app.synchronize_source.create_context_for_now();
 
     let Some(enforcer) = feature

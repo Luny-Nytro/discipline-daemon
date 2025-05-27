@@ -1,28 +1,30 @@
 use crate::database::{generate_ensure_row_create_statement, generate_sql_initialize_table, Column, CompoundValueDeserializer, CompoundValueSerializer, Connection, DatabaseNamespace, DeserializeContext, SerializeContext, Table};
 use crate::GenericError;
-use super::{user_screen_time_regulation, State};
+use super::{user_screen_access_regulation, State};
 
-pub struct StateAdapter {
+pub struct StateSchema {
   id: Column,
   table: Table,
-  pub user_access: user_screen_time_regulation::database::FeatureAdapter,
+  pub user_screen_access_regulation_common_info: user_screen_access_regulation::database::CommonInfoSchema,
+  pub user_screen_access_regulation_policies: user_screen_access_regulation::database::PoliciesSchema,
+  pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
 }
 
 pub struct NormaizedState {
   id: u8,
-  user_access: user_screen_time_regulation::database::NormalizedFeature,
+  user_access: user_screen_access_regulation::database::NormalizedFeature,
 }
 
 impl Default for NormaizedState {
   fn default() -> Self {
     Self {
       id: 0,
-      user_access: user_screen_time_regulation::database::NormalizedFeature::default(),
+      user_access: user_screen_access_regulation::database::NormalizedFeature::default(),
     }
   }
 }
 
-impl CompoundValueSerializer for StateAdapter {
+impl CompoundValueSerializer for StateSchema {
   type Input = NormaizedState;
 
   fn serialize_into(
@@ -31,22 +33,22 @@ impl CompoundValueSerializer for StateAdapter {
     context: &mut SerializeContext, 
   ) {
     context.serializable_scalar(&self.id, &value.id);
-    context.serializable_compound(&self.user_access, &value.user_access);
+    context.serializable_compound(&self.user_screen_access_regulation_common_info, &value.user_access);
   }
 }
 
-impl CompoundValueDeserializer for StateAdapter {
+impl CompoundValueDeserializer for StateSchema {
   type Output = NormaizedState;
 
   fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
     Ok(NormaizedState {
       id: context.deserializable_scalar(&self.id)?,
-      user_access: context.deserialize_compound(&self.user_access)?,
+      user_access: context.deserialize_compound(&self.user_screen_access_regulation_common_info)?,
     })
   }
 }
 
-impl StateAdapter {
+impl StateSchema {
   pub fn new(database_namespace: &DatabaseNamespace) -> Result<Self, GenericError> {
     let table = database_namespace.create_table("app")?;
     let column_namespace = table.column_namespace();
@@ -56,26 +58,26 @@ impl StateAdapter {
       .primary()
       .build()?;
 
-    let user_access = user_screen_time_regulation::database::FeatureAdapter::new(
+    let user_access = user_screen_access_regulation::database::CommonInfoSchema::new(
       database_namespace, 
       &column_namespace.create_namespace("user_access"),
     )?;
 
-    Ok(StateAdapter {
+    Ok(StateSchema {
       id, 
       table, 
-      user_access,
+      user_screen_access_regulation_common_info: user_access,
     })
   }
 
   fn columns(&self) -> Vec<&Column> {
     let mut columns = vec![&self.id];
-    columns.extend_from_slice(&self.user_access.columns());
+    columns.extend_from_slice(&self.user_screen_access_regulation_common_info.columns());
     columns
   }
 
   fn columns_iterator(&self) -> impl Iterator<Item = &Column> {
-    [&self.id].into_iter().chain(self.user_access.columns_iterator())
+    [&self.id].into_iter().chain(self.user_screen_access_regulation_common_info.columns_iterator())
   }
 
   fn generate_initialize_statements(&self, sql: &mut String) ->
@@ -95,7 +97,7 @@ impl StateAdapter {
       &default,
     )?;
 
-    self.user_access.generate_initialize_sql(sql)?;
+    self.user_screen_access_regulation_common_info.generate_initialize_sql(sql)?;
 
     Ok(())
   }
@@ -138,7 +140,7 @@ impl StateAdapter {
     let normalized_app = self.load_normalized_state(connection)?;
 
     let denormalized_app = State {
-      user_access: self.user_access.finalize(connection, normalized_app.user_access)?
+      user_access: self.user_screen_access_regulation_common_info.finalize(connection, normalized_app.user_access)?
     };
 
     Ok(denormalized_app)
@@ -160,7 +162,7 @@ impl StateAdapter {
   ) ->
     Result<(), GenericError>
   {
-    self.user_access.generate_update_after_synchronize_sql(
+    self.user_screen_access_regulation_common_info.generate_update_after_synchronize_sql(
       into, 
       &state.user_access,
     )?;

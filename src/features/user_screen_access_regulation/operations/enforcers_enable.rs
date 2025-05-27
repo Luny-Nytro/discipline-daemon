@@ -1,5 +1,5 @@
 use super::{
-  Serialize, Deserialize, App, IsOperation, Uuid,
+  Serialize, Deserialize, Daemon, IsOperation, Uuid,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -17,9 +17,9 @@ pub struct Operation {
 impl IsOperation for Operation {
   type Outcome = Result<(), Error>;
 
-  fn execute(self, app: &mut App) -> Self::Outcome {
+  fn execute(self, app: &mut Daemon) -> Self::Outcome {
     let feature = &mut app.state.user_access;
-    let adapter = &app.state_database_adapter.user_access;
+    let adapter = &app.schema.user_screen_access_regulation_common_info;
 
     let Some(enforcer) = feature
       .enforcers

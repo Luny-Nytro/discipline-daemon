@@ -4,12 +4,12 @@ pub use operations::*;
 
 mod from_cli_arguments;
 
-use crate::{GenericError, IsOperation, State, StateAdapter, SynchronizeSource};
+use crate::{GenericError, IsOperation, State, StateSchema, SynchronizeSource};
 use crate::database::Connection;
 
-pub struct App {
+pub struct Daemon {
   pub state: State,
-  pub state_database_adapter: StateAdapter,
+  pub schema: StateSchema,
   pub database_connection: Connection,
   pub http_server_address: String,
   pub is_running: bool,
@@ -17,7 +17,7 @@ pub struct App {
 
 // pub struct AppMutex(Arc<Mutex<App>>);
 
-impl App {
+impl Daemon {
   pub fn open(
     database_file_path: &str,
     http_server_port: u32,
@@ -28,7 +28,7 @@ impl App {
       error.change_context("Failed to create App: Failed to open a connection to the database")
     )?;
 
-    let state_database_adapter = StateAdapter::new(database_connection.namespace()).map_err(|error|
+    let state_database_adapter = StateSchema::new(database_connection.namespace()).map_err(|error|
       error.change_context("Failed to create App: Failed to create state database adapter")
     )?;
 
@@ -40,11 +40,11 @@ impl App {
       error.change_context("Failed to create App: Failed to load app state")
     )?;
 
-    Ok(App {
+    Ok(Daemon {
       state,
       is_running: false,
       database_connection,
-      state_database_adapter,
+      schema: state_database_adapter,
       http_server_address: format!("127.0.0.1:{http_server_port}"),
     })
   }

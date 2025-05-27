@@ -52,12 +52,12 @@ impl ColumnBuilder {
   }
 }
 
-pub struct ColumnNamesapce {
+pub struct ColumnNamespace {
   path: String,
   optional: bool,
 }
 
-impl ColumnNamesapce {
+impl ColumnNamespace {
   pub fn new() -> Self {
     Self {
       path: String::new(),
@@ -79,8 +79,8 @@ impl ColumnNamesapce {
 
   // TODO: This should return a Result with the Err variant representing
   // the 'name' being invalid.
-  pub fn create_namespace(&self, name: &str) -> ColumnNamesapce {
-    ColumnNamesapce { 
+  pub fn create_namespace(&self, name: &str) -> ColumnNamespace {
+    ColumnNamespace { 
       path: format!("{}_{}", self.path, name), 
       optional: self.optional,
     }

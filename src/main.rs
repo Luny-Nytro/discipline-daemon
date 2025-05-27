@@ -3,6 +3,9 @@ use uuid::Uuid;
 pub mod daemon;
 pub use daemon::*;
 
+pub mod user;
+pub use user::User;
+
 pub mod chronic_types;
 pub use chronic_types::*;
 
@@ -40,7 +43,7 @@ pub use utility::GenericError;
 pub mod client;
 
 pub mod state;
-pub use state::{State, NormaizedState, StateAdapter};
+pub use state::{State, NormaizedState, StateSchema};
 
 pub fn main() {
   // _ = AppMutex::open_from_command_line_arguments_then_run();

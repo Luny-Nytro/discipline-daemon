@@ -1,5 +1,5 @@
 use crate::GenericError;
-use super::{Column, ColumnNamesapce, CompoundValueSerializer, SerializableScalarValue};
+use super::{Column, ColumnNamespace, CompoundValueSerializer, Connection, SerializableScalarValue};
 
 pub struct SerializeContext {
   column_names: String,
@@ -228,8 +228,21 @@ impl UpdateStatement {
     todo!()
   }
 
+  pub fn new_given_two_where_columns(
+    column_1: &Column,
+    column_1_value: &impl SerializableScalarValue,
+    column_2: &Column,
+    column_2_value: &impl SerializableScalarValue,
+  ) -> Self {
+    todo!()
+  }
+
   pub fn set(&mut self, column: &Column, value: &impl SerializableScalarValue) {
 
+  }
+
+  pub fn execute(self, connection:&Connection) -> Result<(), GenericError> {
+    todo!()
   }
 }
 
@@ -330,7 +343,7 @@ impl DatabaseNamespace {
     Ok(Table {
       name: name.into(),
       fully_qualified_name: format!("{}_{}", self.path, name),
-      column_namespace: ColumnNamesapce::new(),
+      column_namespace: ColumnNamespace::new(),
     })
   }
 }
@@ -338,11 +351,11 @@ impl DatabaseNamespace {
 pub struct Table {
   name: String,
   pub(super) fully_qualified_name: String,
-  column_namespace: ColumnNamesapce,
+  column_namespace: ColumnNamespace,
 }
 
 impl Table {
-  pub fn column_namespace(&self) -> &ColumnNamesapce {
+  pub fn column_namespace(&self) -> &ColumnNamespace {
     &self.column_namespace
   }
 }
@@ -363,6 +376,47 @@ impl<'a> TableInitializer<'a> {
   pub fn finalize(self) {
     
   }
+}
+
+pub struct InitializeTableStatement {
+
+}
+
+impl InitializeTableStatement {
+  pub fn new(table: &Table) -> Self {
+    Self {  }
+  }
+
+  pub fn add_unique_column(&self, column: &Column) -> Result<(), GenericError> {
+    todo!()
+  }
+
+  pub fn add_optional_column(&self, column: &Column) -> Result<(), GenericError> {
+    todo!()
+  }
+
+  pub fn add_primary_column(&self, column: &Column) -> Result<(), GenericError> {
+    todo!()
+  }
+
+  pub fn add_regular_column(&self, column: &Column) -> Result<(), GenericError> {
+    todo!()
+  }
+
+  pub fn finish(self) -> Result<String, GenericError> {
+    todo!()
+  }
+}
+
+pub fn generate_sql_initialize_table_given_columns_writer(
+  into: &mut String,
+  table: &Table,
+  columns_writer: &impl WriteColumns,
+) -> 
+  Result<(), GenericError> 
+{
+  
+  Ok(())
 }
 
 pub fn generate_sql_initialize_table(
@@ -427,7 +481,7 @@ pub fn generate_sql_initialize_table(
   Ok(())
 }
 
-pub fn generate_create_row_statement<Serializer>(
+pub fn generate_sql_insert_row<Serializer>(
   into: &mut String,
   table: &Table,
   serializer: &Serializer,
@@ -453,7 +507,7 @@ where
   Ok(())
 }
 
-pub fn generate_sql_where_1_column(
+pub fn generate_sql_delete_where_1_column(
   into: &mut String,
   table: &Table,
   column_1: &Column,
@@ -465,6 +519,34 @@ pub fn generate_sql_where_1_column(
   into.push_str(&column_1.fully_qualified_name);
   into.push_str(" = ");
   column_1_value.serialize_into(SerializeScalarValueContext { into });
+  into.push_str(";");
+}
+
+pub fn generate_sql_delete_where_2_columns(
+  into: &mut String,
+  table: &Table,
+  column_1: &Column,
+  column_1_value: &impl SerializableScalarValue,
+  column_2: &Column,
+  column_2_value: &impl SerializableScalarValue,
+) {
+  // Append the initial DELETE FROM clause
+  into.push_str("DELETE FROM ");
+  into.push_str(&table.fully_qualified_name);
+  into.push_str(" WHERE ");
+
+  // Append the first column condition
+  into.push_str(&column_1.fully_qualified_name);
+  into.push_str(" = ");
+  column_1_value.serialize_into(SerializeScalarValueContext { into });
+
+  // Append the second column condition
+  into.push_str(" AND ");
+  into.push_str(&column_2.fully_qualified_name);
+  into.push_str(" = ");
+  column_2_value.serialize_into(SerializeScalarValueContext { into });
+
+  // Terminate the SQL statement
   into.push_str(";");
 }
 
@@ -622,4 +704,23 @@ where
   into.push_str(";");
 
   Ok(())
+}
+
+
+
+pub struct WriteColumnsContext {
+
+}
+
+impl WriteColumnsContext {
+  pub fn write(&mut self, column: &Column) -> Result<(), GenericError> {
+    todo!()
+  }
+  pub fn write_compound_type(&mut self, compound_type: &impl WriteColumns) -> Result<(), GenericError> {
+    todo!()
+  }
+}
+
+pub trait WriteColumns {
+  fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError>;
 }

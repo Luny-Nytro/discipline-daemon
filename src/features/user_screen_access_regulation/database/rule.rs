@@ -1,9 +1,8 @@
-use crate::database::UpdateStatement;
-
 use super::{
   Rule, RuleActivator, GenericError, Uuid, RuleActivatorSchema, 
-  Column, ColumnNamesapce, CompoundValueSerializer, 
-  CompoundValueDeserializer, DeserializeContext, SerializeContext
+  Column, ColumnNamespace, CompoundValueSerializer, 
+  CompoundValueDeserializer, DeserializeContext, SerializeContext,
+  UpdateStatement, WriteColumns, WriteColumnsContext,
 };
 
 pub struct RuleSchema {
@@ -15,7 +14,7 @@ pub struct RuleSchema {
 }
 
 impl RuleSchema {
-  pub(super) fn new(column_namespace: &ColumnNamesapce) -> Result<Self, GenericError> {
+  pub fn new(column_namespace: &ColumnNamespace) -> Result<Self, GenericError> {
     Ok(Self {
       id: column_namespace
         .create_column_builder("id")
@@ -38,12 +37,6 @@ impl RuleSchema {
         column_namespace.create_namespace("activator")
       )?,
     })
-  }
-
-  pub(super) fn columns(&self) -> Vec<&Column> {
-    let mut columns = vec![&self.id, &self.position, &self.user_id];
-    columns.extend_from_slice(&self.activator.columns());
-    columns
   }
 
   pub fn activator(&self) -> &RuleActivatorSchema {
@@ -147,5 +140,16 @@ impl CompoundValueDeserializer for RuleSchema {
           .add_error("Failed to deserialize the 'activator' field")
       )?,
     })
+  }
+}
+
+impl WriteColumns for RuleSchema {
+  fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
+    context.write(&self.id)?;
+    context.write(&self.policy_id)?;
+    context.write(&self.position)?;
+    context.write(&self.user_id)?;
+    context.write_compound_type(&self.activator)?;
+    Ok(())
   }
 }

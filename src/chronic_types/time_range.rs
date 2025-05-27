@@ -206,7 +206,12 @@ impl TimeRange {
 }
 
 pub mod database {
-  use crate::database::{Column, ColumnNamesapce, CompoundValueSerializer, CompoundValueDeserializer, DeserializeContext, SerializeContext, UpdateStatement};
+  use crate::database::{
+    Column, ColumnNamespace, CompoundValueSerializer, 
+    CompoundValueDeserializer, DeserializeContext, 
+    SerializeContext, UpdateStatement, WriteColumns,
+    WriteColumnsContext,
+  };
   use crate::{GenericError, Time};
   use super::TimeRange;
 
@@ -216,7 +221,7 @@ pub mod database {
   }
 
   impl Schema {
-    pub fn new(column_namespace: ColumnNamesapce) -> Result<Self, GenericError> {
+    pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
       Ok(Self {
         from: column_namespace
           .create_column_builder("from")
@@ -226,10 +231,6 @@ pub mod database {
           .create_column_builder("till")
           .build()?,
       })
-    }
-
-    pub fn columns(&self) -> Vec<&Column> {
-      vec![&self.from, &self.till]
     }
   }
 
@@ -288,6 +289,14 @@ pub mod database {
       TimeRange::from_numbers(from, till).map_err(|error|
         error.change_context("Failed to deserialize TimeRange: Fields deserialized successfully, but some invariants are invlidated")
       )
+    }
+  }
+
+  impl WriteColumns for Schema {
+    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
+      context.write(&self.from)?;
+      context.write(&self.till)?;
+      Ok(())
     }
   }
 }

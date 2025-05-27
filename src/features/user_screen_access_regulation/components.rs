@@ -101,6 +101,7 @@ pub struct Policy {
   pub(super) name: PolicyName,
   pub(super) rules: Vec<Rule>,
   pub(super) enabler: PolicyEnabler,
+  pub(super) creation_time: DateTime,
 }
 
 impl Policy {
@@ -225,8 +226,24 @@ impl Regulator {
     self.policies.iter_mut().any(|policy| policy.is_enabled(now))
   }
 
+  pub fn get_policy_by_id(&self, policy_id: &Uuid) -> Option<&Policy> {
+    self.policies.iter().any(|policy| policy.id == *policy_id)
+  }
+  
+  pub fn get_policy_by_id_mut(&mut self, policy_id: &Uuid) -> Option<&mut Policy> {
+    self.policies.iter_mut().any(|policy| policy.id == *policy_id)
+  }
+
   pub fn policies_number(&self) -> u32 {
     self.policies.len() as u32
+  }
+
+  pub fn reached_maximum_polices_allowed(&self) -> bool {
+    self.policies.len() >= Self::MAX_POLICIES
+  }
+
+  pub fn add_policy(&mut self, policy: Policy) {
+    self.policies.push(policy);
   }
 }
 

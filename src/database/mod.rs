@@ -3,7 +3,7 @@ mod column_info;
 pub use column_info::{
   Column,
   ColumnBuilder,
-  ColumnNamesapce,
+  ColumnNamespace,
 };
 
 mod serializable_scalar_value;
@@ -22,8 +22,8 @@ pub use serialize_context::{
   UpdateByIdStatement,
   UpdateStatement,
   generate_sql_initialize_table,
-  generate_create_row_statement,
-  generate_sql_where_1_column,
+  generate_sql_insert_row,
+  generate_sql_delete_where_1_column,
   generate_update_column_where_column_statement,
   generate_find_all_rows_statement,
   generate_update_where_column_statement_given_set_clause,
@@ -31,6 +31,11 @@ pub use serialize_context::{
   generate_ensure_row_create_statement,
   generate_sql_delete_where_3_columns,
   UpdateStatementSetClause,
+  InitializeTableStatement,
+  WriteColumns,
+  WriteColumnsContext,
+  generate_sql_initialize_table_given_columns_writer,
+  generate_sql_delete_where_2_columns,
 };
 
 mod column_value;

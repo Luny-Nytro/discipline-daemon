@@ -199,7 +199,7 @@ pub mod database {
   }
 
   impl Schema {
-    pub fn new(column_namespace: ColumnNamesapce) -> Result<Self, GenericError> {
+    pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
       Ok(Self {
         from: column_namespace
           .create_column_builder("from")
@@ -209,10 +209,6 @@ pub mod database {
           .create_column_builder("till")
           .build()?,
       })
-    }
-
-    pub fn columns(&self) -> Vec<&Column> {
-      vec![&self.from, &self.till]
     }
 
     pub fn set_from(
@@ -274,5 +270,13 @@ pub mod database {
           .add_error("deserialized 'from' and 'till' fields violate some invariants")
       )
     }
-  }  
+  }
+
+  impl WriteColumns for Schema {
+    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
+      context.write(&self.from)?;
+      context.write(&self.till)?;
+      Ok(())
+    }
+  }
 }

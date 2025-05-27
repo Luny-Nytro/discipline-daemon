@@ -2,8 +2,8 @@ use super::{
   Table, RuleSchema, GenericError, Rule, Uuid, NormalizedRule,
   RuleSerializer, Connection, DatabaseNamespace,
   generate_sql_delete_where_3_columns, UpdateStatement,
-  generate_create_row_statement,
-  generate_sql_where_1_column,
+  generate_sql_insert_row,
+  generate_sql_delete_where_1_column,
   generate_sql_initialize_table,
 };
 
@@ -13,7 +13,7 @@ pub struct RuleTableSchema {
 }
 
 impl RuleTableSchema {
-  pub(super) fn new(namespace: &DatabaseNamespace) -> Result<Self, GenericError> {
+  pub fn new(namespace: &DatabaseNamespace) -> Result<Self, GenericError> {
     let table = namespace.create_table("rules")?;
     let rule = RuleSchema::new(table.column_namespace())?;
 
@@ -23,7 +23,7 @@ impl RuleTableSchema {
     })
   }
 
-  pub(super) fn generate_sql_initialize(
+  pub fn generate_sql_initialize(
     &self,
     into: &mut String,
   ) -> 
@@ -34,10 +34,13 @@ impl RuleTableSchema {
       &self.table, 
       self.rule.columns().as_slice(),
     )
+    .map_err(|error|
+      error
+        .change_context("generate sql code that initializes the Rules table")
+    )
   }
 
-  /// Generates SQL that inserts a new Rule row into the table.
-  fn generate_sql_create_rule(
+  pub fn generate_sql_create_rule(
     &self,
     into: &mut String, 
     rule: &Rule,
@@ -54,15 +57,18 @@ impl RuleTableSchema {
       policy_id,
     );
 
-    generate_create_row_statement(
+    generate_sql_insert_row(
       into, 
       &self.table, 
       &serializer, 
       rule,
     )
+    .map_err(|error|
+      error
+        .change_context("generate sql code that inserts a Rule into the database")
+    )
   }
 
-  /// Inserts a new Rule row into the table.
   pub fn create_rule(
     &self,
     connection: &Connection,
@@ -81,19 +87,22 @@ impl RuleTableSchema {
       rule_position, 
       user_id,
       policy_id,
+    )
+    .map_err(|error|
+      error
+        .change_context("insert a Rule into the database")
     )?;
 
     connection.execute(&code).map_err(|error|
       error
-        .change_context("create rule in database")
+        .change_context("insert a Rule into the database")
         .add_attachment("rule", format!("{rule:?}"))
         .add_attachment("rule position", rule_position.to_string())
         .add_attachment("enforcer id", user_id.to_string())
     )
   }
 
-  /// Generates SQL that deletes a Rule row whose 'id' column matches the given id.
-  fn generate_sql_delete_rule_by_id(
+  pub fn generate_sql_delete_rule(
     &self,
     into: &mut String, 
     rule_id: &Uuid,
@@ -123,7 +132,7 @@ impl RuleTableSchema {
   {
     let mut code = String::new();
 
-    self.generate_sql_delete_rule_by_id(
+    self.generate_sql_delete_rule(
       &mut code, 
       rule_id,
       user_id,
@@ -132,20 +141,20 @@ impl RuleTableSchema {
 
     connection.execute(&code).map_err(|error| 
       error
-        .change_context("delete rule")
-        .add_error("faild to execute delete statement")
+        .change_context("delete Rule from database")
+        .add_error("faild to execute the sql code that deletes the Rule")
         .add_attachment("rule id", rule_id.to_string())
         .add_attachment("user id", user_id.to_string())
         .add_attachment("policy id", policy_id.to_string())
     )
   }
 
-  pub(super) fn generate_sql_delete_rules_of_user(
+  pub fn generate_sql_delete_rules_of_user(
     &self,
     into: &mut String, 
     user_id: &Uuid,
   ) {
-    generate_sql_where_1_column(
+    generate_sql_delete_where_1_column(
       into,
       &self.table, 
       &self.rule.user_id, 
@@ -153,14 +162,14 @@ impl RuleTableSchema {
     );
   }
 
-  pub fn get_all(
+  pub fn retrieve_all(
     &self,
     connection: &Connection,
   ) -> 
     Result<Vec<NormalizedRule>, GenericError> 
   {
     connection.find_all_rows(&self.table, &self.rule).map_err(|error|
-      error.change_context("get all rules")
+      error.change_context("retrieve all rules from database")
     )
   }
 

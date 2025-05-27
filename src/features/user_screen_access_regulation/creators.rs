@@ -46,6 +46,7 @@ impl PolicyCreator {
       name: self.name,
       rules: Vec::new(),
       enabler: self.enabler.create(now),
+      creation_time: now,
     }
   }
 }
