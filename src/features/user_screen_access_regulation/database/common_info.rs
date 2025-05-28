@@ -93,8 +93,8 @@ impl CompoundValueDeserializer for CommonInfoSchema {
 
 impl WriteColumns for CommonInfoSchema {
   fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write(&self.applying_interval)?;
-    context.write(&self.private_password)?;
+    context.write_scalar_type(&self.applying_interval)?;
+    context.write_scalar_type(&self.private_password)?;
     Ok(())
   }
 }

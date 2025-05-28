@@ -1,13 +1,19 @@
 use crate::database::{generate_ensure_row_create_statement, generate_sql_initialize_table, Column, CompoundValueDeserializer, CompoundValueSerializer, Connection, DatabaseNamespace, DeserializeContext, SerializeContext, Table};
-use crate::GenericError;
-use super::{user_screen_access_regulation, State};
+use crate::{GenericError, user};
+use super::{user_screen_access_regulation, State,};
 
 pub struct StateSchema {
   id: Column,
   table: Table,
+  pub user: user::database::UserSchema,
   pub user_screen_access_regulation_common_info: user_screen_access_regulation::database::CommonInfoSchema,
-  pub user_screen_access_regulation_policies: user_screen_access_regulation::database::PoliciesSchema,
-  pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
+  pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PoliciesSchema,
+}
+
+impl StateSchema {
+  pub fn user(&self) -> &user::database::UserSchema {
+    &self.user
+  }
 }
 
 pub struct NormaizedState {

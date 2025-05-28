@@ -1,4 +1,4 @@
 pub mod user;
 pub use user::*;
 
-mod database;
+pub mod database;

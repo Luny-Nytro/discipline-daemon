@@ -217,6 +217,13 @@ pub struct UpdateStatement {
 }
 
 impl UpdateStatement {
+  pub fn new_given_one_where_columns(
+    column_1: &Column,
+    column_1_value: &impl SerializableScalarValue,
+  ) -> Self {
+    todo!()
+  }
+
   pub fn new_given_three_where_columns(
     column_1: &Column,
     column_1_value: &impl SerializableScalarValue,
@@ -387,6 +394,9 @@ impl InitializeTableStatement {
     Self {  }
   }
 
+  pub fn add_compound_type(&self, writer: &impl WriteColumns) -> Result<(), GenericError> {
+    todo!()
+  }
   pub fn add_unique_column(&self, column: &Column) -> Result<(), GenericError> {
     todo!()
   }
@@ -713,7 +723,7 @@ pub struct WriteColumnsContext {
 }
 
 impl WriteColumnsContext {
-  pub fn write(&mut self, column: &Column) -> Result<(), GenericError> {
+  pub fn write_scalar_type(&mut self, column: &Column) -> Result<(), GenericError> {
     todo!()
   }
   pub fn write_compound_type(&mut self, compound_type: &impl WriteColumns) -> Result<(), GenericError> {

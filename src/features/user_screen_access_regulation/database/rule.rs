@@ -145,10 +145,10 @@ impl CompoundValueDeserializer for RuleSchema {
 
 impl WriteColumns for RuleSchema {
   fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write(&self.id)?;
-    context.write(&self.policy_id)?;
-    context.write(&self.position)?;
-    context.write(&self.user_id)?;
+    context.write_scalar_type(&self.id)?;
+    context.write_scalar_type(&self.policy_id)?;
+    context.write_scalar_type(&self.position)?;
+    context.write_scalar_type(&self.user_id)?;
     context.write_compound_type(&self.activator)?;
     Ok(())
   }

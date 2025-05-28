@@ -36,7 +36,7 @@ impl Operation {
 
     if let Err(error) = daemon
       .schema
-      .user_screen_access_regulation_policies
+      .user_screen_access_regulation_policy
       .delete_policy(&daemon.database_connection, &self.policy_id, &self.user_id)
     {
       return Err(Error::InternalError(error));

@@ -110,6 +110,20 @@ impl Policy {
   pub fn is_enabled(&mut self, now: DateTime) -> bool {
     self.enabler.is_effective(now)
   }
+
+  pub fn has_rule_with_id(&self, rule_id: &Uuid) -> bool {
+    self.rules.iter().any(|rule| rule.id == *rule_id)
+  }
+
+  pub fn remove_rule_by_id(&mut self, rule_id: &Uuid) {
+    if let Some(index) = self
+      .rules
+      .iter()
+      .position(|rule| rule.id == *rule_id) 
+    {
+      self.rules.remove(index);
+    }
+  }
 }
 
 #[derive(Debug, Clone)]

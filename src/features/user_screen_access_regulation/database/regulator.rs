@@ -2,12 +2,12 @@ use super::{
   Column, ColumnNamespace, GenericError, CompoundValueSerializer,
   Regulator, SerializeContext, OperatingSystemCalls,
   CompoundValueDeserializer, DeserializeContext, Policy,
-  WriteColumns, WriteColumnsContext,
+  WriteColumns, WriteColumnsContext, UpdateStatement,
 };
 
 pub struct RegulatorSchema {
-  pub(super) is_applying_enabled: Column,
-  pub(super) is_user_screen_access_blocked: Column,
+  pub is_applying_enabled: Column,
+  pub is_user_screen_access_blocked: Column,
 }
 
 impl RegulatorSchema {
@@ -21,6 +21,22 @@ impl RegulatorSchema {
         .create_column_builder("is_user_screen_access_blocked")
         .build()?,
     })
+  }
+
+  pub fn set_is_applying_enabled(
+    &self, 
+    statement: &mut UpdateStatement,
+    new_value: bool,
+  ) {
+    statement.set(&self.is_applying_enabled, &new_value);
+  }
+
+  pub fn set_is_user_screen_access_blocked(
+    &self, 
+    statement: &mut UpdateStatement,
+    new_value: bool,
+  ) {
+    statement.set(&self.is_user_screen_access_blocked, &new_value);
   }
 }
 
@@ -95,8 +111,8 @@ impl NormalizedRegulator {
 
 impl WriteColumns for RegulatorSchema {
   fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write(&self.is_applying_enabled)?;
-    context.write(&self.is_user_screen_access_blocked)?;
+    context.write_scalar_type(&self.is_applying_enabled)?;
+    context.write_scalar_type(&self.is_user_screen_access_blocked)?;
     Ok(())
   }
 }

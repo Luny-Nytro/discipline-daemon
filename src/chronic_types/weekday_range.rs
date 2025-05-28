@@ -274,8 +274,8 @@ pub mod database {
 
   impl WriteColumns for Schema {
     fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-      context.write(&self.from)?;
-      context.write(&self.till)?;
+      context.write_scalar_type(&self.from)?;
+      context.write_scalar_type(&self.till)?;
       Ok(())
     }
   }

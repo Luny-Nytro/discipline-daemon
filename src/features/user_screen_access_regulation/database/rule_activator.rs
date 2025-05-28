@@ -105,8 +105,8 @@ impl CompoundValueDeserializer for RuleActivatorSchema {
 
 impl WriteColumns for RuleActivatorSchema {
   fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write(&self.variant)?;
-    context.write(&self.weekday)?;
+    context.write_scalar_type(&self.variant)?;
+    context.write_scalar_type(&self.weekday)?;
     context.write_compound_type(&self.in_time_range)?;
     context.write_compound_type(&self.in_weekday_range)?;
     Ok(())

@@ -31,7 +31,7 @@ impl Operation {
 
     let mut updater = daemon
       .schema
-      .user_screen_access_regulation_policies
+      .user_screen_access_regulation_policy
       .create_policy_updater(&self.policy_id, &self.user_id);
     
     daemon

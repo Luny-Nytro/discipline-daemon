@@ -143,10 +143,10 @@ impl NormalizedPolicy {
 
 impl WriteColumns for PolicySchema {
   fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write(&self.id)?;
-    context.write(&self.name)?;
-    context.write(&self.user_id)?;
-    context.write(&self.creation_time)?;
+    context.write_scalar_type(&self.id)?;
+    context.write_scalar_type(&self.name)?;
+    context.write_scalar_type(&self.user_id)?;
+    context.write_scalar_type(&self.creation_time)?;
     context.write_compound_type(&self.enabler)?;
     Ok(())
   }

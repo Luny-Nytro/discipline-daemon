@@ -163,9 +163,9 @@ pub mod database_serde {
 
   impl WriteColumns for Schema {
     fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-      context.write(&self.duration)?;
-      context.write(&self.remaining_duration)?;
-      context.write(&self.previous_synchronization_time)?;
+      context.write_scalar_type(&self.duration)?;
+      context.write_scalar_type(&self.remaining_duration)?;
+      context.write_scalar_type(&self.previous_synchronization_time)?;
       Ok(())
     }
   }
