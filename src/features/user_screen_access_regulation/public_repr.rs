@@ -71,7 +71,7 @@ impl ToPublicRepr for CommonInfo {
 
   fn to_public_repr(&mut self) -> Self::PublicRepr {
     CommonInfoPublicRepr {
-      applying_interval: self.enforcing_interval,
+      applying_interval: self.applying_interval,
     }
   }
 }

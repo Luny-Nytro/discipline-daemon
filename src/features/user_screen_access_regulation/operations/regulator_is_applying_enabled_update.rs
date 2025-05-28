@@ -4,7 +4,7 @@ use super::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Outcome {
-  UserNotFound,
+  NoSuchUser,
   NoActionNeeded,
   MayNotSetToFalseWhenSomePoliciesAreEnabled,
   InternalError(GenericError),
@@ -23,7 +23,7 @@ impl Operation {
       .state
       .get_user_by_id_mut(&self.user_id) else 
     {
-      return Outcome::UserNotFound;
+      return Outcome::NoSuchUser;
     };
 
     let regulator = &mut user.screen_access_regulator;

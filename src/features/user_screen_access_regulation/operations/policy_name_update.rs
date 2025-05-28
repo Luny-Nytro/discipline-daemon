@@ -1,6 +1,6 @@
 use super::{
   Serialize, Deserialize, Uuid, PolicyName, Daemon,
-  GenericError
+  GenericError, IsOperation,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -11,22 +11,25 @@ pub struct Operation {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Error {
-  UserNotFound,
-  PolicyNotFound,
-  InternalError(GenericError)
+pub enum Outcome {
+  NoSuchUser,
+  NoSuchPolicy,
+  InternalError(GenericError),
+  Success,
 }
 
-impl Operation {
-  pub fn execute(self, daemon: &mut Daemon) -> Result<(), Error> {
+impl IsOperation for Operation {
+  type Outcome = Outcome;
+
+  fn execute(self, daemon: &mut Daemon) -> Self::Outcome {
     let Some(user) = daemon.state.get_user_by_id_mut(&self.user_id) else {
-      return Err(Error::UserNotFound);
+      return Outcome::NoSuchUser;
     };
 
     let regulator = &mut user.screen_access_regulator;
 
     let Some(policy) = regulator.get_policy_by_id_mut(&self.policy_id) else {
-      return Err(Error::PolicyNotFound);
+      return Outcome::NoSuchPolicy;
     };
 
     let mut updater = daemon
@@ -40,10 +43,10 @@ impl Operation {
       .set_name(&mut updater, &self.new_name);
 
     if let Err(error) = updater.execute(&daemon.database_connection) {
-      return Err(Error::InternalError(error));
+      return Outcome::InternalError(error);
     }
 
     policy.name = self.new_name;
-    Ok(())
+    Outcome::Success
   }
 }

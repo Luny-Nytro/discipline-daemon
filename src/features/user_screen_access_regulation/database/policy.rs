@@ -1,8 +1,11 @@
 use super::{
-  GenericError, Column, ColumnNamespace, PolicyEnablerSchema,
+  GenericError, Column, PolicyEnablerSchema,
   UpdateStatement, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   SerializeContext, Policy, Uuid, DateTime, PolicyEnabler, DeserializeContext, Rule,
-  WriteColumns, WriteColumnsContext, 
+  WriteColumns, WriteColumnsContext, DatabaseNamespace, Connection,
+  generate_sql_initialize_table_given_columns_writer,
+  generate_sql_insert_row,
+  generate_sql_delete_where_2_columns
 };
 
 pub struct PolicySchema {
@@ -15,36 +18,42 @@ pub struct PolicySchema {
 
 impl PolicySchema {
   pub fn new(
-    column_namespace: &ColumnNamespace
+    database_namespace: &DatabaseNamespace
   ) -> 
     Result<Self, GenericError>
   {
+    let table = database_namespace
+      .create_table("policies")
+      .map_err(|error| error.change_context("create policy schema"))?;
+
+    let column_namespace = table.column_namespace();
+
     Ok(Self {
       id: column_namespace
         .create_column_builder("id")
         .primary()
         .build()
-        .map_err(|error| error.change_context("create PolicySchema"))?,
+        .map_err(|error| error.change_context("create policy schema"))?,
       
       name: column_namespace
         .create_column_builder("name")
         .build()
-        .map_err(|error| error.change_context("create PolicySchema"))?,
+        .map_err(|error| error.change_context("create policy schema"))?,
         
       enabler: PolicyEnablerSchema
         ::new(column_namespace.create_namespace("enabler"))
-        .map_err(|error| error.change_context("create PolicySchema"))?,
+        .map_err(|error| error.change_context("create policy schema"))?,
         
       user_id: column_namespace
         .create_column_builder("user_id")
         .primary()
         .build()
-        .map_err(|error| error.change_context("create PolicySchema"))?,
+        .map_err(|error| error.change_context("create policy schema"))?,
         
       creation_time: column_namespace
         .create_column_builder("creation_time")
         .build()
-        .map_err(|error| error.change_context("create PolicySchema"))?,
+        .map_err(|error| error.change_context("create policy schema"))?,
     })
   }
 
@@ -149,5 +158,110 @@ impl WriteColumns for PolicySchema {
     context.write_scalar_type(&self.creation_time)?;
     context.write_compound_type(&self.enabler)?;
     Ok(())
+  }
+}
+
+impl PolicySchema {
+  pub fn generate_sql_initialize(
+    &self,
+    into: &mut String,
+  ) -> Result<(), GenericError> {
+    generate_sql_initialize_table_given_columns_writer(
+      into,
+      &self.table,
+      &self.policy,
+    )
+    .map_err(|error| 
+      error.change_context("generate sql code that initializes everything related to the policies table")
+    )
+  }
+
+  pub fn generate_sql_insert_policy(
+    &self,
+    into: &mut String,
+    policy: &Policy,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    let serializer = PolicySerializer::new(user_id, &self.policy);
+    generate_sql_insert_row(into, &self.table, &serializer, policy)
+      .map_err(|error| 
+        error.change_context("generate sql code that inserts a policy")
+      )
+  }
+
+  pub fn add_policy(
+    &self,
+    connection: &Connection,
+    policy: &Policy,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    let mut sql = String::new();
+
+    self
+      .generate_sql_insert_policy(&mut sql, policy, user_id)
+      .map_err(|error|
+        error.change_context("insert a policy into the database")
+      )?;
+
+    connection 
+      .execute(&sql)
+      .map_err(|error|
+        error.change_context("insert a policy into the database")
+      )
+  }
+
+  pub fn generate_sql_delete_policy(
+    &self,
+    into: &mut String,
+    policy_id: &Uuid,
+    user_id: &Uuid,
+  ) {
+    generate_sql_delete_where_2_columns(
+      into,
+      &self.table,
+      &self.id,
+      policy_id,
+      &self.user_id,
+      user_id,
+    )
+  }
+
+  pub fn delete_policy(
+    &self,
+    connection: &Connection,
+    policy_id: &Uuid,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError> 
+  {
+    let mut sql = String::new();
+
+    self
+      .generate_sql_delete_policy(&mut sql, policy_id, user_id);
+
+    connection
+      .execute(&sql)
+      .map_err(|error|
+        error.change_context("delete a policy from the database")
+      )
+  }
+
+  pub fn create_policy_updater(
+    &self,
+    policy_id: &Uuid,
+    user_id: &Uuid,
+  ) -> 
+    UpdateStatement
+  {
+    UpdateStatement::new_given_two_where_columns(
+      &self.id,
+      policy_id, 
+      &self.user_id, 
+      user_id,
+    )
   }
 }

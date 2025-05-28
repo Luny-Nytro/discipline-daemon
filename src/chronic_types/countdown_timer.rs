@@ -65,7 +65,7 @@ pub mod database_serde {
   use crate::database::{
     Column, ColumnNamespace, CompoundValueSerializer, 
     CompoundValueDeserializer, DeserializeContext, 
-    SerializeContext, UpdateStatementSetClause,
+    SerializeContext, UpdateStatement,
     WriteColumns, WriteColumnsContext,
   };
 
@@ -95,37 +95,28 @@ pub mod database_serde {
       })
     }
     
-    pub fn update_remaining_duration(
+    pub fn set_remaining_duration(
       &self,
-      update_statement_set_clause: &mut UpdateStatementSetClause,
+      updater: &mut UpdateStatement,
       new_remaining_duration: &Duration,
-    ) -> 
-      Result<(), GenericError>
-    {
-      update_statement_set_clause.update_column(
-        &self.remaining_duration, 
-        new_remaining_duration
-      )
+    ) {
+      updater.set(&self.remaining_duration, new_remaining_duration);
     }
 
     pub fn update_after_synchronize(
       &self,
-      update_statement_set_clause: &mut UpdateStatementSetClause,
+      updater: &mut UpdateStatement,
       countdown_timer: &CountdownTimer,
-    ) -> 
-      Result<(), GenericError>
-    {
-      update_statement_set_clause.update_column(
+    ) {
+      updater.update_column(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
-      )?;
+      );
 
-      update_statement_set_clause.update_column(
+      updater.update_column(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
-      )?;
-
-      Ok(())
+      );
     }
   }
 

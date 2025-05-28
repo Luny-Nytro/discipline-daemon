@@ -1,6 +1,6 @@
 use super::{
-  Serialize, Deserialize, Uuid, Daemon, ToPublicRepr,
-  GenericError, DateTime, PolicyPublicRepr
+  Serialize, Deserialize, Uuid, Daemon,
+  GenericError, DateTime, IsOperation,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,29 +9,32 @@ pub struct Operation {
   policy_id: Uuid,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Error {
-  UserNotFound,
-  PolicyNotFound,
-  PolicyIsEnabled,
-  InternalError(GenericError)
+#[derive(Debug, Clone)]
+pub enum Outcome {
+  NoSuchUser,
+  NoSuchPolicy,
+  MayNotDeletePolicyWhileEnabled,
+  InternalError(GenericError),
+  Success,
 }
 
-impl Operation {
-  pub fn execute(self, daemon: &mut Daemon) -> Result<PolicyPublicRepr, Error> {
+impl IsOperation for Operation {
+  type Outcome = Outcome;
+
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon.state.get_user_by_id_mut(&self.user_id) else {
-      return Err(Error::UserNotFound);
+      return Outcome::NoSuchUser;
     };
 
     let regulator = &mut user.screen_access_regulator;
 
     let Some(policy) = regulator.get_policy_by_id(&self.policy_id) else {
-      return Err(Error::PolicyNotFound);
+      return Outcome::NoSuchPolicy;
     };
 
     let now = DateTime::now();
     if policy.is_enabled(now) {
-      return Err(Error::PolicyIsEnabled);
+      return Outcome::MayNotDeletePolicyWhileEnabled;
     }
 
     if let Err(error) = daemon
@@ -39,11 +42,10 @@ impl Operation {
       .user_screen_access_regulation_policy
       .delete_policy(&daemon.database_connection, &self.policy_id, &self.user_id)
     {
-      return Err(Error::InternalError(error));
+      return Outcome::InternalError(error);
     }
 
-    let public_repr = policy.to_public_repr();
-    regulator.add_policy(policy);
-    Ok(policy)
+    regulator.remove_policy_by_id(&self.policy_id);
+    Outcome::Success
   }
 }

@@ -7,7 +7,8 @@ pub struct StateSchema {
   table: Table,
   pub user: user::database::UserSchema,
   pub user_screen_access_regulation_common_info: user_screen_access_regulation::database::CommonInfoSchema,
-  pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PoliciesSchema,
+  pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
+  pub user_screen_access_regulation_rule: user_screen_access_regulation::database::RuleSchema,
 }
 
 impl StateSchema {

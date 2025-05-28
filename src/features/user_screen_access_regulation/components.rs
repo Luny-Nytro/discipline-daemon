@@ -115,6 +115,14 @@ impl Policy {
     self.rules.iter().any(|rule| rule.id == *rule_id)
   }
 
+  pub fn get_rule_by_id(&self, rule_id: &Uuid) -> Option<&Rule> {
+    self.rules.iter().find(|rule| rule.id == *rule_id)
+  }
+
+  pub fn get_rule_by_id_mut(&mut self, rule_id: &Uuid) -> Option<&mut Rule> {
+    self.rules.iter_mut().find(|rule| rule.id == *rule_id)
+  }
+
   pub fn remove_rule_by_id(&mut self, rule_id: &Uuid) {
     if let Some(index) = self
       .rules
@@ -241,11 +249,11 @@ impl Regulator {
   }
 
   pub fn get_policy_by_id(&self, policy_id: &Uuid) -> Option<&Policy> {
-    self.policies.iter().any(|policy| policy.id == *policy_id)
+    self.policies.iter().find(|policy| policy.id == *policy_id)
   }
   
   pub fn get_policy_by_id_mut(&mut self, policy_id: &Uuid) -> Option<&mut Policy> {
-    self.policies.iter_mut().any(|policy| policy.id == *policy_id)
+    self.policies.iter_mut().find(|policy| policy.id == *policy_id)
   }
 
   pub fn policies_number(&self) -> u32 {
@@ -259,12 +267,22 @@ impl Regulator {
   pub fn add_policy(&mut self, policy: Policy) {
     self.policies.push(policy);
   }
+
+  pub fn remove_policy_by_id(&mut self, policy_id: &Uuid) {
+    if let Some(index) = self
+      .policies
+      .iter()
+      .position(|policy| policy.id == *policy_id)
+    {
+      self.policies.remove(index);
+    }
+  }
 }
 
 #[derive(Debug)]
 pub struct CommonInfo {
   pub(super) private_password: OperatingSystemPassword,
-  pub(super) enforcing_interval: Duration,
+  pub(super) applying_interval: Duration,
 }
 
 impl CommonInfo {
@@ -272,11 +290,11 @@ impl CommonInfo {
     OperatingSystemPassword::generate_random_password()
   }
 
-  pub(super) fn default_enforcing_interval() -> Duration {
+  pub(super) fn default_applying_interval() -> Duration {
     Duration::from_minutes(5).unwrap()
   }
 
-  pub fn enforcing_interval(&self) -> Duration {
-    self.enforcing_interval
+  pub fn applying_interval(&self) -> Duration {
+    self.applying_interval
   }
 }

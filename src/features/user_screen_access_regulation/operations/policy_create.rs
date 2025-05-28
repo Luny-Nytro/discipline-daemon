@@ -1,6 +1,7 @@
 use super::{
   Serialize, Deserialize, Uuid, Daemon, ToPublicRepr,
-  GenericError, PolicyCreator, DateTime, PolicyPublicRepr
+  GenericError, PolicyCreator, DateTime, PolicyPublicRepr,
+  IsOperation,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,23 +10,26 @@ pub struct Operation {
   policy_creator: PolicyCreator
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Error {
-  UserNotFound,
+#[derive(Debug, Clone)]
+pub enum Outcome {
+  NoSuchUser,
   ReachedMaximumPolicesAllowed,
-  InternalError(GenericError)
+  InternalError(GenericError),
+  Success(PolicyPublicRepr),
 }
 
-impl Operation {
-  pub fn execute(self, daemon: &mut Daemon) -> Result<PolicyPublicRepr, Error> {
+impl IsOperation for Operation {
+  type Outcome = Outcome;
+
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon.state.get_user_by_id_mut(&self.user_id) else {
-      return Err(Error::UserNotFound);
+      return Outcome::NoSuchUser;
     };
 
     let regulator = &mut user.screen_access_regulator;
 
     if regulator.reached_maximum_polices_allowed() {
-      return Err(Error::ReachedMaximumPolicesAllowed);
+      return Outcome::ReachedMaximumPolicesAllowed;
     }
 
     let now = DateTime::now();
@@ -34,13 +38,13 @@ impl Operation {
     if let Err(error) = daemon
       .schema
       .user_screen_access_regulation_policy
-      .insert_policy(&daemon.database_connection, &policy, &self.user_id)
+      .add_policy(&daemon.database_connection, &policy, &self.user_id)
     {
-      return Err(Error::InternalError(error));
+      return Outcome::InternalError(error);
     }
 
     let public_repr = policy.to_public_repr();
     regulator.add_policy(policy);
-    Ok(policy)
+    Outcome::Success(policy)
   }
 }

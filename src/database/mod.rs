@@ -52,16 +52,7 @@ pub mod serializable_scalar_value_implementations;
 mod compound_value_deserialize;
 pub use compound_value_deserialize::CompoundValueDeserializer;
 
-mod scalar_type_adapter;
-pub use scalar_type_adapter::ScalarTypeAdapter;
-
-pub mod scalar_type_adapters;
-pub use scalar_type_adapters::*;
-
 use crate::GenericError;
-
-
-pub type DatabaseConnection = rusqlite::Connection;
 
 /// TODO: Rename to SqliteConnection.
 pub struct Connection {
