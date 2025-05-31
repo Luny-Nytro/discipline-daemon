@@ -3,7 +3,7 @@ use super::{
   ToPublicRepr, RuleCreator, Policy, GenericError, RulePublicRepr,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -48,19 +48,20 @@ impl IsOperation for Operation {
       }
     }
 
-    let rule = self.rule_creator.create();
-    if let Err(_) = daemon
+    let mut rule = self.rule_creator.create();
+    if let Err(error) = daemon
       .schema
-      .user_screen_access_regulation_rule
-      .create_rule(
+      .user_screen_access_regulation
+      .rule
+      .add_rule(
         &daemon.database_connection, 
-        &rule, 
-        policy.rules.len(), 
         &self.user_id, 
         &self.policy_id,
+        &rule, 
+        policy.rules.len(), 
       ) 
     {
-      return Err(Outcome::InternalError);
+      return Outcome::InternalError(error);
     }
 
     let public_repr = rule.to_public_repr();

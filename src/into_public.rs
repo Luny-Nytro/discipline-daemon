@@ -11,6 +11,10 @@ where
   type PublicRepr = Vec<T::PublicRepr>;
 
   fn to_public_repr(&mut self) -> Self::PublicRepr {
-    self.iter().map(|item| item.to_public_repr())
+    let mut items = Vec::with_capacity(self.len());
+    for item in self {
+      items.push(item.to_public_repr());
+    }
+    items
   }
 }

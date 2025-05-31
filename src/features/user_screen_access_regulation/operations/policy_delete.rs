@@ -28,7 +28,7 @@ impl IsOperation for Operation {
 
     let regulator = &mut user.screen_access_regulator;
 
-    let Some(policy) = regulator.get_policy_by_id(&self.policy_id) else {
+    let Some(policy) = regulator.get_policy_by_id_mut(&self.policy_id) else {
       return Outcome::NoSuchPolicy;
     };
 
@@ -39,7 +39,8 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .schema
-      .user_screen_access_regulation_policy
+      .user_screen_access_regulation
+      .policy
       .delete_policy(&daemon.database_connection, &self.policy_id, &self.user_id)
     {
       return Outcome::InternalError(error);

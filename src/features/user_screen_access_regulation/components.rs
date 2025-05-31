@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use super::OperatingSystemCalls;
 use crate::{
-  CountdownTimer, DateTime, Duration, GenericError, 
-  OperatingSystemPassword, 
-  OperatingSystemUsername, TimeRange, 
-  Uuid, Weekday, WeekdayRange
+  CountdownTimer, Daemon, DateTime, Duration, GenericError, OperatingSystemPassword, OperatingSystemUsername, TimeRange, Uuid, Weekday, WeekdayRange
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -285,6 +282,15 @@ pub struct CommonInfo {
   pub(super) applying_interval: Duration,
 }
 
+impl Default for CommonInfo {
+  fn default() -> Self {
+    Self {
+      private_password: CommonInfo::generate_private_password(),
+      applying_interval: CommonInfo::default_applying_interval(),
+    }
+  }
+}
+
 impl CommonInfo {
   pub(super) fn generate_private_password() -> OperatingSystemPassword {
     OperatingSystemPassword::generate_random_password()
@@ -294,6 +300,10 @@ impl CommonInfo {
     Duration::from_minutes(5).unwrap()
   }
 
+  pub fn private_password(&self) -> &OperatingSystemPassword {
+    &self.private_password
+  }
+  
   pub fn applying_interval(&self) -> Duration {
     self.applying_interval
   }

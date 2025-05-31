@@ -40,7 +40,11 @@ mod regulator;
 pub use regulator::{RegulatorSchema, NormalizedRegulator};
 
 mod common_info;
-pub use common_info::{CommonInfoSchema, NormalizedFeature};
+pub use common_info::CommonInfoSchema;
 
 mod policy;
 pub use policy::*;
+
+mod policy_name;
+mod feature;
+pub use feature::FeatureSchema;

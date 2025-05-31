@@ -3,7 +3,7 @@ use super::{
   GenericError
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -53,12 +53,14 @@ impl IsOperation for Operation {
 
     let mut updater = daemon
       .schema
-      .user_screen_access_regulation_policy
-      .create_policy_updater(&self.policy_id, &self.user_id);
+      .user_screen_access_regulation
+      .policy
+      .create_updater(&self.policy_id, &self.user_id);
 
     daemon
       .schema
-      .user_screen_access_regulation_policy
+      .user_screen_access_regulation
+      .policy
       .enabler
       .timer()
       .set_remaining_duration(&mut updater, &new_remaining_duration);
@@ -70,7 +72,7 @@ impl IsOperation for Operation {
     policy
       .enabler
       .timer
-      .change_remaining_duration(self.increment);
+      .set_remaining_duration(self.increment);
 
     Outcome::Success
   }

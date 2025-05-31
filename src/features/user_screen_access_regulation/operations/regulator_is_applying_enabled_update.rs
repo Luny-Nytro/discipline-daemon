@@ -1,8 +1,8 @@
 use super::{
-  Serialize, Deserialize, Daemon, Uuid, DateTime, GenericError
+  Serialize, Deserialize, Daemon, Uuid, DateTime, GenericError, IsOperation
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoActionNeeded,
@@ -17,7 +17,9 @@ pub struct Operation {
   new_value: bool,
 }
 
-impl Operation {
+impl IsOperation for Operation {
+  type Outcome = Outcome;
+
   fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon
       .state
@@ -52,7 +54,7 @@ impl Operation {
       return Outcome::InternalError(error);
     }
 
-    user.name = self.new_value;
+    regulator.is_applying_enabled = self.new_value;
     Outcome::Success
   }
 }

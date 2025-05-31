@@ -385,16 +385,16 @@ impl<'a> TableInitializer<'a> {
   }
 }
 
-pub struct InitializeTableStatement {
-
+pub struct InitializeTableStatement<'a> {
+  into: &'a mut String,
 }
 
-impl InitializeTableStatement {
-  pub fn new(table: &Table) -> Self {
-    Self {  }
+impl<'a> InitializeTableStatement<'a> {
+  pub fn new(into: &'a mut String, table: &Table) -> Self {
+    Self { into }
   }
 
-  pub fn add_compound_type(&self, writer: &impl WriteColumns) -> Result<(), GenericError> {
+  pub fn add_compound_type(&mut self, writer: &impl WriteColumns) -> Result<(), GenericError> {
     todo!()
   }
   pub fn add_unique_column(&self, column: &Column) -> Result<(), GenericError> {
@@ -413,7 +413,7 @@ impl InitializeTableStatement {
     todo!()
   }
 
-  pub fn finish(self) -> Result<String, GenericError> {
+  pub fn finish(self) -> Result<(), GenericError> {
     todo!()
   }
 }
@@ -491,7 +491,7 @@ pub fn generate_sql_initialize_table(
   Ok(())
 }
 
-pub fn generate_sql_insert_row<Serializer>(
+pub fn generate_sql_add_row<Serializer>(
   into: &mut String,
   table: &Table,
   serializer: &Serializer,

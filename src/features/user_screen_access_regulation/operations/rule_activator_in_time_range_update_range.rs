@@ -3,7 +3,7 @@ use super::{
   RuleActivator, GenericError,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -62,12 +62,14 @@ impl IsOperation for Operation {
 
     let mut updater = daemon
       .schema
-      .user_screen_access_regulation_rule
+      .user_screen_access_regulation
+      .rule
       .create_updater(&self.rule_id, &self.policy_id, &self.user_id);
 
     daemon
       .schema
-      .user_screen_access_regulation_rule
+      .user_screen_access_regulation
+      .rule
       .activator()
       .in_time_range()
       .set_range(&mut updater, &self.new_time_range);

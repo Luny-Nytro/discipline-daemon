@@ -13,7 +13,7 @@ use crate::database::{
   CompoundValueDeserializer, DeserializeContext, Connection,
   DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext,
   ColumnValue, Table, DatabaseNamespace, InitializeTableStatement,
-  generate_sql_insert_row
+  generate_sql_add_row,
 };
 
 impl SerializableScalarValue for UserName {
@@ -27,12 +27,12 @@ impl DeserializableScalarValue for UserName {
     value
       .as_string()
       .and_then(UserName::new)
-      .map_err(|error| error.change_context("deserialize UserName"))
+      .map_err(|error| error.change_context("deserialize user name"))
   }
 }
 
 pub struct UserSchema {
-  table: Table,
+  table_metadata: Table,
   id_column: Column,
   name_column: Column,
   operating_system_user_id_column: Column,
@@ -43,47 +43,44 @@ pub struct UserSchema {
 
 impl UserSchema {
   pub fn new(database_namespace: &DatabaseNamespace) -> Result<Self, GenericError> {
-    let table = database_namespace
+    let table_metadata = database_namespace
       .create_table("users")
-      .map_err(|error| error.change_context("create UsersSchema"))?;
+      .map_err(|error| error.change_context("create user schema"))?;
 
-    let user = UserSchema::new(table.column_namespace())
-      .map_err(|error| error.change_context("create UsersSchema"))?;
-
-    Ok(Self {
-      table,
-      
-      id_column: table.column_namespace()
+    Ok(Self {      
+      id_column: table_metadata.column_namespace()
         .create_column_builder("id")
         .primary()
         .build()
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        .map_err(|error| error.change_context("create user schema"))?,
 
-      name_column: table.column_namespace()
+      name_column: table_metadata.column_namespace()
         .create_column_builder("name")
         .build()
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        .map_err(|error| error.change_context("create user schema"))?,
 
-      operating_system_user_id_column: table.column_namespace()
+      operating_system_user_id_column: table_metadata.column_namespace()
         .create_column_builder("operating_system_user_id")
         .build()
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        .map_err(|error| error.change_context("create user schema"))?,
 
-      operating_system_username_column: table.column_namespace()
+      operating_system_username_column: table_metadata.column_namespace()
         .create_column_builder("operating_system_username")
         .build()
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        .map_err(|error| error.change_context("create user schema"))?,
 
-      operating_system_password_column: table.column_namespace()
+      operating_system_password_column: table_metadata.column_namespace()
         .create_column_builder("operating_system_password")
         .build()
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        .map_err(|error| error.change_context("create user schema"))?,
 
       screen_access_regulator_type: user_screen_access_regulation
         ::database
         ::RegulatorSchema
-        ::new(&table.column_namespace().create_namespace("screen_access_regulator"))        
-        .map_err(|error| error.change_context("create UserSchema"))?,
+        ::new(&table_metadata.column_namespace().create_namespace("screen_access_regulator"))        
+        .map_err(|error| error.change_context("create user schema"))?,
+
+      table_metadata,
     })
   }
 
@@ -97,19 +94,19 @@ impl UserSchema {
 }
 
 impl CompoundValueSerializer for UserSchema {
-  type Input = UserSchema;
+  type Input = User;
 
   fn serialize_into(
     &self, 
     value: &Self::Input,
     context: &mut SerializeContext, 
   ) {
-    context.serializable_scalar(&self.id_column, &value.id_column);  
-    context.serializable_scalar(&self.name_column, &value.name_column);  
-    context.serializable_scalar(&self.operating_system_user_id_column, &value.operating_system_user_id_column);  
-    context.serializable_scalar(&self.operating_system_username_column, &value.operating_system_username_column);  
-    context.serializable_scalar(&self.operating_system_password_column, &value.operating_system_password_column);  
-    context.serializable_compound(&self.screen_access_regulator_type, &value.screen_access_regulator_type);  
+    context.serializable_scalar(&self.id_column, &value.id);  
+    context.serializable_scalar(&self.name_column, &value.name);  
+    context.serializable_scalar(&self.operating_system_user_id_column, &value.operating_system_user_id);  
+    context.serializable_scalar(&self.operating_system_username_column, &value.operating_system_username);  
+    context.serializable_scalar(&self.operating_system_password_column, &value.operating_system_password);  
+    context.serializable_compound(&self.screen_access_regulator_type, &value.screen_access_regulator);  
   }
 }
 
@@ -124,50 +121,70 @@ pub struct NormalizedUser {
     ::NormalizedRegulator
 }
 
+impl NormalizedUser {
+  pub fn denormalize(
+    self, 
+    user_screen_access_regulation_policies: &Vec<user_screen_access_regulation::database::NormalizedPolicy>,
+    user_screen_access_regulation_rules: &Vec<user_screen_access_regulation::database::NormalizedRule>,
+  ) -> User {
+    User {
+      id: self.id,
+      name: self.name,
+      operating_system_user_id: self.operating_system_user_id,
+      operating_system_username: self.operating_system_username,
+      operating_system_password: self.operating_system_password,
+      screen_access_regulator: self.screen_access_regulator.denormalize(
+        user_screen_access_regulation_policies,
+        user_screen_access_regulation_rules,
+      ),
+    }
+  }
+}
+
 impl CompoundValueDeserializer for UserSchema {
   type Output = NormalizedUser;
 
   fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedUser {
       id: context
-        .deserializable_scalar("id")
+        .deserializable_scalar(&self.id_column)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'id' field")
         )?,
 
       name: context
-        .deserializable_scalar("name")
+        .deserializable_scalar(&self.name_column)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'name' field")
         )?,
 
       operating_system_user_id: context
-        .deserializable_scalar("operating_system_user_id")
+        .deserializable_scalar(&self.operating_system_user_id_column)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'operating_system_user_id' field")
         )?,
 
       operating_system_username: context
-        .deserializable_scalar("operating_system_username")
+        .deserializable_scalar(&self.operating_system_username_column)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'operating_system_username' field")
         )?,
 
       operating_system_password: context
-        .deserializable_scalar("operating_system_password")
+        .deserializable_scalar(&self.operating_system_password_column)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'operating_system_password' field")
         )?,
 
       screen_access_regulator: context
-        .deserialize_compound("screen_access_regulator")
+        .deserialize_compound(&self.screen_access_regulator_type)
         .map_err(|error| error
-          .change_context("deserialize NormalizedUser")
+          .change_context("deserialize normalized user")
           .add_error("failed to deserialize the 'screen_access_regulator' field")
         )?,
     })
@@ -193,10 +210,10 @@ impl UserSchema {
   ) -> 
     Result<(), GenericError>
   {
-    let mut statement = InitializeTableStatement::new(&self.table);
+    let mut statement = InitializeTableStatement::new(into, &self.table_metadata);
     statement
-      .add_compound_type(&self.user)
-      .map_err(|error| error.change_context("generate sql code that initializes everything related to the 'users' table in the database"))
+      .add_compound_type(self)
+      .map_err(|error| error.change_context("generate sql code that initializes everything related to the users table"))
   }
 
   pub fn generate_sql_add(
@@ -206,14 +223,10 @@ impl UserSchema {
   ) -> 
     Result<(), GenericError>
   {
-    generate_sql_insert_row(
-      into, 
-      &self.table, 
-      &self, 
-      user,
-    )
+    generate_sql_add_row(into, &self.table_metadata, self, user)
     .map_err(|error| error
-      .change_context("generate sql that adds a user to the 'users' table")
+      .change_context("generate sql that adds a user to the users table")
+      .add_attachment("user", format!("{user:?}"))
     )
   }
 
@@ -228,9 +241,19 @@ impl UserSchema {
     self
       .generate_sql_add(&mut sql, user)
       .and(connection.execute(&sql))
-      .map_err(|error| error.change_context("add a user to the 'users' table"))
+      .map_err(|error| error.change_context("add a user to the users table"))
   }
 
+  pub fn retrieve_all_normalized(
+    &self,
+    connection: &Connection
+  ) -> 
+    Result<Vec<NormalizedUser>, GenericError>
+  {
+    connection
+      .find_all_rows(&self.table_metadata, self)
+      .map_err(|error| error.change_context("retrieve all users from the users table"))
+  }
 
   pub fn create_updater(&self, user_id: &Uuid) -> UpdateStatement {
     UpdateStatement::new_given_one_where_columns(

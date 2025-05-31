@@ -1,14 +1,15 @@
 use super::{
-  GenericError, Column, PolicyEnablerSchema,
+  GenericError, Column, PolicyEnablerSchema, Table,
   UpdateStatement, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   SerializeContext, Policy, Uuid, DateTime, PolicyEnabler, DeserializeContext, Rule,
   WriteColumns, WriteColumnsContext, DatabaseNamespace, Connection,
   generate_sql_initialize_table_given_columns_writer,
-  generate_sql_insert_row,
+  generate_sql_add_row,
   generate_sql_delete_where_2_columns
 };
 
 pub struct PolicySchema {
+  pub table: Table,
   pub id: Column,
   pub name: Column,
   pub enabler: PolicyEnablerSchema,
@@ -54,6 +55,8 @@ impl PolicySchema {
         .create_column_builder("creation_time")
         .build()
         .map_err(|error| error.change_context("create policy schema"))?,
+
+      table,
     })
   }
 
@@ -90,7 +93,7 @@ impl<'a> CompoundValueSerializer for PolicySerializer<'a> {
   ) {
     context.serializable_scalar(&self.policy_schema.id, &value.id);
     context.serializable_scalar(&self.policy_schema.name, &value.name);
-    context.serializable_scalar(&self.policy_schema.user_id, &self.user_id);
+    context.serializable_scalar(&self.policy_schema.user_id, self.user_id);
     context.serializable_scalar(&self.policy_schema.creation_time, &value.creation_time);
     context.serializable_compound(&self.policy_schema.enabler, &value.enabler);
   }
@@ -101,29 +104,29 @@ impl CompoundValueDeserializer for PolicySchema {
 
   fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedPolicy {
-      id: context.deserializable_scalar("id").map_err(|error|
+      id: context.deserializable_scalar(&self.id).map_err(|error|
         error
-          .change_context("deserialize NormalizedPolicy")
+          .change_context("deserialize normalized policy")
           .add_error("failed to deserialize the 'id' field")
       )?,
-      name: context.deserializable_scalar("name").map_err(|error|
+      name: context.deserializable_scalar(&self.name).map_err(|error|
         error
-          .change_context("deserialize NormalizedPolicy")
+          .change_context("deserialize normalized policy")
           .add_error("failed to deserialize the 'name' field")
       )?,
-      user_id: context.deserializable_scalar("user_id").map_err(|error|
+      user_id: context.deserializable_scalar(&self.user_id).map_err(|error|
         error
-          .change_context("deserialize NormalizedPolicy")
+          .change_context("deserialize normalized policy")
           .add_error("failed to deserialize the 'user_id' field")
       )?,
-      enabler: context.deserialize_compound("enabler").map_err(|error|
+      enabler: context.deserialize_compound(&self.enabler).map_err(|error|
         error
-          .change_context("deserialize NormalizedPolicy")
+          .change_context("deserialize normalized policy")
           .add_error("failed to deserialize the 'enabler' field")
       )?,
-      creation_time: context.deserializable_scalar("creation_time").map_err(|error|
+      creation_time: context.deserializable_scalar(&self.creation_time).map_err(|error|
         error
-          .change_context("deserialize NormalizedPolicy")
+          .change_context("deserialize normalized policy")
           .add_error("failed to deserialize the 'creation_time' field")
       )?,
     })
@@ -169,7 +172,7 @@ impl PolicySchema {
     generate_sql_initialize_table_given_columns_writer(
       into,
       &self.table,
-      &self.policy,
+      self,
     )
     .map_err(|error| 
       error.change_context("generate sql code that initializes everything related to the policies table")
@@ -184,8 +187,8 @@ impl PolicySchema {
   ) -> 
     Result<(), GenericError>
   {
-    let serializer = PolicySerializer::new(user_id, &self.policy);
-    generate_sql_insert_row(into, &self.table, &serializer, policy)
+    let serializer = PolicySerializer::new(user_id, self);
+    generate_sql_add_row(into, &self.table, &serializer, policy)
       .map_err(|error| 
         error.change_context("generate sql code that inserts a policy")
       )
@@ -250,7 +253,20 @@ impl PolicySchema {
       )
   }
 
-  pub fn create_policy_updater(
+  pub fn load_all_normalized_policies(
+    &self,
+    connection: &Connection,
+  ) -> 
+    Result<Vec<NormalizedPolicy>, GenericError>
+  {
+    connection
+      .find_all_rows(&self.table, self)
+      .map_err(|error| 
+        error.change_context("retrieve all policies from the database in normalized form")
+      )
+  }
+
+  pub fn create_updater(
     &self,
     policy_id: &Uuid,
     user_id: &Uuid,

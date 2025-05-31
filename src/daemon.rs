@@ -1,10 +1,7 @@
-
-pub mod operations;
-pub use operations::*;
-
-mod from_cli_arguments;
-
-use crate::{GenericError, IsOperation, State, StateSchema, SynchronizeSource};
+use clap::{Parser, command};
+use std::sync::{Arc, Mutex, MutexGuard};
+use std::thread::{sleep, spawn};
+use crate::{GenericError, IsOperation, State, StateSchema, DateTime, Duration};
 use crate::database::Connection;
 
 pub struct Daemon {
@@ -15,48 +12,54 @@ pub struct Daemon {
   pub is_running: bool,
 }
 
-// pub struct AppMutex(Arc<Mutex<App>>);
-
 impl Daemon {
   pub fn open(
     database_file_path: &str,
     http_server_port: u32,
   ) -> 
-    Result<Self, GenericError> 
+    Result<DaemonMutex, GenericError> 
   {
     let database_connection = Connection::new(database_file_path).map_err(|error|
-      error.change_context("Failed to create App: Failed to open a connection to the database")
+      error
+        .change_context("open a connection to the database")
+        .change_context("create daemon")
     )?;
 
-    let state_database_adapter = StateSchema::new(database_connection.namespace()).map_err(|error|
-      error.change_context("Failed to create App: Failed to create state database adapter")
+    let schema = StateSchema::new(database_connection.namespace()).map_err(|error|
+      error
+        .change_context("create state database schema")
+        .change_context("create daemon")
     )?;
 
-    state_database_adapter.initialize(&database_connection).map_err(|error|
-      error.change_context("Failed to create App: Failed to initialize state database schema")
+    schema.initialize(&database_connection).map_err(|error|
+      error
+        .change_context("initialize database schema")
+        .change_context("create daemon")
     )?;
 
-    let state = state_database_adapter.load(&database_connection).map_err(|error|
-      error.change_context("Failed to create App: Failed to load app state")
+    let state = schema.load(&database_connection).map_err(|error|
+      error
+        .change_context("load state from the database")
+        .change_context("create daemon")
     )?;
 
-    Ok(Daemon {
+    Ok(DaemonMutex::new(Daemon {
       state,
+      schema,
       is_running: false,
       database_connection,
-      schema: state_database_adapter,
       http_server_address: format!("127.0.0.1:{http_server_port}"),
-    })
+    }))
   }
 
-  pub fn open_and_run(
-    database_file_path: &str,
-    http_server_port: u32,
-  ) -> Result<Self, ()> {
-    let app = Self::open(database_file_path, http_server_port)?;
-    app.run();
-    Ok(app)
-  }
+  // pub fn open_and_run(
+  //   database_file_path: &str,
+  //   http_server_port: u32,
+  // ) -> Result<Self, GenericError> {
+  //   let app = Self::open(database_file_path, http_server_port)?;
+  //   app.run();
+  //   Ok(app)
+  // }
 
   fn http_server_address(&self) -> &String {
     &self.http_server_address
@@ -68,68 +71,122 @@ impl Daemon {
   {
     operation.execute(self)
   }
+}
 
-  pub fn run(&self) {
-    {
-      // Don't respawn below threads if they are already spawned.
-      let mut app = self.0.lock().unwrap();
-      if app.is_running {
-        return;
-      } else {
-        app.is_running = true;
+pub struct DaemonMutex(Arc<Mutex<Daemon>>);
+
+impl DaemonMutex {
+  pub fn new(daemon: Daemon) -> Self {
+    Self(Arc::new(Mutex::new(daemon)))
+  }
+
+  pub fn lock(&self) -> Result<MutexGuard<'_, Daemon>, GenericError> {
+    self.0.lock().map_err(|error| 
+      GenericError::new("lock the daemon mutex")
+        .add_attachment("error", error.to_string())
+    )  
+  }
+
+  pub fn clone(&self) -> Self {
+    Self(Arc::clone(&self.0))
+  }
+}
+
+#[derive(Parser, Debug)]
+#[command(name = "Discipline", version = "1.0", author = "LunyNytro")]
+struct Args {
+  /// The path to the database file.
+  database_path: String,
+
+  /// Age of the Supreme Emperor (optional)
+  http_server_port: u32,
+}
+
+impl DaemonMutex {
+  pub fn open_from_command_line_arguments() -> Result<Self, GenericError> {
+    let arguments = Args::parse();
+    if arguments.database_path.len() > 300 {
+      return Err(
+        GenericError::new("open Daemon from command line arguments")
+          .add_error("the 'database_path' argument is longer than 300 characters")
+          .add_attachment("'database_path' argument", arguments.database_path)
+      );
+    }
+    
+    Daemon::open(
+      &arguments.database_path, 
+      arguments.http_server_port,
+    )
+    .map_err(|error|
+      error.change_context("open Daemon from command line arguments")
+    )
+  }
+}
+
+pub struct ServerThread {
+  daemon: DaemonMutex,
+}
+
+impl ServerThread {
+  pub fn spawn(daemon: DaemonMutex) {
+    spawn(move || {
+      // http_server::run(http_server_app);
+    })
+    .join();
+  }
+}
+
+pub struct SynchronizationThread {
+  daemon: DaemonMutex,
+}
+
+impl SynchronizationThread {
+  pub fn spawn(daemon: DaemonMutex) {
+    let default_interval = Duration::from_minutes(5).unwrap();
+
+    spawn(move || {
+      loop {
+        match Self::job(daemon.clone()) {
+          Ok(interval) => {
+            sleep(interval.to_std());
+          }
+          Err(error) => {
+            sleep(default_interval.to_std());
+
+            let now = DateTime::now().to_iso_8601_like();
+            eprintln!("{now}: {error:?}\n---------------------------------------------")
+          }
+        }
+      }
+    });
+  }
+
+  pub fn job(daemon: DaemonMutex) -> Result<Duration, GenericError> {
+    let now = DateTime::now();
+    
+    let mut daemon = daemon.lock().map_err(|error| 
+      error.change_context("perform synchronization job")
+    )?;
+
+    let private_password = daemon
+      .state
+      .user_screen_access_regulation_common_info
+      .private_password()
+      .clone();
+
+    let mut errors = Vec::new();
+    
+    for user in &mut daemon.state.users {
+      if let Err(error) = user.screen_access_regulator.apply(
+        now, 
+        &user.operating_system_username, 
+        &user.operating_system_password, 
+        &private_password,
+      ) {
+        errors.push(error);
       }
     }
-
-    let user_access_app = Arc::clone(&self.0);
-    let user_access_thread = spawn(move || {
-      loop {
-        let interval = {
-          let now = DateTime::now();
-          let mut app = user_access_app.lock().unwrap();
-          app.state.user_access.apply_actions(now);
-          app.state.user_access.enforcing_interval()
-        };
-
-        sleep(interval.to_std());
-      }
-    });
-
-    let network_access_enforcer_app = Arc::clone(&self.0);
-    let network_access_enforcer_thread = spawn(move || {
-      loop {
-        let interval = {
-          let now = DateTime::now();
-          let mut app = network_access_enforcer_app.lock().unwrap();
-          app.state.networking_access.apply_enforcers(now);
-          app.state.networking_access.enforcing_interval()
-        };
-
-        sleep(interval.to_std());
-      }
-    });
-
-    let synchronization_app = Arc::clone(&self.0);
-    let synchronization_thread = spawn(move || {
-      let interval = Duration::from_minutes(5).unwrap().to_std();
-
-      loop {
-        {
-          let mut app = synchronization_app.lock().unwrap();
-          synchronize::synchronize(&mut app);
-        }
-
-        sleep(interval);
-      }
-    });
-
-    let http_server_app = self.clone();
-    let http_server_thread = spawn(move || {
-      http_server::run(http_server_app);
-    });
-
-    user_access_thread.join().unwrap();
-    network_access_enforcer_thread.join().unwrap();
-    synchronization_thread.join().unwrap();
-    http_server_thread.join().unwrap();
+    
+    todo!()
   }
 }

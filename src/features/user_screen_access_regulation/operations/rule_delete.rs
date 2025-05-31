@@ -3,7 +3,7 @@ use super::{
   Daemon, DateTime,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -15,9 +15,9 @@ pub enum Outcome {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Operation {
-  rule_id: Uuid,
   user_id: Uuid,
   policy_id: Uuid,
+  rule_id: Uuid,
 }
 
 impl IsOperation for Operation {
@@ -51,7 +51,8 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .schema
-      .user_screen_access_regulation_policy
+      .user_screen_access_regulation
+      .policy
       .delete_policy(
         &daemon.database_connection, 
         &self.policy_id, 

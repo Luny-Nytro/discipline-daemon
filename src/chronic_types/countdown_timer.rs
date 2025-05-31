@@ -37,7 +37,7 @@ impl CountdownTimer {
     self.remaining_duration
   }
 
-  pub fn change_remaining_duration(&mut self, new_value: Duration) {
+  pub fn set_remaining_duration(&mut self, new_value: Duration) {
     self.remaining_duration = new_value;
   }
 
@@ -108,12 +108,12 @@ pub mod database_serde {
       updater: &mut UpdateStatement,
       countdown_timer: &CountdownTimer,
     ) {
-      updater.update_column(
+      updater.set(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
       );
 
-      updater.update_column(
+      updater.set(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
       );

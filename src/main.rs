@@ -40,7 +40,7 @@ pub use synchronize_source::*;
 pub mod utility;
 pub use utility::GenericError;
 
-pub mod client;
+pub mod web_client;
 
 pub mod state;
 pub use state::{State, NormaizedState, StateSchema};

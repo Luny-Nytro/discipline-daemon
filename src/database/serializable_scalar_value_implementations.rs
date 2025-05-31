@@ -175,3 +175,15 @@ impl DeserializableScalarValue for f64 {
     value.as_f64()
   }
 }
+
+impl SerializableScalarValue for usize {
+  fn serialize_into(&self, ctx: SerializeScalarValueContext) {
+    ctx.as_usize(*self);
+  }
+}
+
+impl DeserializableScalarValue for usize {
+  fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+    value.as_usize()
+  }
+}

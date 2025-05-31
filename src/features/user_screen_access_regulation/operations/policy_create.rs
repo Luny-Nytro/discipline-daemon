@@ -37,7 +37,8 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .schema
-      .user_screen_access_regulation_policy
+      .user_screen_access_regulation
+      .policy
       .add_policy(&daemon.database_connection, &policy, &self.user_id)
     {
       return Outcome::InternalError(error);
@@ -45,6 +46,6 @@ impl IsOperation for Operation {
 
     let public_repr = policy.to_public_repr();
     regulator.add_policy(policy);
-    Outcome::Success(policy)
+    Outcome::Success(public_repr)
   }
 }

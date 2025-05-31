@@ -1,8 +1,8 @@
 use super::{
   Column, ColumnNamespace, CompoundValueSerializer, CommonInfo,
-  SerializeContext, OperatingSystemPassword, Duration, DeserializeContext,
+  SerializeContext, Duration, DeserializeContext,
   CompoundValueDeserializer, GenericError, UpdateStatement,
-  DatabaseNamespace, WriteColumns, WriteColumnsContext,
+  WriteColumns, WriteColumnsContext,
 };
 
 pub struct CommonInfoSchema {
@@ -12,7 +12,6 @@ pub struct CommonInfoSchema {
 
 impl CommonInfoSchema {
   pub fn new(
-    database_namespace: &DatabaseNamespace,
     column_namespace: &ColumnNamespace,
   ) -> 
     Result<Self, GenericError>
@@ -28,13 +27,6 @@ impl CommonInfoSchema {
     })
   }
 
-  pub fn columns(&self) -> Vec<&Column> {
-    vec![
-      &self.applying_interval, 
-      &self.private_password,
-    ]
-  }
-
   pub fn set_applying_interval(
     &self, 
     statement: &mut UpdateStatement,
@@ -45,7 +37,7 @@ impl CommonInfoSchema {
 }
 
 impl CompoundValueSerializer for CommonInfoSchema {
-  type Input = NormalizedFeature;
+  type Input = CommonInfo;
 
   fn serialize_into(
     &self, 
@@ -57,26 +49,11 @@ impl CompoundValueSerializer for CommonInfoSchema {
   }
 }
 
-#[derive(Debug, Clone)]
-pub struct NormalizedFeature {
-  private_password: OperatingSystemPassword,
-  applying_interval: Duration,
-}
-
-impl Default for NormalizedFeature {
-  fn default() -> Self {
-    Self {
-      private_password: CommonInfo::generate_private_password(),
-      applying_interval: CommonInfo::default_applying_interval(),
-    }
-  }
-}
-
 impl CompoundValueDeserializer for CommonInfoSchema {
-  type Output = NormalizedFeature;
+  type Output = CommonInfo;
 
   fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
-    Ok(NormalizedFeature {
+    Ok(CommonInfo {
       applying_interval: context.deserializable_scalar(&self.applying_interval).map_err(|error|
         error
           .change_context("deserialize CommonInfo")

@@ -22,7 +22,7 @@ pub use serialize_context::{
   UpdateByIdStatement,
   UpdateStatement,
   generate_sql_initialize_table,
-  generate_sql_insert_row,
+  generate_sql_add_row,
   generate_sql_delete_where_1_column,
   generate_update_column_where_column_statement,
   generate_find_all_rows_statement,

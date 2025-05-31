@@ -3,6 +3,7 @@ use super::{
   Regulator, SerializeContext, OperatingSystemCalls,
   CompoundValueDeserializer, DeserializeContext, Policy,
   WriteColumns, WriteColumnsContext, UpdateStatement,
+  NormalizedPolicy, NormalizedRule,
 };
 
 pub struct RegulatorSchema {
@@ -99,13 +100,18 @@ impl CompoundValueDeserializer for RegulatorSchema {
 }
 
 impl NormalizedRegulator {
-  pub fn finalize(self, policies: Vec<Policy>) -> Regulator {
-    Regulator {
-      policies,
-      is_applying_enabled: self.is_applying_enabled,
-      operating_system_calls: OperatingSystemCalls::new(),
-      is_user_screen_access_blocked: self.is_user_screen_access_blocked,
-    }
+  pub fn denormalize(
+    self, 
+    normalized_policies: &Vec<NormalizedPolicy>,
+    normalized_rules: &Vec<NormalizedRule>,
+  ) -> Regulator {
+    todo!()
+    // Regulator {
+    //   policies,
+    //   is_applying_enabled: self.is_applying_enabled,
+    //   operating_system_calls: OperatingSystemCalls::new(),
+    //   is_user_screen_access_blocked: self.is_user_screen_access_blocked,
+    // }
   }
 }
 

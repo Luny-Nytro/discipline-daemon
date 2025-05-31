@@ -10,7 +10,7 @@ pub struct Operation {
   new_name: PolicyName
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -34,12 +34,14 @@ impl IsOperation for Operation {
 
     let mut updater = daemon
       .schema
-      .user_screen_access_regulation_policy
-      .create_policy_updater(&self.policy_id, &self.user_id);
+      .user_screen_access_regulation
+      .policy
+      .create_updater(&self.policy_id, &self.user_id);
     
     daemon
       .schema
-      .user_screen_access_regulation_policy
+      .user_screen_access_regulation
+      .policy
       .set_name(&mut updater, &self.new_name);
 
     if let Err(error) = updater.execute(&daemon.database_connection) {

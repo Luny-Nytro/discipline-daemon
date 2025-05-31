@@ -1,22 +1,21 @@
 use super::{
   Rule, RuleActivator, GenericError, Uuid, RuleActivatorSchema, 
-  Column, CompoundValueSerializer, 
+  Column, CompoundValueSerializer, InitializeTableStatement,
   CompoundValueDeserializer, DeserializeContext, SerializeContext,
   UpdateStatement, WriteColumns, WriteColumnsContext,
   Table, Connection, DatabaseNamespace,
   generate_sql_delete_where_3_columns,
-  generate_sql_insert_row,
+  generate_sql_add_row,
   generate_sql_delete_where_1_column,
-  generate_sql_initialize_table,
 };
 
 pub struct RuleSchema {
-  pub table: Table,
+  pub table_metadata: Table,
   pub(super) id_column: Column,
   pub(super) user_id_column: Column,
   pub(super) policy_id_column: Column,
   pub(super) position_column: Column,
-  pub(super) activator_column: RuleActivatorSchema,
+  pub(super) activator_type: RuleActivatorSchema,
 }
 
 impl RuleSchema {
@@ -28,8 +27,6 @@ impl RuleSchema {
     let column_namespace = table.column_namespace();
 
     Ok(Self {
-      table,
-
       id_column: column_namespace
         .create_column_builder("id")
         .primary()
@@ -51,14 +48,16 @@ impl RuleSchema {
         .build()
         .map_err(|error| error.change_context("create rule schema"))?,
 
-      activator_column: RuleActivatorSchema
+      activator_type: RuleActivatorSchema
         ::new(column_namespace.create_namespace("activator"))
         .map_err(|error| error.change_context("create rule schema"))?,
+
+      table_metadata: table,
     })
   }
 
   pub fn activator(&self) -> &RuleActivatorSchema {
-    &self.activator_column
+    &self.activator_type
   }
   
   pub fn set_position(
@@ -71,24 +70,24 @@ impl RuleSchema {
 }
 
 pub struct RuleSerializer<'a> {
-  rule_adapter: &'a RuleSchema,
-  rule_position: u32,
+  rule_schema: &'a RuleSchema,
+  rule_position: usize,
   user_id: &'a Uuid,
   policy_id: &'a Uuid,
 }
 
 impl<'a> RuleSerializer<'a> {
   pub fn new(
-    rule_adapter: &'a RuleSchema,
-    rule_position: u32,
     user_id: &'a Uuid,
     policy_id: &'a Uuid,
+    rule_schema: &'a RuleSchema,
+    rule_position: usize,
   ) -> Self {
     Self {
-      rule_adapter,
-      rule_position,
       user_id,
       policy_id,
+      rule_schema,
+      rule_position,
     }
   }
 }
@@ -101,21 +100,20 @@ impl<'a> CompoundValueSerializer for RuleSerializer<'a> {
     value: &Self::Input,
     context: &mut SerializeContext, 
   ) {
-    context.serializable_scalar(&self.rule_adapter.id_column, &value.id);
-    context.serializable_scalar(&self.rule_adapter.position_column, &self.rule_position);
-    context.serializable_scalar(&self.rule_adapter.user_id_column, self.user_id);
-    context.serializable_compound(&self.rule_adapter.activator_column, &value.activator);
-    // context.serializable_compound(&self.rule_adapter.deactivator, &value.deactivator);
+    context.serializable_scalar(&self.rule_schema.id_column, &value.id);
+    context.serializable_scalar(&self.rule_schema.position_column, &self.rule_position);
+    context.serializable_scalar(&self.rule_schema.user_id_column, self.user_id);
+    context.serializable_compound(&self.rule_schema.activator_type, &value.activator);
   }
 }
 
 #[derive(Debug, Clone)]
 pub struct NormalizedRule {
+  pub(super) user_id: Uuid,
+  pub(super) policy_id: Uuid,
   pub(super) id: Uuid,
   pub(super) position: u32,
   pub(super) activator: RuleActivator,
-  pub(super) user_id: Uuid,
-  pub(super) policy_id: Uuid,
 }
 
 impl NormalizedRule {
@@ -132,30 +130,30 @@ impl CompoundValueDeserializer for RuleSchema {
 
   fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRule {
-      id: context.deserializable_scalar(&self.id_column).map_err(|error|
-        error
-          .change_context("Deserialize NormalizedRule")
-          .add_error("Failed to deserialize the 'id' field")
-      )?,
       user_id: context.deserializable_scalar(&self.id_column).map_err(|error|
         error
-          .change_context("Deserialize NormalizedRule")
-          .add_error("Failed to deserialize the 'user_id' field")
+          .change_context("deserialize normalized rule")
+          .add_error("failed to deserialize the 'user_id' field")
       )?,
       policy_id: context.deserializable_scalar(&self.id_column).map_err(|error|
         error
-          .change_context("Deserialize NormalizedRule")
-          .add_error("Failed to deserialize the 'policy_id' field")
+          .change_context("deserialize normalized rule")
+          .add_error("failed to deserialize the 'policy_id' field")
+      )?,
+      id: context.deserializable_scalar(&self.id_column).map_err(|error|
+        error
+          .change_context("deserialize normalized rule")
+          .add_error("failed to deserialize the 'id' field")
       )?,
       position: context.deserializable_scalar(&self.position_column).map_err(|error|
         error
-          .change_context("Deserialize NormalizedRule")
-          .add_error("Failed to deserialize the 'position' field")
+          .change_context("deserialize normalized rule")
+          .add_error("failed to deserialize the 'position' field")
       )?,
-      activator: context.deserialize_compound(&self.activator_column).map_err(|error|
+      activator: context.deserialize_compound(&self.activator_type).map_err(|error|
         error
-          .change_context("Deserialize NormalizedRule")
-          .add_error("Failed to deserialize the 'activator' field")
+          .change_context("deserialize normalized rule")
+          .add_error("failed to deserialize the 'activator' field")
       )?,
     })
   }
@@ -167,7 +165,7 @@ impl WriteColumns for RuleSchema {
     context.write_scalar_type(&self.policy_id_column)?;
     context.write_scalar_type(&self.position_column)?;
     context.write_scalar_type(&self.user_id_column)?;
-    context.write_compound_type(&self.activator_column)?;
+    context.write_compound_type(&self.activator_type)?;
     Ok(())
   }
 }
@@ -179,77 +177,67 @@ impl RuleSchema {
   ) -> 
     Result<(), GenericError> 
   {
-    generate_sql_initialize_table(
-      into, 
-      &self.table, 
-      self.columns().as_slice(),
-    )
-    .map_err(|error|
-      error
-        .change_context("generate sql code that initializes the Rules table")
-    )
+    let mut statement = InitializeTableStatement::new(into, &self.table_metadata);
+    statement
+      .add_compound_type(self)
+      .and_then(|_| statement.finish())
+      .map_err(|error|  error.change_context("generate sql code that initializes the rules table"))
   }
 
-  pub fn generate_sql_create_rule(
+  pub fn generate_sql_add_rule(
     &self,
     into: &mut String, 
-    rule: &Rule,
-    rule_position: u32,
     user_id: &Uuid,
     policy_id: &Uuid,
+    rule: &Rule,
+    rule_position: usize,
   ) -> 
     Result<(), GenericError> 
   {
     let serializer = RuleSerializer::new(
-      &self.rule, 
-      rule_position, 
       user_id,
       policy_id,
+      self, 
+      rule_position, 
     );
 
-    generate_sql_insert_row(
-      into, 
-      &self.table, 
-      &serializer, 
-      rule,
-    )
-    .map_err(|error|
-      error
-        .change_context("generate sql code that inserts a Rule into the database")
-    )
+    generate_sql_add_row(into, &self.table_metadata, &serializer, rule)
+      .map_err(|error| 
+        error
+          .change_context("generate sql code that adds a rule to the rules table")
+          .add_attachment("user id", user_id.to_string())
+          .add_attachment("policy id", policy_id.to_string())
+          .add_attachment("rule", format!("{rule:?}"))
+          .add_attachment("rule position", rule_position.to_string())
+      )
   }
 
-  pub fn create_rule(
+  pub fn add_rule(
     &self,
     connection: &Connection,
-    rule: &Rule, 
-    rule_position: u32,
     user_id: &Uuid,
     policy_id: &Uuid,
+    rule: &Rule, 
+    rule_position: usize,
   ) -> 
     Result<(), GenericError>
   {
     let mut code = String::new();
 
-    self.generate_sql_create_rule(
-      &mut code, 
-      rule, 
-      rule_position, 
-      user_id,
-      policy_id,
-    )
-    .map_err(|error|
-      error
-        .change_context("insert a Rule into the database")
-    )?;
+    self
+      .generate_sql_add_rule(&mut code, user_id, policy_id, rule, rule_position)
+      .map_err(|error| error.change_context("add a rule to the rules table"))?;
 
-    connection.execute(&code).map_err(|error|
-      error
-        .change_context("insert a Rule into the database")
-        .add_attachment("rule", format!("{rule:?}"))
-        .add_attachment("rule position", rule_position.to_string())
-        .add_attachment("enforcer id", user_id.to_string())
-    )
+    connection
+      .execute(&code)
+      .map_err(|error|
+        error
+          .change_context("add a rule to the rules table")
+          .add_attachment("user id", user_id.to_string())
+          .add_attachment("policy id", policy_id.to_string())
+          .add_attachment("rule", format!("{rule:?}"))
+          .add_attachment("rule position", rule_position.to_string())
+      )
   }
 
   pub fn generate_sql_delete_rule(
@@ -261,7 +249,7 @@ impl RuleSchema {
   ) {
     generate_sql_delete_where_3_columns(
       into,
-      &self.table, 
+      &self.table_metadata, 
       &self.id_column, 
       rule_id,
       &self.user_id_column,
@@ -274,9 +262,9 @@ impl RuleSchema {
   pub fn delete_rule(
     &self,
     connection: &Connection, 
-    rule_id: &Uuid,
     user_id: &Uuid,
     policy_id: &Uuid,
+    rule_id: &Uuid,
   ) -> 
     Result<(), GenericError> 
   {
@@ -284,18 +272,17 @@ impl RuleSchema {
 
     self.generate_sql_delete_rule(
       &mut code, 
-      rule_id,
       user_id,
       policy_id,
+      rule_id,
     );
 
     connection.execute(&code).map_err(|error| 
       error
-        .change_context("delete Rule from database")
-        .add_error("faild to execute the sql code that deletes the Rule")
-        .add_attachment("rule id", rule_id.to_string())
+        .change_context("delete a rule from the rules table")
         .add_attachment("user id", user_id.to_string())
         .add_attachment("policy id", policy_id.to_string())
+        .add_attachment("rule id", rule_id.to_string())
     )
   }
 
@@ -306,28 +293,28 @@ impl RuleSchema {
   ) {
     generate_sql_delete_where_1_column(
       into,
-      &self.table, 
+      &self.table_metadata, 
       &self.user_id_column, 
       user_id,
     );
   }
 
-  pub fn retrieve_all(
+  pub fn load_all_rules_normalized(
     &self,
     connection: &Connection,
   ) -> 
     Result<Vec<NormalizedRule>, GenericError> 
   {
-    connection.find_all_rows(&self.table, &self.rule).map_err(|error|
-      error.change_context("retrieve all rules from database")
-    )
+    connection
+      .find_all_rows(&self.table_metadata, self)
+      .map_err(|error| error.change_context("load all rules from the rules table in normalized form"))
   }
 
   pub fn create_updater(
     &self, 
-    rule_id: &Uuid,
-    policy_id: &Uuid,
     user_id: &Uuid,
+    policy_id: &Uuid,
+    rule_id: &Uuid,
   ) -> 
     UpdateStatement
   {
