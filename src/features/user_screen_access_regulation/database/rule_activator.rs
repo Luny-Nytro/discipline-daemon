@@ -1,37 +1,37 @@
 use super::{
-  RuleActivatorVariant, GenericError, Column, ColumnNamespace,
-  CompoundValueDeserializer, CompoundValueSerializer, DeserializeContext, 
+  RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeSpecificationCreator,
+  CompoundValueDeserializer, CompoundValueSerializer, CompoundValueDeserializerContext, 
   SerializeContext, RuleActivator, time_range, weekday_range, WriteColumns, 
   WriteColumnsContext,
 };
 pub struct RuleActivatorSchema {
-  variant: Column,
-  weekday: Column,
+  variant: ScalarFieldSpecification,
+  weekday: ScalarFieldSpecification,
   in_time_range: time_range::database::Schema,
   in_weekday_range: weekday_range::database::Schema,
 }
 
 impl RuleActivatorSchema {
-  pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
+  pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
     Ok(Self {
       variant: column_namespace
-        .create_column_builder("variant")
+        .scalar_field_specification("variant")
         .build()?,
 
       weekday: column_namespace
-        .create_column_builder("weekday")
+        .scalar_field_specification("weekday")
         .optional()
         .build()?,
         
       in_time_range: time_range::database::Schema::new(
         column_namespace
-          .create_namespace("in_time_range")
+          .compound_field_specification("in_time_range")
           .optional()
       )?,
      
       in_weekday_range: weekday_range::database::Schema::new(
         column_namespace
-          .create_namespace("in_weekday_range")
+          .compound_field_specification("in_weekday_range")
           .optional()
       )?,
     })
@@ -77,7 +77,7 @@ impl CompoundValueSerializer for RuleActivatorSchema {
 impl CompoundValueDeserializer for RuleActivatorSchema {
   type Output = RuleActivator;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     let variant = context.deserializable_scalar(&self.variant)?;
 
     Ok(match variant {

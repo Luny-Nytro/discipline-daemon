@@ -1,63 +1,30 @@
-mod column_info;
+mod serializing_utiliites;
+use serializing_utiliites::escape_string_for_sqilte_into;
 
-pub use column_info::{
-  Column,
-  ColumnBuilder,
-  ColumnNamespace,
-};
+mod compound_value_serialization;
+pub use compound_value_serialization::*;
 
-mod serializable_scalar_value;
-pub use serializable_scalar_value::{SerializableScalarValue, ToSerializableScalarValue};
+mod specifications;
+pub use specifications::*;
 
-mod deserializable_scalar_value;
-pub use deserializable_scalar_value::DeserializableScalarValue;
+mod scalar_value_deserialization;
+pub use scalar_value_deserialization::*;
 
-mod serialize_context;
-pub use serialize_context::{
-  SerializeContext, 
-  SerializeScalarValueContext,
-  Database,
-  DatabaseNamespace,
-  Table,
-  UpdateByIdStatement,
-  UpdateStatement,
-  generate_sql_initialize_table,
-  generate_sql_add_row,
-  generate_sql_delete_where_1_column,
-  generate_update_column_where_column_statement,
-  generate_find_all_rows_statement,
-  generate_update_where_column_statement_given_set_clause,
-  generate_delete_rows_where_column_in_statement,
-  generate_ensure_row_create_statement,
-  generate_sql_delete_where_3_columns,
-  UpdateStatementSetClause,
-  InitializeTableStatement,
-  WriteColumns,
-  WriteColumnsContext,
-  generate_sql_initialize_table_given_columns_writer,
-  generate_sql_delete_where_2_columns,
-};
+mod scalar_value_serialization;
+pub use scalar_value_serialization::*;
 
-mod column_value;
-pub use column_value::ColumnValue;
+mod compound_value_deserialization;
+pub use compound_value_deserialization::{CompoundValueDeserializerContext, deserialize_compound_value as deserialize_sqlite_row_using};
 
-mod compound_value_serializer;
-pub use compound_value_serializer::CompoundValueSerializer;
-
-mod deserialize_context;
-pub use deserialize_context::{DeserializeContext, deserialize_sqlite_row_using as deserialize_sqlite_row_using};
-
-pub mod serializable_scalar_value_implementations;
-
-mod compound_value_deserialize;
-pub use compound_value_deserialize::CompoundValueDeserializer;
+mod actions;
+pub use actions::*;
 
 use crate::GenericError;
 
 /// TODO: Rename to SqliteConnection.
 pub struct Connection {
   conn: rusqlite::Connection,
-  namespace: DatabaseNamespace,
+  namespace: Namespace,
 }
 
 impl Connection {
@@ -65,9 +32,9 @@ impl Connection {
     rusqlite::Connection::open(path)
     .map(|connection| Connection {
       conn: connection,
-      namespace: DatabaseNamespace {
-        name: "main".into(),
-        path: "main".into(),
+      namespace: Namespace {
+        identifier: "main".into(),
+        fully_qualified_identifier: "main".into(),
       }
     })
     .map_err(|error|
@@ -77,7 +44,7 @@ impl Connection {
     )
   }
   
-  pub fn namespace(&self) -> &DatabaseNamespace {
+  pub fn namespace(&self) -> &Namespace {
     &self.namespace
   }
 
@@ -93,7 +60,7 @@ impl Connection {
 
   pub fn find_all_rows<Deserializer>(
     &self,
-    table: &Table,
+    table: &CollectionSpecfication,
     row_deserializer: &Deserializer
   ) ->
     Result<Vec<Deserializer::Output>, GenericError>
@@ -101,7 +68,7 @@ impl Connection {
     Deserializer: CompoundValueDeserializer
   {
     let mut code = String::new();
-    generate_find_all_rows_statement(&mut code, table).map_err(|error|
+    generate_code_find_all_collection_items(&mut code, table).map_err(|error|
       error.change_context("Sqlite error: Failed to find all rows: Failed to generate statement")
         .add_attachment("table name", table.fully_qualified_name.clone())
     )?;
@@ -133,7 +100,7 @@ impl Connection {
         break;
       };
 
-      let rule = deserialize_sqlite_row_using(row, row_deserializer).map_err(|error|
+      let rule = deserialize_compound_value(row, row_deserializer).map_err(|error|
         error.change_context("Sqlie error: Failed to find all rows: Failed to deserialize a row")
           .add_attachment("sqlite row", format!("{row:?}"))
           .add_attachment("table name", table.fully_qualified_name.clone())
@@ -147,7 +114,7 @@ impl Connection {
 
   pub fn find_some_row<Deserializer>(
     &self,
-    table: &Table,
+    table: &CollectionSpecfication,
     row_deserializer: &Deserializer
   ) ->
     Result<Deserializer::Output, GenericError>
@@ -189,11 +156,20 @@ impl Connection {
         )
       };
 
-      return deserialize_sqlite_row_using(row, row_deserializer).map_err(|error|
+      return deserialize_compound_value(row, row_deserializer).map_err(|error|
         error.change_context("Sqlie error: Failed to find first row: Failed to deserialize a row")
           .add_attachment("sqlite row", format!("{row:?}"))
           .add_attachment("table name", table.fully_qualified_name.clone())
       );
     }
+  }
+
+  pub fn apply_collection_item_modifications(
+    &self,
+    collection_specification: &CollectionSpecfication,
+    collection_item_matcher: &CollectionItemMatcher,
+    collection_item_modifications: &CollectionItemModifications,
+  ) -> Result<(), GenericError> {
+    todo!()
   }
 }

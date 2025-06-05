@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use super::OperatingSystemCalls;
 use crate::{
-  CountdownTimer, Daemon, DateTime, Duration, GenericError, OperatingSystemPassword, OperatingSystemUsername, TimeRange, Uuid, Weekday, WeekdayRange
+  CountdownTimer, DateTime, Duration, GenericError, 
+  OperatingSystemPassword, OperatingSystemUsername, 
+  TimeRange, Uuid, Weekday, WeekdayRange
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

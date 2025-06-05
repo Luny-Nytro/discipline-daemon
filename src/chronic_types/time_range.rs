@@ -207,8 +207,8 @@ impl TimeRange {
 
 pub mod database {
   use crate::database::{
-    Column, ColumnNamespace, CompoundValueSerializer, 
-    CompoundValueDeserializer, DeserializeContext, 
+    ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, 
+    CompoundValueDeserializer, CompoundValueDeserializerContext, 
     SerializeContext, UpdateStatement, WriteColumns,
     WriteColumnsContext,
   };
@@ -216,19 +216,19 @@ pub mod database {
   use super::TimeRange;
 
   pub struct Schema {
-    from: Column,
-    till: Column,
+    from: ScalarFieldSpecification,
+    till: ScalarFieldSpecification,
   }
 
   impl Schema {
-    pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
+    pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
       Ok(Self {
         from: column_namespace
-          .create_column_builder("from")
+          .scalar_field_specification("from")
           .build()?,
 
         till: column_namespace
-          .create_column_builder("till")
+          .scalar_field_specification("till")
           .build()?,
       })
     }
@@ -277,7 +277,7 @@ pub mod database {
   impl<'a> CompoundValueDeserializer for Schema {
     type Output = TimeRange;
 
-    fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       let from = context.deserializable_scalar(&self.from).map_err(|error| 
         error.change_context("Faild to deserialize TimeRange: Failed to deserialize 'from' field")
       )?;

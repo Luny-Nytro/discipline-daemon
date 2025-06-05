@@ -1,6 +1,6 @@
 use super::{
-  ColumnNamespace, CompoundValueSerializer, 
-  CompoundValueDeserializer, DeserializeContext, 
+  CompoundTypeSpecificationCreator, CompoundValueSerializer, 
+  CompoundValueDeserializer, CompoundValueDeserializerContext, 
   SerializeContext, CountdownTimerAdapter,
   PolicyEnabler, GenericError, WriteColumns, WriteColumnsContext,
 };
@@ -10,7 +10,7 @@ pub struct PolicyEnablerSchema {
 }
 
 impl PolicyEnablerSchema {
-  pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
+  pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
     Ok(Self {
       timer: CountdownTimerAdapter::new(column_namespace)?,
     })
@@ -36,7 +36,7 @@ impl CompoundValueSerializer for PolicyEnablerSchema {
 impl CompoundValueDeserializer for PolicyEnablerSchema {
   type Output = PolicyEnabler;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(PolicyEnabler {
       timer: self.timer.deserialize(context).map_err(|error|
         error

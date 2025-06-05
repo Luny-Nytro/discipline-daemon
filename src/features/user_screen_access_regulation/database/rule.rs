@@ -1,20 +1,20 @@
 use super::{
   Rule, RuleActivator, GenericError, Uuid, RuleActivatorSchema, 
-  Column, CompoundValueSerializer, InitializeTableStatement,
-  CompoundValueDeserializer, DeserializeContext, SerializeContext,
+  ScalarFieldSpecification, CompoundValueSerializer, InitializeTableStatement,
+  CompoundValueDeserializer, CompoundValueDeserializerContext, SerializeContext,
   UpdateStatement, WriteColumns, WriteColumnsContext,
-  Table, Connection, DatabaseNamespace,
+  CollectionSpecfication, Connection, DatabaseNamespace,
   generate_sql_delete_where_3_columns,
   generate_sql_add_row,
   generate_sql_delete_where_1_column,
 };
 
 pub struct RuleSchema {
-  pub table_metadata: Table,
-  pub(super) id_column: Column,
-  pub(super) user_id_column: Column,
-  pub(super) policy_id_column: Column,
-  pub(super) position_column: Column,
+  pub table_metadata: CollectionSpecfication,
+  pub(super) id_column: ScalarFieldSpecification,
+  pub(super) user_id_column: ScalarFieldSpecification,
+  pub(super) policy_id_column: ScalarFieldSpecification,
+  pub(super) position_column: ScalarFieldSpecification,
   pub(super) activator_type: RuleActivatorSchema,
 }
 
@@ -128,7 +128,7 @@ impl NormalizedRule {
 impl CompoundValueDeserializer for RuleSchema {
   type Output = NormalizedRule;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRule {
       user_id: context.deserializable_scalar(&self.id_column).map_err(|error|
         error

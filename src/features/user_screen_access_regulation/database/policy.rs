@@ -1,7 +1,7 @@
 use super::{
-  GenericError, Column, PolicyEnablerSchema, Table,
+  GenericError, ScalarFieldSpecification, PolicyEnablerSchema, CollectionSpecfication,
   UpdateStatement, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
-  SerializeContext, Policy, Uuid, DateTime, PolicyEnabler, DeserializeContext, Rule,
+  SerializeContext, Policy, Uuid, DateTime, PolicyEnabler, CompoundValueDeserializerContext, Rule,
   WriteColumns, WriteColumnsContext, DatabaseNamespace, Connection,
   generate_sql_initialize_table_given_columns_writer,
   generate_sql_add_row,
@@ -9,12 +9,12 @@ use super::{
 };
 
 pub struct PolicySchema {
-  pub table: Table,
-  pub id: Column,
-  pub name: Column,
+  pub table: CollectionSpecfication,
+  pub id: ScalarFieldSpecification,
+  pub name: ScalarFieldSpecification,
   pub enabler: PolicyEnablerSchema,
-  pub user_id: Column,
-  pub creation_time: Column,
+  pub user_id: ScalarFieldSpecification,
+  pub creation_time: ScalarFieldSpecification,
 }
 
 impl PolicySchema {
@@ -102,7 +102,7 @@ impl<'a> CompoundValueSerializer for PolicySerializer<'a> {
 impl CompoundValueDeserializer for PolicySchema {
   type Output = NormalizedPolicy;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedPolicy {
       id: context.deserializable_scalar(&self.id).map_err(|error|
         error

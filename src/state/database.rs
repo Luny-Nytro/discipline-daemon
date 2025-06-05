@@ -1,7 +1,7 @@
 use crate::database::{
-  Column, CompoundValueDeserializer, CompoundValueSerializer, 
-  Connection, DatabaseNamespace, DeserializeContext, 
-  SerializeContext, Table, InitializeTableStatement, WriteColumns,
+  ScalarFieldSpecification, CompoundValueDeserializer, CompoundValueSerializer, 
+  Connection, DatabaseNamespace, CompoundValueDeserializerContext, 
+  SerializeContext, CollectionSpecfication, InitializeTableStatement, WriteColumns,
   WriteColumnsContext,
 };
 
@@ -9,8 +9,8 @@ use crate::{GenericError, user};
 use super::{user_screen_access_regulation, State,};
 
 pub struct StateSchema {
-  id_column: Column,
-  table_metadata: Table,
+  id_column: ScalarFieldSpecification,
+  table_metadata: CollectionSpecfication,
   pub user: user::database::UserSchema,
   pub user_screen_access_regulation: user_screen_access_regulation::database::FeatureSchema,
   // pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
@@ -87,7 +87,7 @@ impl Default for NormaizedState {
 impl CompoundValueDeserializer for StateSchema {
   type Output = NormaizedState;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormaizedState {
       id: context.deserializable_scalar(&self.id_column)?,
       user_access: context.deserialize_compound(self.user_screen_access_regulation.singleton())?,

@@ -1,28 +1,28 @@
 use super::{
-  Column, ColumnNamespace, CompoundValueSerializer, CommonInfo,
-  SerializeContext, Duration, DeserializeContext,
+  ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, CommonInfo,
+  SerializeContext, Duration, CompoundValueDeserializerContext,
   CompoundValueDeserializer, GenericError, UpdateStatement,
   WriteColumns, WriteColumnsContext,
 };
 
 pub struct CommonInfoSchema {
-  private_password: Column,
-  applying_interval: Column,
+  private_password: ScalarFieldSpecification,
+  applying_interval: ScalarFieldSpecification,
 }
 
 impl CommonInfoSchema {
   pub fn new(
-    column_namespace: &ColumnNamespace,
+    column_namespace: &CompoundTypeSpecificationCreator,
   ) -> 
     Result<Self, GenericError>
   {
     Ok(Self {
       private_password: column_namespace
-        .create_column_builder("private_password")
+        .scalar_field_specification("private_password")
         .build()?,
 
       applying_interval: column_namespace
-        .create_column_builder("applying_interval")
+        .scalar_field_specification("applying_interval")
         .build()?,
     })
   }
@@ -52,7 +52,7 @@ impl CompoundValueSerializer for CommonInfoSchema {
 impl CompoundValueDeserializer for CommonInfoSchema {
   type Output = CommonInfo;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(CommonInfo {
       applying_interval: context.deserializable_scalar(&self.applying_interval).map_err(|error|
         error

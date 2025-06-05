@@ -1,25 +1,25 @@
 use super::{
-  Column, ColumnNamespace, GenericError, CompoundValueSerializer,
+  ScalarFieldSpecification, CompoundTypeSpecificationCreator, GenericError, CompoundValueSerializer,
   Regulator, SerializeContext, OperatingSystemCalls,
-  CompoundValueDeserializer, DeserializeContext, Policy,
+  CompoundValueDeserializer, CompoundValueDeserializerContext, Policy,
   WriteColumns, WriteColumnsContext, UpdateStatement,
   NormalizedPolicy, NormalizedRule,
 };
 
 pub struct RegulatorSchema {
-  pub is_applying_enabled: Column,
-  pub is_user_screen_access_blocked: Column,
+  pub is_applying_enabled: ScalarFieldSpecification,
+  pub is_user_screen_access_blocked: ScalarFieldSpecification,
 }
 
 impl RegulatorSchema {
-  pub fn new(column_namespace: &ColumnNamespace) -> Result<Self, GenericError> {
+  pub fn new(column_namespace: &CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
     Ok(Self {
       is_applying_enabled: column_namespace
-        .create_column_builder("is_applying_enabled")
+        .scalar_field_specification("is_applying_enabled")
         .build()?,
 
       is_user_screen_access_blocked: column_namespace
-        .create_column_builder("is_user_screen_access_blocked")
+        .scalar_field_specification("is_user_screen_access_blocked")
         .build()?,
     })
   }
@@ -63,7 +63,7 @@ pub struct NormalizedRegulator {
 impl CompoundValueDeserializer for RegulatorSchema {
   type Output = NormalizedRegulator;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRegulator {
       // id: context.deserializable_scalar(&self.id).map_err(|error|
       //   error

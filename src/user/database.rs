@@ -8,11 +8,11 @@ use crate::{
 };
 
 use crate::database::{
-  Column, WriteColumns, WriteColumnsContext,
+  ScalarFieldSpecification, WriteColumns, WriteColumnsContext,
   UpdateStatement, CompoundValueSerializer, SerializeContext,
-  CompoundValueDeserializer, DeserializeContext, Connection,
+  CompoundValueDeserializer, CompoundValueDeserializerContext, Connection,
   DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext,
-  ColumnValue, Table, DatabaseNamespace, InitializeTableStatement,
+  ColumnValue, CollectionSpecfication, DatabaseNamespace, InitializeTableStatement,
   generate_sql_add_row,
 };
 
@@ -32,12 +32,12 @@ impl DeserializableScalarValue for UserName {
 }
 
 pub struct UserSchema {
-  table_metadata: Table,
-  id_column: Column,
-  name_column: Column,
-  operating_system_user_id_column: Column,
-  operating_system_username_column: Column,
-  operating_system_password_column: Column,
+  table_metadata: CollectionSpecfication,
+  id_column: ScalarFieldSpecification,
+  name_column: ScalarFieldSpecification,
+  operating_system_user_id_column: ScalarFieldSpecification,
+  operating_system_username_column: ScalarFieldSpecification,
+  operating_system_password_column: ScalarFieldSpecification,
   pub screen_access_regulator_type: user_screen_access_regulation::database::RegulatorSchema,
 }
 
@@ -144,7 +144,7 @@ impl NormalizedUser {
 impl CompoundValueDeserializer for UserSchema {
   type Output = NormalizedUser;
 
-  fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedUser {
       id: context
         .deserializable_scalar(&self.id_column)

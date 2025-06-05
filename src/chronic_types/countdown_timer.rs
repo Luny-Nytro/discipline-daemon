@@ -63,8 +63,8 @@ impl CountdownTimer {
 
 pub mod database_serde {
   use crate::database::{
-    Column, ColumnNamespace, CompoundValueSerializer, 
-    CompoundValueDeserializer, DeserializeContext, 
+    ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, 
+    CompoundValueDeserializer, CompoundValueDeserializerContext, 
     SerializeContext, UpdateStatement,
     WriteColumns, WriteColumnsContext,
   };
@@ -73,24 +73,24 @@ pub mod database_serde {
   use super::CountdownTimer;
 
   pub struct Schema {
-    duration: Column,
-    remaining_duration: Column,
-    previous_synchronization_time: Column,
+    duration: ScalarFieldSpecification,
+    remaining_duration: ScalarFieldSpecification,
+    previous_synchronization_time: ScalarFieldSpecification,
   }
 
   impl Schema {
-    pub fn new(column_namespace: ColumnNamespace) -> Result<Self, GenericError> {
+    pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
       Ok(Self {
         duration: column_namespace
-          .create_column_builder("duration")
+          .scalar_field_specification("duration")
           .build()?,
 
         remaining_duration: column_namespace
-          .create_column_builder("remaining_duration")
+          .scalar_field_specification("remaining_duration")
           .build()?,
 
         previous_synchronization_time: column_namespace
-          .create_column_builder("previous_synchronization_time")
+          .scalar_field_specification("previous_synchronization_time")
           .build()?,
       })
     }
@@ -137,7 +137,7 @@ pub mod database_serde {
   impl CompoundValueDeserializer for Schema {
     type Output = CountdownTimer;
 
-    fn deserialize(&self, context: &DeserializeContext) -> Result<Self::Output, GenericError> {
+    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       Ok(CountdownTimer {
         duration: context.deserializable_scalar(&self.duration).map_err(|error|
           error.change_context("Failed to deserialize CountdownTimer: Failed to deserialize the 'duration' column")

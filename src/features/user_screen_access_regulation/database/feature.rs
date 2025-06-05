@@ -1,6 +1,6 @@
 use super::{
   PolicySchema, RuleSchema, DatabaseNamespace, GenericError,
-  CommonInfoSchema, ColumnNamespace,
+  CommonInfoSchema, CompoundTypeSpecificationCreator,
 };
 
 pub struct FeatureSchema {
@@ -12,7 +12,7 @@ pub struct FeatureSchema {
 impl FeatureSchema {
   pub fn new(
     database_namespace: &DatabaseNamespace,
-    column_namespace: &ColumnNamespace,
+    column_namespace: &CompoundTypeSpecificationCreator,
   ) ->
     Result<Self, GenericError>
   {
