@@ -62,23 +62,17 @@ impl CountdownTimer {
 // }
 
 pub mod database_serde {
-  use crate::database::{
-    ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, 
-    CompoundValueDeserializer, CompoundValueDeserializerContext, 
-    SerializeContext, UpdateStatement,
-    WriteColumns, WriteColumnsContext,
-  };
-
+  use crate::database::*;
   use crate::{Duration, GenericError};
   use super::CountdownTimer;
 
-  pub struct Schema {
+  pub struct Specification {
     duration: ScalarFieldSpecification,
     remaining_duration: ScalarFieldSpecification,
     previous_synchronization_time: ScalarFieldSpecification,
   }
 
-  impl Schema {
+  impl Specification {
     pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
       Ok(Self {
         duration: column_namespace
@@ -97,67 +91,79 @@ pub mod database_serde {
     
     pub fn set_remaining_duration(
       &self,
-      updater: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_remaining_duration: &Duration,
-    ) {
-      updater.set(&self.remaining_duration, new_remaining_duration);
+    ) -> 
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.remaining_duration, new_remaining_duration)
     }
 
+    // TODO: rename to update_after_synchronization
     pub fn update_after_synchronize(
       &self,
-      updater: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       countdown_timer: &CountdownTimer,
-    ) {
-      updater.set(
+    ) -> 
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
-      );
+      )?;
 
-      updater.set(
+      modifications.modify_scalar_field(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
-      );
+      )
     }
   }
 
-  impl CompoundValueSerializer for Schema {
-    type Input = CountdownTimer;
+  impl CompoundValueSerializer for Specification {
+    type CompoundValue = CountdownTimer;
 
     fn serialize_into(
       &self, 
-      value: &CountdownTimer,
-      context: &mut SerializeContext, 
-    ) {
-      context.serializable_scalar(&self.duration, &value.duration);
-      context.serializable_scalar(&self.remaining_duration, &value.remaining_duration);
-      context.serializable_scalar(&self.previous_synchronization_time, &value.previous_synchronization_time);
+      value: &Self::CompoundValue,
+      context: &mut CompoundValueSerializerContext, 
+    ) ->
+      Result<(), GenericError>
+    {
+      context.serializable_scalar(&self.duration, &value.duration)?;
+      context.serializable_scalar(&self.remaining_duration, &value.remaining_duration)?;
+      context.serializable_scalar(&self.previous_synchronization_time, &value.previous_synchronization_time)
     }
   }
 
-  impl CompoundValueDeserializer for Schema {
+  impl CompoundValueDeserializer for Specification {
     type Output = CountdownTimer;
 
     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       Ok(CountdownTimer {
         duration: context.deserializable_scalar(&self.duration).map_err(|error|
-          error.change_context("Failed to deserialize CountdownTimer: Failed to deserialize the 'duration' column")
+          error
+            .change_context("deserializing the 'duration' column")
+            .change_context("deserializing a CountdownTimer")
         )?,
         remaining_duration: context.deserializable_scalar(&self.remaining_duration).map_err(|error|
-          error.change_context("Failed to deserialize CountdownTimer: Failed to deserialize the 'remaining_duration' column")
+          error
+            .change_context("deserializing the 'remaining_duration' column")
+            .change_context("deserializing a CountdownTimer")
         )?,
         previous_synchronization_time: context.deserializable_scalar(&self.previous_synchronization_time).map_err(|error|
-          error.change_context("Failed to deserialize CountdownTimer: Failed to deserialize the 'previous_synchronization_time' column")
+          error
+            .change_context("deserializing the 'previous_synchronization_time' column")
+            .change_context("deserializing a CountdownTimer")
         )?,
       })
     }
   }
 
-  impl WriteColumns for Schema {
-    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-      context.write_scalar_type(&self.duration)?;
-      context.write_scalar_type(&self.remaining_duration)?;
-      context.write_scalar_type(&self.previous_synchronization_time)?;
-      Ok(())
+  impl CompoundTypeSpecificationProvider for Specification {
+    fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
+      context.add_scalar_field(&self.duration)?;
+      context.add_scalar_field(&self.remaining_duration)?;
+      context.add_scalar_field(&self.previous_synchronization_time)
     }
   }
 }

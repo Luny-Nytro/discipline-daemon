@@ -51,8 +51,8 @@ impl CompoundValueSerializer for RuleActivatorSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     match value {
       RuleActivator::AllTheTime => {

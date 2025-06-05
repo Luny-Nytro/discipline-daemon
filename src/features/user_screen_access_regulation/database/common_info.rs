@@ -29,10 +29,10 @@ impl CommonInfoSchema {
 
   pub fn set_applying_interval(
     &self, 
-    statement: &mut UpdateStatement,
+    modifications: &mut CollectionItemModifications,
     new_value: Duration,
   ) {
-    statement.set(&self.applying_interval, &new_value);
+    modifications.modify_scalar_field(&self.applying_interval, &new_value);
   }
 }
 
@@ -41,8 +41,8 @@ impl CompoundValueSerializer for CommonInfoSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_scalar(&self.private_password, &value.private_password);
     context.serializable_scalar(&self.applying_interval, &value.applying_interval);

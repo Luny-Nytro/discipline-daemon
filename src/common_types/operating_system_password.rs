@@ -34,13 +34,13 @@ mod database_serde {
   use crate::GenericError;
 
   impl SerializableScalarValue for OperatingSystemPassword {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_string(&self.0);
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_string(&self.0);
     }
   }
 
   impl DeserializableScalarValue for OperatingSystemPassword {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       let string = value.as_string().map_err(|error|
         error.change_context("Failed to deserialize OperatingSystemPassword: Failed to cast value to string")
       )?;

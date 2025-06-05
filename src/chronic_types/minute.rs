@@ -16,6 +16,18 @@ impl Minute {
     }
   }
 
+  pub fn from_0_or_generic_error(value: u32) -> Result<Self, GenericError> {
+    if value < 60 {
+      Ok(Self(value))
+    } else {
+      Err(
+        GenericError::new("creating a minute from an integer")
+          .add_error("integer must be in this range 0 =.. 59")
+          .add_attachment("integer", value.to_string())
+      )
+    }
+  }
+
   pub unsafe fn unchekced_from(value: u32) -> Self {
     Self(value)
   }
@@ -30,6 +42,8 @@ impl Minute {
 }
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
+
+use crate::GenericError;
 
 impl Serialize for Minute {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -59,49 +73,20 @@ pub mod database_serde {
   use crate::GenericError;
   use super::Minute;
 
-  // pub struct Adapter {}
-  
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
-
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = Minute;
-
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.as_u32(self.value0());
-  //   }
-
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let number = value.as_u32().map_err(|error|
-  //       error.change_context("Failed to create a minute from a ColumnValue: Expected ColumnValue to be a u32 number")
-  //     )?;
-
-  //     Minute::try_from0(number).ok_or_else(||
-  //       GenericError::new("Failed to create a minute from a u32 ColumnValue: Expected ColumnValue to be in this range 0 ..= 59")
-  //         .attach_info("ColumnValue", number.to_string())
-  //     )        
-  //   }
-  // }
-
   impl SerializableScalarValue for Minute {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_u32(self.value0());
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_u32(self.value0())
     }
   }
 
   impl DeserializableScalarValue for Minute {
-    fn deserialize(value: ColumnValue) -> Result<Self, crate::GenericError> {
-      let number = value.as_u32().map_err(|error|
-        error.change_context("Failed to create a minute from a ColumnValue: Expected ColumnValue to be a u32 number")
-      )?;
-
-      Minute::try_from0(number).ok_or_else(||
-        GenericError::new("Failed to create a minute from a u32 ColumnValue: Expected ColumnValue to be in this range 0 ..= 59")
-          .add_attachment("ColumnValue", number.to_string())
-      )
+    fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {
+      value
+        .as_u32()
+        .and_then(Minute::from_0_or_generic_error)
+        .map_err(|error|
+          error.change_context("deserializing a minute")
+        )
     }
   }
 }

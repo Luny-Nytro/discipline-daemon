@@ -1,5 +1,7 @@
 use std::fmt::Write;
 use chrono::{self, Datelike, Timelike};
+use crate::GenericError;
+
 use super::{Duration, Time, Hour, Minute, Weekday};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -12,6 +14,18 @@ impl DateTime {
 
   pub fn from_timestamp(timestamp: i64) -> Option<Self> {
     chrono::DateTime::from_timestamp_millis(timestamp).map(Self)
+  }
+
+  pub fn from_timestamp_or_generic_error(timestamp: i64) -> Result<Self, GenericError> {
+    chrono
+      ::DateTime
+      ::from_timestamp_millis(timestamp)
+      .ok_or_else(|| 
+        GenericError::new("creating a datetime from the number of non-leap milliseconds since January 1, 1970 0:00:00.000 UTC (aka \"UNIX timestamp\")")
+          .add_error("provided millisecond timestamp is out of valid range")
+          .add_attachment("millisecond timestamp", timestamp.to_string())
+      )
+      .map(DateTime)
   }
 
   pub fn from_timestamp_micros(timestamp: i64) -> Option<Self> {
@@ -164,8 +178,9 @@ impl<'de> Deserialize<'de> for DateTime {
   }
 }
 
-pub mod database_serde {
-  use crate::{database::{ColumnValue, DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext}, GenericError};
+pub mod database {
+  use crate::database::*;
+  use crate::GenericError;
   use super::DateTime;
 
   // pub struct Adapter;
@@ -180,7 +195,7 @@ pub mod database_serde {
   //   type Type = DateTime;
 
   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.as_i64(self.timestamp());    
+  //     context.write_i64(self.timestamp());    
   //   }
 
   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
@@ -196,21 +211,19 @@ pub mod database_serde {
   // }
 
   impl SerializableScalarValue for DateTime {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_i64(self.timestamp());
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_i64(self.timestamp())
     }
   }
 
   impl DeserializableScalarValue for DateTime {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
-      let timestamp = value.as_i64().map_err(|error|
-        error.change_context("Failed to create a DateTime from ColumnValue: ColumnValue is not a i64")
-      )?;
-
-      DateTime::from_timestamp(timestamp).ok_or_else(|| 
-        GenericError::new("Failed to create a DateTime from an i64 ColumnValue: Failed to create a DateTime from timestamp")
-          .add_attachment("timestamp", timestamp.to_string())
-      )
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+      value
+        .as_i64()
+        .and_then(DateTime::from_timestamp_or_generic_error)
+        .map_err(|error|
+          error.change_context("deserializing a datetime")
+        )
     }
   }
 }

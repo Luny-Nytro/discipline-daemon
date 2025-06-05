@@ -5,12 +5,12 @@ use super::{
 
 impl SerializableScalarValue for PolicyName {
   fn serialize_into(&self, context: SerializeScalarValueContext) {
-    context.as_string(self.as_ref());
+    context.write_string(self.as_ref());
   }
 }
 
 impl DeserializableScalarValue for PolicyName {
-  fn deserialize(value: ColumnValue) -> Result<Self, crate::GenericError> {
+  fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {
     value
       .as_string()
       .and_then(PolicyName::new)

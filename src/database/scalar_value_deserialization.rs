@@ -1,3 +1,5 @@
+use std::num::TryFromIntError;
+
 use crate::GenericError;
 use rusqlite::types::ValueRef;
 
@@ -46,7 +48,7 @@ impl<'a> ScalarValue<'a> {
     String::from_utf8(string.into()).map_err(|error|
       GenericError::new("casting scalar value as boolean")
         .add_error("scalar value is not valid utf8")
-        .add_attachment("raw string", format!("{string}"))
+        .add_attachment("raw string", format!("{string:?}"))
         .add_attachment("utf8 parse error", error.to_string())
     )
   }
@@ -60,10 +62,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as i8")
         .add_error("scalar value is too large and doesn't fit in the i8 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -77,10 +79,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as u8")
         .add_error("scalar value is too large and doesn't fit in the u8 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -94,10 +96,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as i16")
         .add_error("scalar value is too large and doesn't fit in the i16 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -111,10 +113,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as u16")
         .add_error("scalar value is too large and doesn't fit in the u16 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -128,10 +130,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as i32")
         .add_error("scalar value is too large and doesn't fit in the i32 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -145,10 +147,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as u32")
         .add_error("scalar value is too large and doesn't fit in the u32 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -174,10 +176,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as u64")
         .add_error("scalar value is too large and doesn't fit in the u64 type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -191,10 +193,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as isize")
         .add_error("scalar value is too large and doesn't fit in the isize type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -208,10 +210,10 @@ impl<'a> ScalarValue<'a> {
       );
     };
 
-    integer.try_into().map_err(|error| 
+    integer.try_into().map_err(|error: TryFromIntError| 
       GenericError::new("casting scalar value as usize")
         .add_error("scalar value is too large and doesn't fit in the usize type")
-        .add_attachment("scalar value", serialize_value_ref(integer))
+        .add_attachment("scalar value", integer.to_string())
         .add_attachment("error", error.to_string())
     )
   }
@@ -451,7 +453,6 @@ impl<'a> ScalarValue<'a> {
 pub trait DeserializableScalarValue: Sized {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError>;
 }
-
 
 impl DeserializableScalarValue for bool {
   fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {

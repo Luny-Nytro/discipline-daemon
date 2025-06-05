@@ -225,24 +225,24 @@ impl<'a> SerializeScalarValueContext<'a> {
 }
 
 pub trait SerializableScalarValue {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError>;
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError>;
 }
 
 impl SerializableScalarValue for bool {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_boolean(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_boolean(*self)
   }
 }
 
 impl SerializableScalarValue for String {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_string(self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_string(self)
   }
 }
 
 impl<'a> SerializableScalarValue for &'a String {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_string(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_string(*self)
   }
 }
 
@@ -250,81 +250,81 @@ impl<T> SerializableScalarValue for Option<T>
 where 
   T: SerializableScalarValue
 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
     match self {
       Self::None => {
-        context.as_null()
+        context.write_null()
       }
       Some(inner) => {
-        inner.serialize_into(context)
+        inner.write_into(context)
       }
     }
   }
 }
 
 impl SerializableScalarValue for i8 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_i8(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_i8(*self)
   }
 }
 
 impl SerializableScalarValue for i16 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_i16(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_i16(*self)
   }
 }
 
 impl SerializableScalarValue for i32 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_i32(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_i32(*self)
   }
 }
 
 impl SerializableScalarValue for i64 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_i64(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_i64(*self)
   }
 }
 
 impl SerializableScalarValue for u8 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_u8(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_u8(*self)
   }
 }
 
 impl SerializableScalarValue for u16 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_u16(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_u16(*self)
   }
 }
 
 impl SerializableScalarValue for u32 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_u32(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_u32(*self)
   }
 }
 
 impl SerializableScalarValue for u64 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_u64(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_u64(*self)
   }
 }
 
 impl SerializableScalarValue for f32 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_f32(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_f32(*self)
   }
 }
 
 impl SerializableScalarValue for f64 {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_f64(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_f64(*self)
   }
 }
 
 impl SerializableScalarValue for usize {
-  fn serialize_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.as_usize(*self)
+  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    context.write_usize(*self)
   }
 }
 
@@ -335,7 +335,7 @@ pub(super) fn serialize_scalar_value_into(
   let length_before_serialization = into.len();
 
   let mut context = SerializeScalarValueContext::new(into);
-  if let Err(error) = scalar_value.serialize_into(&mut context) {
+  if let Err(error) = scalar_value.write_into(&mut context) {
     return Err(
       error
         .change_context("serializing a scalar value to its sqlite representation")
@@ -346,7 +346,7 @@ pub(super) fn serialize_scalar_value_into(
   if !context.did_write_value {
     return Err(
       GenericError::new("serializing a scalar value to its sqlite representation")
-        .add_error("the 'serialize_into' method of the value's SerializableScalarValue implementation didn't write itself into the provided SerializeScalarValueContext")
+        .add_error("the 'write_into' method of the value's SerializableScalarValue implementation didn't write itself into the provided SerializeScalarValueContext")
     );
   }
 

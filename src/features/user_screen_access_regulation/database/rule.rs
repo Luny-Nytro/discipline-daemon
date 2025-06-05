@@ -62,10 +62,10 @@ impl RuleSchema {
   
   pub fn set_position(
     &self, 
-    statement: &mut UpdateStatement,
+    modifications: &mut CollectionItemModifications,
     new_value: u32
   ) {
-    statement.set(&self.position_column, &new_value);
+    modifications.modify_scalar_field(&self.position_column, &new_value);
   }
 }
 
@@ -97,8 +97,8 @@ impl<'a> CompoundValueSerializer for RuleSerializer<'a> {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_scalar(&self.rule_schema.id_column, &value.id);
     context.serializable_scalar(&self.rule_schema.position_column, &self.rule_position);

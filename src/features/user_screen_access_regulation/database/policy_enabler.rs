@@ -26,8 +26,8 @@ impl CompoundValueSerializer for PolicyEnablerSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_compound(&self.timer, &value.timer);
   }

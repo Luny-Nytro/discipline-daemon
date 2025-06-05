@@ -1,7 +1,56 @@
+use crate::GenericError;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperatingSystemUsername(String);
 
 impl OperatingSystemUsername {
+  pub fn validate_linux_username(username: &String) -> Result<(), GenericError> {
+    if username.len() < 1 || 32 < username.len() {
+      return Err(
+        GenericError::new("validate linux username")
+          .add_error("linux username length must begine with an ascii lowercase letter")
+          .add_attachment("username", username)
+          .add_attachment("username beginning", username.len().to_string())
+      );
+    }
+  
+    let mut characters = username.chars();
+    
+    let Some(beginning) = characters.next() else {
+      return Err(
+        GenericError::new("validate linux username")
+          .add_error("linux username length must begine with an ascii lowercase letter")
+          .add_attachment("username", username)
+          .add_attachment("username beginning", username.len().to_string())
+      );
+    };
+
+    if !beginning.is_ascii_lowercase() {
+      return Err(
+        GenericError::new("validate linux username")
+          .add_error("linux username length must begine with an ascii lowercase letter")
+          .add_attachment("username", username)
+          .add_attachment("username beginning", beginning.to_string())
+      );
+    }
+
+    for character in characters {
+      if !character.is_ascii_lowercase() 
+      && !character.is_ascii_digit() 
+      && character != '-' 
+      && character != '_' 
+      {
+        return Err(
+          GenericError::new("validate linux username")
+            .add_error("linux username may only conttaon ascii lowercase letters, ascii digits, hypens or underscores")
+            .add_attachment("username", username)
+        );
+      }
+    }
+
+    Ok(())
+  }
+
   /// Linux rules for a username are:
   /// It must be 1 to 32 characters long.
   /// It can only contain lowercase letters (a-z), digits (0-9), dashes (-), and underscores (_).
@@ -43,6 +92,11 @@ impl OperatingSystemUsername {
     }
   }
 
+  pub fn new_or_generic_error(username: String) -> Result<OperatingSystemUsername, GenericError> {
+    Self::validate_linux_username(&username)?;
+    Ok(Self(username))
+  }
+
   pub fn as_ref(&self) -> &String {
     &self.0
   }
@@ -54,17 +108,17 @@ pub mod database_serde {
   use crate::GenericError;
 
   impl SerializableScalarValue for OperatingSystemUsername {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_string(&self.0);
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_string(&self.0)
     }
   }
 
   impl DeserializableScalarValue for OperatingSystemUsername {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_string()
-        .map(OperatingSystemUsername)
+        .and_then(OperatingSystemUsername::new_or_generic_error)
         .map_err(|error|
-          error.change_context("Failed to deserialize OperationSystemUsername: Failed to cast value to string")
+          error.change_context("deserializing an OperatingSystemUsername")
         )
     }
   }

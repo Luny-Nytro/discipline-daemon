@@ -26,16 +26,16 @@ impl ToSerializableScalarValue for RuleActivatorVariant {
 // impl SerializableScalarValue for RuleActivatorVariant {
 //   fn serialize_into(&self, context: SerializeScalarValueContext) {
 //     match self {
-//       RuleActivatorVariant::AllTheTime => context.as_u8(0),
-//       RuleActivatorVariant::OnWeekday => context.as_u8(1),
-//       RuleActivatorVariant::InTimeRange => context.as_u8(2),
-//       RuleActivatorVariant::InWeekdayRange => context.as_u8(3),
+//       RuleActivatorVariant::AllTheTime => context.write_u8(0),
+//       RuleActivatorVariant::OnWeekday => context.write_u8(1),
+//       RuleActivatorVariant::InTimeRange => context.write_u8(2),
+//       RuleActivatorVariant::InWeekdayRange => context.write_u8(3),
 //     } 
 //   }
 // }
 
 impl DeserializableScalarValue for RuleActivatorVariant {
-  fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+  fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     let number = value.as_u8().map_err(|error|
       error
         .change_context("deserialize RuleActivatorVariant")

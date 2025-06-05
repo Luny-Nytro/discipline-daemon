@@ -5,7 +5,10 @@ use super::{ScalarFieldSpecification, ScalarValue, DeserializableScalarValue};
 pub trait CompoundValueDeserializer {
   type Output;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError>;
+  fn deserialize(
+    &self, 
+    context: &CompoundValueDeserializerContext,
+  ) -> Result<Self::Output, GenericError>;
 }
 
 pub struct CompoundValueDeserializerContext<'a>(&'a Row<'a>);
@@ -23,6 +26,7 @@ impl<'a> CompoundValueDeserializerContext<'a> {
       )
   }
 
+  // TODO: rename to deserializable_scalar_field
   pub fn deserializable_scalar<Value>(
     &self, 
     column: &ScalarFieldSpecification,
@@ -48,7 +52,7 @@ impl<'a> CompoundValueDeserializerContext<'a> {
   }
 }
 
-pub fn deserialize_compound_value<Deserializer>(
+pub(super) fn deserialize_compound_value<Deserializer>(
   row: &Row, 
   deserializer: &Deserializer,
 ) -> 

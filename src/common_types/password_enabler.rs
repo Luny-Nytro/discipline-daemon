@@ -106,8 +106,8 @@ pub mod database_serde {
 
     fn serialize_into(
       &self, 
-      value: &Self::Input,
-      context: &mut SerializeContext, 
+      value: &Self::CompoundValue,
+      context: &mut CompoundValueSerializerContext, 
     ) {
       context.scalar(&self.password, &value.password);
       context.scalar(&self.is_effective, &value.is_effective);

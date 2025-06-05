@@ -1,3 +1,5 @@
+use crate::GenericError;
+
 use super::{Duration, Hour, Minute};
 
 const MS_PER_SECOND: u32 = 1000;
@@ -31,6 +33,18 @@ impl Time {
       Some(Self(value))
     } else {
       None
+    }
+  }
+  
+  pub fn try_from_timestamp_or_generic_error(value: u32) -> Result<Self, GenericError> {
+    if Self::MIN.0 <= value && value <= Self::MAX.0 {
+      Ok(Self(value))
+    } else {
+      Err(
+        GenericError::new("creating a Time from a millisecind-based timestamp from midnight")
+          .add_error(format!("timestamp must be in this range {} ..= {}", Self::MIN.0, Self::MAX.0))
+          .add_attachment("timestamp", value.to_string())
+      )
     }
   }
 
@@ -133,51 +147,22 @@ mod serde_impl {
 mod database_serde {
   use crate::database::*;
   use crate::GenericError;
-  use super::{Time, MIN_VALUE, MAX_VALUE};
-
-  // pub struct Adapter {}
-
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
-
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = Time;
-
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.as_u32(self.0);      
-  //   }
-
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let timestamp = value.as_u32().map_err(|error|
-  //       error.change_context("Failed to create a Time from a ColumnValue: Expected ColumnValue to be a u32 number")
-  //     )?;
-
-  //     Time::try_from_timestamp(timestamp).ok_or_else(||
-  //       GenericError::new(format!("Failed to create a Time from a u32 ColumnValue: Expected ColumnValue to be in this range {MIN_VALUE} ..= {MAX_VALUE}"))
-  //         .attach_info("ColumnValue", timestamp.to_string())
-  //     )        
-  //   }
-  // }
+  use super::Time;
 
   impl SerializableScalarValue for Time {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_u32(self.0);
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_u32(self.0)
     }
   }
 
   impl DeserializableScalarValue for Time {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
-      let timestamp = value.as_u32().map_err(|error|
-        error.change_context("Failed to create a Time from a ColumnValue: Expected ColumnValue to be a u32 number")
-      )?;
-
-      Time::try_from_timestamp(timestamp).ok_or_else(||
-        GenericError::new(format!("Failed to create a Time from a u32 ColumnValue: Expected ColumnValue to be in this range {MIN_VALUE} ..= {MAX_VALUE}"))
-          .add_attachment("ColumnValue", timestamp.to_string())
-      )
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+      value
+        .as_u32()
+        .and_then(Time::try_from_timestamp_or_generic_error)
+        .map_err(|error|
+          error.change_context("deserializing a Time")
+        )
     }
   }
 }

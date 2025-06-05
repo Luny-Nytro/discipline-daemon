@@ -26,18 +26,18 @@ impl RegulatorSchema {
 
   pub fn set_is_applying_enabled(
     &self, 
-    statement: &mut UpdateStatement,
+    modifications: &mut CollectionItemModifications,
     new_value: bool,
   ) {
-    statement.set(&self.is_applying_enabled, &new_value);
+    modifications.modify_scalar_field(&self.is_applying_enabled, &new_value);
   }
 
   pub fn set_is_user_screen_access_blocked(
     &self, 
-    statement: &mut UpdateStatement,
+    modifications: &mut CollectionItemModifications,
     new_value: bool,
   ) {
-    statement.set(&self.is_user_screen_access_blocked, &new_value);
+    modifications.modify_scalar_field(&self.is_user_screen_access_blocked, &new_value);
   }
 }
 
@@ -46,8 +46,8 @@ impl CompoundValueSerializer for RegulatorSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_scalar(&self.is_applying_enabled, &value.is_applying_enabled);
     context.serializable_scalar(&self.is_user_screen_access_blocked, &value.is_user_screen_access_blocked);

@@ -44,6 +44,7 @@ fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
   Ok(())
 }
 
+#[derive(Debug)]
 pub struct ScalarFieldSpecification {
   pub fully_qualified_identifier: String,
   pub optional: bool,
@@ -79,7 +80,7 @@ impl ScalarFieldSpecificationBuilder {
     verify_identifier(&self.fully_qualified_name)
       .map_err(|error| 
         error
-          .change_context("verify field name")
+          .change_context("verify field identifier")
           .change_context("create scalar field specification from builder")
       )?;
 
@@ -110,18 +111,10 @@ impl CompoundTypeSpecificationCreator {
   }
 
   pub fn scalar_field_specification(&self, identifier: &str) -> ScalarFieldSpecificationBuilder {
-    verify_identifier(identifier)
-      .map(|_| 
-        ScalarFieldSpecificationBuilder::new(
-          format!("{}_{}", self.fully_qualified_name, identifier), 
-          self.optional,
-        )
-      )
-      .map_err(|error| 
-        error
-        // TODO: Write a descriptiive error message
-          .change_context("action")
-      )
+    ScalarFieldSpecificationBuilder::new(
+      format!("{}_{}", self.fully_qualified_name, identifier), 
+      self.optional,
+    )
   }
 
   pub fn compound_field_specification(&self, identifier: &str) -> Result<CompoundTypeSpecificationCreator, GenericError> {
@@ -139,6 +132,7 @@ impl CompoundTypeSpecificationCreator {
   }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum ColumnType {
   Primary, 
   UniqueRequired,
@@ -153,15 +147,14 @@ pub struct ColumnSpecification {
 }
 
 pub trait CompoundTypeSpecificationProvider {
-  fn write_fields(&self, context: &mut CompoundTypeFieldsSpecificationBuilder) -> Result<(), GenericError>;
+  fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError>;
 }
 
-pub struct CompoundTypeFieldsSpecificationBuilder {
+pub struct CompoundTypeFieldsSpecification {
   column_specifications: Vec<ColumnSpecification>,
-  has_multiple_primary_key_columns: bool,
 }
 
-impl CompoundTypeFieldsSpecificationBuilder {
+impl CompoundTypeFieldsSpecification {
   pub fn add_scalar_field(&mut self, scalar_field_specification: &ScalarFieldSpecification) -> Result<(), GenericError> {
     if self
       .column_specifications
@@ -185,7 +178,7 @@ impl CompoundTypeFieldsSpecificationBuilder {
   ) -> 
     Result<(), GenericError>
   {
-    compound_field_specification_provider.write_fields(self)
+    compound_field_specification_provider.add_fields(self)
   }
 }
 
@@ -240,17 +233,26 @@ impl Namespace {
 
   pub fn collection(
     &self, 
-    identifier: &str,
-    
-  ) -> Result<CollectionSpecfication, GenericError> {
-    verify_identifier(identifier)
-      .map(|_|
-        CollectionSpecfication {
-          identifier: identifier.into(),
-          fully_qualified_identifier: format!("{}_{}", self.fully_qualified_identifier, identifier),
-        }      
-      )
+    collection_identifier: &str,
+    collection_item_fields_specification: CompoundTypeFieldsSpecification,
+  ) -> 
+    Result<CollectionSpecfication, GenericError> 
+  {
     // TODO: do proper error handling
+
+    if let Err(error) = verify_identifier(collection_identifier) {
+      return Err(error);
+    }
+
+    if collection_item_fields_specification.column_specifications.is_empty() {
+      return Err(todo!());
+    }
+
+    Ok(CollectionSpecfication::new(
+      collection_identifier.into(), 
+      format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
+      collection_item_fields_specification.column_specifications,
+    ))
   }
 }
 
@@ -262,7 +264,7 @@ impl Database {
     }
   }
 
-  pub fn namespace(&self, identifier: &str) -> Namespace {
+  pub fn namespace(&self, identifier: &str) -> Result<Namespace, GenericError> {
     verify_identifier(identifier)
       .map(|_|
         Namespace {

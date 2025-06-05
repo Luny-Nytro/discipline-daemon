@@ -209,7 +209,8 @@ impl<'de> Deserialize<'de> for Duration {
 }
 
 pub mod database_serde {
-  use crate::{database::{ColumnValue, DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext}, GenericError};
+  use crate::database::*;
+  use crate::GenericError;
   use super::Duration;
 
   // pub struct Adapter;
@@ -224,7 +225,7 @@ pub mod database_serde {
   //   type Type = Duration;
 
   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.as_u64(self.total_milliseconds());      
+  //     context.write_u64(self.total_milliseconds());      
   //   }
 
   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
@@ -237,18 +238,19 @@ pub mod database_serde {
   // }
 
   impl SerializableScalarValue for Duration {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_u64(self.total_milliseconds());
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_u64(self.total_milliseconds())
     }
   }
 
   impl DeserializableScalarValue for Duration {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
-      let milliseconds = value.as_u64().map_err(|error|
-        error.change_context("Failed to create a Duration from a ColumnValue: ColumnValue is not a u64 number")
-      )?;
-
-      Ok(Duration::from_milliseconds(milliseconds))
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+      value
+        .as_u64()
+        .map(Duration::from_milliseconds)
+        .map_err(|error|
+          error.change_context("deserializing a duration")
+        )
     }
   }
 }

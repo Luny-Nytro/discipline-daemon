@@ -1,39 +1,66 @@
+use crate::GenericError;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CreateError {
   PasswordTooLong,
+  PasswordTooShort,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Password(String);
 
 impl Password {
+  const MIN_LENGTH: usize = 1;
   const MAX_LENGTH: usize = 40;
 
   pub fn new(value: String) -> Result<Self, CreateError> {
-    if value.len() > Self::MAX_LENGTH {
+    if value.len() < Self::MAX_LENGTH {
+      Err(CreateError::PasswordTooShort)
+    } else if value.len() > Self::MAX_LENGTH {
       Err(CreateError::PasswordTooLong)
+    } else {
+      Ok(Self(value))
+    }
+  }
+
+  pub fn new_or_generic_error(value: String) -> Result<Self, GenericError> {
+    if value.len() < Self::MAX_LENGTH {
+      Err(
+        GenericError::new("creating a Password")
+          .add_error("password is too short")
+          .add_attachment("minimum valid length", Self::MIN_LENGTH.to_string())
+          .add_attachment("password", value)
+      )
+    } else if value.len() > Self::MAX_LENGTH {
+      Err(
+        GenericError::new("creating a Password")
+          .add_error("password is too long")
+          .add_attachment("maximum valid length", Self::MAX_LENGTH.to_string())
+          .add_attachment("password", value)
+      )
     } else {
       Ok(Self(value))
     }
   }
 }
 
-mod database_serde {
-  use crate::{database::{ColumnValue, DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext}, GenericError};
+mod database {
+  use crate::database::*;
+  use crate::GenericError;
   use super::Password;
 
   impl SerializableScalarValue for Password {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_string(&self.0);
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_string(&self.0)
     }
   }
 
   impl DeserializableScalarValue for Password {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_string()
         .map(Password)
         .map_err(|error|
-          error.change_context("Failed to deserialize password: Failed to cast value to string")
+          error.change_context("deserializing a password")
         )
     }
   }

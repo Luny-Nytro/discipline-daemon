@@ -18,12 +18,12 @@ use crate::database::{
 
 impl SerializableScalarValue for UserName {
   fn serialize_into(&self, context: SerializeScalarValueContext) {
-    context.as_string(self.as_ref());
+    context.write_string(self.as_ref());
   }
 }
 
 impl DeserializableScalarValue for UserName {
-  fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+  fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value
       .as_string()
       .and_then(UserName::new)
@@ -86,10 +86,10 @@ impl UserSchema {
 
   pub fn set_name(
     &self, 
-    statement: &mut UpdateStatement, 
+    modifications: &mut CollectionItemModifications, 
     new_value: &UserName,
   ) {
-    statement.set(&self.name_column, new_value);
+    modifications.modify_scalar_field(&self.name_column, new_value);
   }
 }
 
@@ -98,8 +98,8 @@ impl CompoundValueSerializer for UserSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_scalar(&self.id_column, &value.id);  
     context.serializable_scalar(&self.name_column, &value.name);  

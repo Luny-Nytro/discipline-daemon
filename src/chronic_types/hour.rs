@@ -16,6 +16,18 @@ impl Hour {
     }
   }
 
+  pub fn from_0_or_generic_error(value: u32) -> Result<Self, GenericError> {
+    if value <= MAX_VALUE {
+      Ok(Self(value))
+    } else {
+      Err(
+        GenericError::new("creating an hour from an integer")
+          .add_error("integer must be this range 0 ..= 23")
+          .add_attachment("integer", value.to_string())
+      )
+    }
+  }
+
   pub unsafe fn unchecked_from(value: u32) -> Self {
     Self(value)
   }
@@ -62,6 +74,8 @@ impl Hour {
 
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
+use crate::GenericError;
+
 impl Serialize for Hour {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
@@ -101,7 +115,7 @@ pub mod database_serde {
   //   type Type = Hour;
 
   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.as_u32(self.value());
+  //     context.write_u32(self.value());
   //   }
 
   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
@@ -117,21 +131,19 @@ pub mod database_serde {
   // }
 
   impl SerializableScalarValue for Hour {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_u32(self.value());
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_u32(self.value())
     }
   }
 
   impl DeserializableScalarValue for Hour {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
-      let number = value.as_u32().map_err(|error|
-        error.change_context("Failed to create an Hour from a ColumnValue: Expected ColumnValue to be a u32")
-      )?;
-
-      Hour::try_from0(number).ok_or_else(|| 
-        GenericError::new("Failed to create an Hour from a u32 ColumnValue: Expected ColumnValue to be in this range 0 ..= 23")
-          .add_attachment("ColumnValue", number.to_string())
-      )
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+      value
+        .as_u32()
+        .and_then(Hour::from_0_or_generic_error)
+        .map_err(|error|
+          error.change_context("deserializing an hour")
+        )
     }
   }
 }

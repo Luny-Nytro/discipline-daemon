@@ -72,13 +72,13 @@ mod database_serde {
   use crate::GenericError;
 
   impl SerializableScalarValue for OperatingSystemUserId {
-    fn serialize_into(&self, ctx: SerializeScalarValueContext) {
-      ctx.as_u32(self.0);
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+      context.write_u32(self.0);
     }
   }
 
   impl DeserializableScalarValue for OperatingSystemUserId {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_u32()
         .map(OperatingSystemUserId)
         .map_err(|error|

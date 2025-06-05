@@ -62,8 +62,8 @@ impl CompoundValueSerializer for StateSchema {
 
   fn serialize_into(
     &self, 
-    value: &Self::Input,
-    context: &mut SerializeContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) {
     context.serializable_scalar(&self.id_column, &0);
     context.serializable_compound(self.user_screen_access_regulation.singleton(), &value.user_screen_access_regulation_common_info);

@@ -109,6 +109,7 @@ impl CompoundValueSerializerContext {
   pub fn write_string(&mut self, scalar_field_specification: &ScalarFieldSpecification, string: &String) -> Result<(), GenericError> {
     self.write_separating_comma();
     self.column_names.push_str(&scalar_field_specification.fully_qualified_identifier);
+    // TODO
     escape_string_for_sqilte_into(string, &mut self.column_values);
     Ok(())
   }

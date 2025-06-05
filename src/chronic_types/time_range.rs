@@ -54,30 +54,32 @@ impl TimeRange {
   pub fn from_numbers(from: u32, till: u32) -> Result<TimeRange, GenericError> {    
     if from > FROM_MAX_VALUE {
       return Err(
-        GenericError::new("Faild to create TimeRange from raw numbers: 'from' is not in valid range")
-          .add_attachment("valid range", format!("0 ..= {FROM_MAX_VALUE}"))
-          .add_attachment("provided value", from.to_string())
+        GenericError::new("creating a TimeRange from raw numbers")
+          .add_error(format!("'from' must be in this range 0 ..= {FROM_MAX_VALUE}"))
+          .add_attachment("'from'", from.to_string())
       );
     }
     if till > TILL_MAX_VALUE {
       return Err(
-        GenericError::new("Faild to create TimeRange from raw numbers: 'till' is not in valid range")
-          .add_attachment("valid range", format!("0 ..= {TILL_MAX_VALUE}"))
-          .add_attachment("provided value", from.to_string())
+        GenericError::new("creating a TimeRange from raw numbers")
+          .add_error(format!("'till' must be in this range 0 ..= {TILL_MAX_VALUE}"))
+          .add_attachment("'till'", till.to_string())
       );
     }
     if from > till {
       return Err(
-        GenericError::new("Faild to create TimeRange from raw numbers: 'from' is later than 'till'")
-          .add_attachment("provided 'from'", from.to_string())
-          .add_attachment("provided 'till'", till.to_string())
+        GenericError::new("creating a TimeRange from raw numbers")
+          .add_error("'from' is later than 'till'")
+          .add_attachment("from", from.to_string())
+          .add_attachment("till", till.to_string())
       );
     }
     if till - from > MILLISECONDS_PER_DAY {
       return Err(
-        GenericError::new("Faild to create TimeRange from raw numbers: duration between 'from' and 'till' is longer than one day")
-          .add_attachment("provided 'from'", from.to_string())
-          .add_attachment("provided 'till'", till.to_string())
+        GenericError::new("creating a TimeRange from raw numbers")
+          .add_error("duration between 'from' and 'till' is longer than one day")
+          .add_attachment("from", from.to_string())
+          .add_attachment("till", till.to_string())
       );
     }
 
@@ -206,97 +208,103 @@ impl TimeRange {
 }
 
 pub mod database {
-  use crate::database::{
-    ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, 
-    CompoundValueDeserializer, CompoundValueDeserializerContext, 
-    SerializeContext, UpdateStatement, WriteColumns,
-    WriteColumnsContext,
-  };
+  use crate::database::*;
   use crate::{GenericError, Time};
   use super::TimeRange;
 
-  pub struct Schema {
+  pub struct Specification {
     from: ScalarFieldSpecification,
     till: ScalarFieldSpecification,
   }
 
-  impl Schema {
-    pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
+  impl Specification {
+    pub fn new(creator: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
       Ok(Self {
-        from: column_namespace
+        from: creator
           .scalar_field_specification("from")
           .build()?,
 
-        till: column_namespace
+        till: creator
           .scalar_field_specification("till")
           .build()?,
       })
     }
   }
 
-  impl Schema {
+  impl Specification {
     pub fn set_from(
       &self, 
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &Time,
-    ) {
-      statement.set(&self.from, new_value);
+    ) -> 
+      Result<(), GenericError> 
+    {
+      modifications.modify_scalar_field(&self.from, new_value)
     }
 
     pub fn set_till(
       &self, 
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &Time,
-    ) {
-      statement.set(&self.from, new_value);
+    ) -> 
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.from, new_value)
     }
 
     pub fn set_range(
       &self, 
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &TimeRange,
-    ) {
-      statement.set(&self.from, &new_value.from);
-      statement.set(&self.till, &new_value.till);
+    ) -> 
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.from, &new_value.from)?;
+      modifications.modify_scalar_field(&self.till, &new_value.till)
     }
   }
 
-  impl<'a> CompoundValueSerializer for Schema {
-    type Input = TimeRange;
+  impl<'a> CompoundValueSerializer for Specification {
+    type CompoundValue = TimeRange;
 
     fn serialize_into(
       &self, 
-      value: &Self::Input,
-      context: &mut SerializeContext, 
-    ) {
-      context.serializable_scalar(&self.from, &value.from);  
-      context.serializable_scalar(&self.till, &value.till);  
+      value: &Self::CompoundValue,
+      context: &mut CompoundValueSerializerContext, 
+    ) -> 
+      Result<(), GenericError>
+    {
+      context.serializable_scalar(&self.from, &value.from)?; 
+      context.serializable_scalar(&self.till, &value.till) 
     }
   }
 
-  impl<'a> CompoundValueDeserializer for Schema {
+  impl<'a> CompoundValueDeserializer for Specification {
     type Output = TimeRange;
 
     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       let from = context.deserializable_scalar(&self.from).map_err(|error| 
-        error.change_context("Faild to deserialize TimeRange: Failed to deserialize 'from' field")
+        error
+          .change_context("deserialize the 'from' field")
+          .change_context("deserialize a TimeRange")
       )?;
 
       let till = context.deserializable_scalar(&self.till).map_err(|error| 
-        error.change_context("Faild to deserialize TimeRange: Failed to deserialize 'till' field")
+        error
+          .change_context("deserialize the 'till' field")
+          .change_context("deserialize a TimeRange")
       )?;
 
       TimeRange::from_numbers(from, till).map_err(|error|
-        error.change_context("Failed to deserialize TimeRange: Fields deserialized successfully, but some invariants are invlidated")
+        error.change_context("deserialize a TimeRange")
       )
     }
   }
 
-  impl WriteColumns for Schema {
-    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-      context.write_scalar_type(&self.from)?;
-      context.write_scalar_type(&self.till)?;
-      Ok(())
+  impl CompoundTypeSpecificationProvider for Specification {
+    fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
+      context.add_scalar_field(&self.from)?;
+      context.add_scalar_field(&self.till)
     }
   }
 }

@@ -54,8 +54,8 @@ impl CollectionItemModifications {
     Ok(())
   }
 
-  fn finish(self) -> Option<String> {
-    Ok(self.code)
+  fn finish(&self) -> Option<&String> {
+    Some(&self.code)
   }
 }
 
@@ -87,7 +87,7 @@ impl CollectionItemAndMatchWriter {
   }
 
   fn did_write_a_match(&self) -> bool {
-    self.code.len()
+    self.code.len() > 0
   }
 
   pub fn and_scalar_field_is(
@@ -95,7 +95,7 @@ impl CollectionItemAndMatchWriter {
     scalar_field_specification: &ScalarFieldSpecification,
     scalar_field_value: &impl SerializableScalarValue,
   ) -> 
-    Result<CollectionItemMatcher, GenericError>
+    Result<(), GenericError>
   {
     let mut temp = String::new();
     if let Err(error) = serialize_scalar_value_into(scalar_field_value, &mut temp) {
@@ -121,7 +121,7 @@ impl CollectionItemAndMatchWriter {
     Ok(())
   }
 
-  pub fn finish(self) -> Result<CollectionItemMatcher, GenericError> {
+  fn finish(self) -> Result<CollectionItemMatcher, GenericError> {
     Ok(CollectionItemMatcher {
       inner: if self.did_write_a_match() {
         CollectionItemMatcherInner::WhereClause(self.code)
@@ -233,13 +233,12 @@ impl MlutiColumnPrimaryKeyConstraint {
   }
 }
 
-pub(super) fn generate_code_define_collection(
+pub fn generate_code_define_collection(
+  code: &mut String,
   collection_specification: &CollectionSpecfication,
-  collection_item_specification_provider: &impl ProvidesCollectionItemSpecification
 ) ->
   Result<(), GenericError>
 {
-  let mut code = String::new();
   code.push_str("CREATE TABLE IF NOT EXISTS ");
   code.push_str(&collection_specification.fully_qualified_identifier);
   code.push_str(" (");
@@ -247,7 +246,7 @@ pub(super) fn generate_code_define_collection(
   let mut multi_column_primary_key_constraint = MlutiColumnPrimaryKeyConstraint::new();
   let mut did_write_a_column_definition = false;
 
-  for column_specification in collection_specification.column_specifications {
+  for column_specification in &collection_specification.column_specifications {
     if did_write_a_column_definition {
       code.push_str(", ");
     }
@@ -312,7 +311,7 @@ impl WriteCompoundTypeSpecificationContext {
   pub fn mark_field_as_primary(&mut self, scalar_field_description: &ScalarFieldSpecification) -> Result<(), GenericError> {
     let Some(column_specification) = self
       .column_specfications
-      .iter()
+      .iter_mut()
       .find(|column_specification| 
         column_specification.fully_qualified_name 
         == 
@@ -339,7 +338,7 @@ pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
   collection_specification: &CollectionSpecfication,
   collection_item_serializer: &Serializer,
-  collection_item: &Serializer::CompoundValue,
+  new_collection_item: &Serializer::CompoundValue,
 ) ->
   Result<(), GenericError>
 where 
@@ -348,7 +347,7 @@ where
   let mut values_clause = String::new();
   serialize_compound_value_into(
     collection_item_serializer, 
-    collection_item, 
+    new_collection_item, 
     &mut values_clause
   )?; // TODO: do proper error handling
 
@@ -370,7 +369,7 @@ pub(super) fn generate_code_delete_collection_item(
 {
   code.push_str("DELETE FROM ");
   code.push_str(&collection_specification.fully_qualified_identifier);
-  match collection_item_matcher.inner {
+  match &collection_item_matcher.inner {
     CollectionItemMatcherInner::NoWhereClause => {
       code.push_str(";");
     }
@@ -401,7 +400,7 @@ pub(super) fn generate_code_update_collection_item(
   code.push_str(" ");
   code.push_str(&set_clause);
  
-  match collection_item_matcher.inner {
+  match &collection_item_matcher.inner {
     CollectionItemMatcherInner::NoWhereClause => {
       code.push_str(";");
     }
@@ -425,4 +424,65 @@ pub(super) fn generate_code_find_all_collection_items(
   code.push_str(&collection_specification.fully_qualified_identifier);
   code.push_str(";");
   Ok(())
+}
+
+pub(super) fn generate_code_find_one_collection_item(
+  code: &mut String,
+  collection_specification: &CollectionSpecfication,
+  collection_item_matcher: &CollectionItemMatcher,
+) -> 
+  Result<(), GenericError>
+{
+  code.push_str("SELECT * FROM ");
+  code.push_str(&collection_specification.fully_qualified_identifier);
+
+  match &collection_item_matcher.inner {
+    CollectionItemMatcherInner::NoWhereClause => {
+      code.push_str(";");
+    }
+    CollectionItemMatcherInner::WhereClause(where_clause) => {
+      code.push_str(" ");
+      code.push_str(where_clause);
+      code.push_str(";");
+    }
+  }
+
+  Ok(())
+}
+
+pub struct DatabaseSpecificationsProviderContext<'a> {
+  code: &'a mut String,
+}
+
+impl<'a> DatabaseSpecificationsProviderContext<'a> {
+  fn new(code: &'a mut String) -> Self {
+    Self { code }
+  }
+
+  pub fn add_collection_specification(
+    &mut self, 
+    collection_specification: &CollectionSpecfication,
+  ) -> 
+    Result<(), GenericError>
+  {
+    // if, in the future, this actually fails, handle the error and change the context
+    generate_code_define_collection(&mut self.code, collection_specification)
+  }
+}
+
+pub trait DatabaseSpecificationsProvider {
+  fn add_specifications(&self, context: &mut DatabaseSpecificationsProviderContext) -> Result<(), GenericError>;
+}
+
+pub(super) fn generate_code_define_database_schema(
+  code: &mut String,
+  database_specifications_provider: &impl DatabaseSpecificationsProvider,
+) ->
+  Result<(), GenericError>
+{
+  // TODO: Retrun an error if the providers adds zero collection specifications
+  let mut context = DatabaseSpecificationsProviderContext::new(code);
+  database_specifications_provider
+    .add_specifications(&mut context)
+    .map_err(|error| error.change_context("generate sql code that initializes the database schema, which are tables, triggers and views"))
 }

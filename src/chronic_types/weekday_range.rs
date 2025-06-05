@@ -193,19 +193,19 @@ pub mod database {
   use super::WeekdayRange;
   use crate::GenericError;
 
-  pub struct Schema {
+  pub struct Specification {
     from: ScalarFieldSpecification,
     till: ScalarFieldSpecification,
   }
 
-  impl Schema {
-    pub fn new(column_namespace: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
+  impl Specification {
+    pub fn new(creator: CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
       Ok(Self {
-        from: column_namespace
+        from: creator
           .scalar_field_specification("from")
           .build()?,
 
-        till: column_namespace
+        till: creator
           .scalar_field_specification("till")
           .build()?,
       })
@@ -213,70 +213,77 @@ pub mod database {
 
     pub fn set_from(
       &self,
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &Weekday
-    ) {
-      statement.set(&self.from, new_value);
+    ) ->
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.from, new_value)
     }
 
     pub fn set_till(
       &self,
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &Weekday
-    ) {
-      statement.set(&self.till, new_value);
+    ) ->
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.till, new_value)
     }
 
     pub fn set_range(
       &self,
-      statement: &mut UpdateStatement,
+      modifications: &mut CollectionItemModifications,
       new_value: &WeekdayRange
-    ) {
-      statement.set(&self.from, &new_value.from);
-      statement.set(&self.till, &new_value.till);
+    ) ->
+      Result<(), GenericError>
+    {
+      modifications.modify_scalar_field(&self.from, &new_value.from)?;
+      modifications.modify_scalar_field(&self.till, &new_value.till)
     }
   }
 
-  impl CompoundValueSerializer for Schema {
-    type Input = WeekdayRange;
+  impl CompoundValueSerializer for Specification {
+    type CompoundValue = WeekdayRange;
 
     fn serialize_into(
       &self, 
-      value: &Self::Input,
-      context: &mut SerializeContext, 
-    ) {
-      context.serializable_scalar(&self.from, &value.from);
-      context.serializable_scalar(&self.till, &value.till);
+      value: &Self::CompoundValue,
+      context: &mut CompoundValueSerializerContext, 
+    ) ->
+      Result<(), GenericError>
+    {
+      context.serializable_scalar(&self.from, &value.from)?;
+      context.serializable_scalar(&self.till, &value.till)
     }
   }
 
-  impl CompoundValueDeserializer for Schema {
+  impl CompoundValueDeserializer for Specification {
     type Output = WeekdayRange;
 
     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       let from = context.deserializable_scalar(&self.from).map_err(|error| 
         error
-          .change_context("Deserialize WeekdayRange")
-          .add_error("Failed to deserialize the 'from' field")
+          .change_context("deserializing the the 'from' field")
+          .change_context("deserislizing a WeekdayRange")
       )?;
+
       let till = context.deserializable_scalar(&self.till).map_err(|error|
         error
-          .change_context("Deserialize WeekdayRange")
-          .add_error("Failed to deserialize the 'till' field")
+          .change_context("deserializing the 'till' field")
+          .change_context("deserislizing a WeekdayRange")
       )?;
+
       WeekdayRange::from_numbers(from, till).map_err(|error|
-        error
-          .change_context("Deserialize WeekdayRange")
-          .add_error("deserialized 'from' and 'till' fields violate some invariants")
+        error.change_context("deserislizing a WeekdayRange")
       )
     }
   }
 
-  impl WriteColumns for Schema {
-    fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-      context.write_scalar_type(&self.from)?;
-      context.write_scalar_type(&self.till)?;
-      Ok(())
+  impl CompoundTypeSpecificationProvider for Specification {
+    fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
+      context.add_scalar_field(&self.from)?;
+      context.add_scalar_field(&self.till)
     }
   }
 }

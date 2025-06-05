@@ -195,74 +195,31 @@ impl<'de> Deserialize<'de> for Weekday {
 }
 
 pub mod database_serde {
-  use crate::{database::{ColumnValue, DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext}, GenericError};
+  use crate::database::*;
+  use crate::GenericError;
   use super::*;
 
-  // pub struct Adapter {}
-
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
-
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = Weekday;
-
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     match self {
-  //       Sunday => context.as_u8(0),
-  //       Monday => context.as_u8(1),
-  //       Tuesday => context.as_u8(2),
-  //       Wednesday => context.as_u8(3),
-  //       Thursday => context.as_u8(4),
-  //       Friday => context.as_u8(5),
-  //       Saturday => context.as_u8(6),
-  //     }        
-  //   }
-
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let number = value.as_u8().map_err(|error| 
-  //       error.change_context("Failed to create a weekday from a column value: Expected value to be an integer")
-  //     )?;
-      
-  //     match number {
-  //       0 => Ok(Sunday),
-  //       1 => Ok(Monday),
-  //       2 => Ok(Tuesday),
-  //       3 => Ok(Wednesday),
-  //       4 => Ok(Thursday),
-  //       5 => Ok(Friday),
-  //       6 => Ok(Saturday),
-  //       _ => {
-  //         Err(
-  //           GenericError::new("Faild to create a weekday from integer: Casted column value as u8 but the resulting u8 is outside valid range 0 ..= 6")
-  //             .attach_info("u8 number", number.to_string())
-  //         )
-  //       }
-  //     }
-  //   }
-  // }
-
   impl SerializableScalarValue for Weekday {
-    fn serialize_into(&self, context: SerializeScalarValueContext) {
+    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       match self {
-        Sunday => context.as_u8(0),
-        Monday => context.as_u8(1),
-        Tuesday => context.as_u8(2),
-        Wednesday => context.as_u8(3),
-        Thursday => context.as_u8(4),
-        Friday => context.as_u8(5),
-        Saturday => context.as_u8(6),
+        Sunday => context.write_u8(0),
+        Monday => context.write_u8(1),
+        Tuesday => context.write_u8(2),
+        Wednesday => context.write_u8(3),
+        Thursday => context.write_u8(4),
+        Friday => context.write_u8(5),
+        Saturday => context.write_u8(6),
       }
     }
   }
 
   impl DeserializableScalarValue for Weekday {
-    fn deserialize(value: ColumnValue) -> Result<Self, GenericError> {
-      let number = value.as_u8().map_err(|error| 
-        error.change_context("Failed to create a weekday from a column value: Expected value to be an integer")
-      )?;
+    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+      let number = value
+        .as_u8()
+        .map_err(|error| 
+          error.change_context("deserializing a Weekday")
+        )?;
       
       match number {
         0 => Ok(Sunday),
@@ -274,8 +231,9 @@ pub mod database_serde {
         6 => Ok(Saturday),
         _ => {
           Err(
-            GenericError::new("Faild to create a weekday from integer: Casted column value as u8 but the resulting u8 is outside valid range 0 ..= 6")
-              .add_attachment("u8 number", number.to_string())
+            GenericError::new("deserializing a Weekday")
+              .add_error("scalar value is an integer but it's outside the valid range 0 ..= 6")
+              .add_attachment("scalar value", number.to_string())
           )
         }
       }
