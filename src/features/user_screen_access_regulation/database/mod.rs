@@ -1,5 +1,3 @@
-use crate::countdown_timer::database_serde::Schema as CountdownTimerAdapter;
-
 use crate::database::*;
 
 // use crate::database::{
@@ -15,8 +13,10 @@ use crate::database::*;
 
 use crate::{
   Duration, DateTime, GenericError, time_range, 
-  weekday_range, Uuid, OperatingSystemPassword,
+  weekday_range, Uuid
 };
+
+use crate::countdown_timer::database::Specification as CountdownTimerSpecification;
 
 use super::{
   RuleActivator, PolicyEnabler, 
@@ -28,23 +28,23 @@ mod rule_activator_variant;
 pub use rule_activator_variant::RuleActivatorVariant;
 
 mod rule_activator;
-pub use rule_activator::RuleActivatorSchema;
+pub use rule_activator::RuleActivatorSpecification;
 
 mod policy_enabler;
-pub use policy_enabler::PolicyEnablerSchema;
+pub use policy_enabler::PolicyEnablerSpecification;
 
 mod rule;
-pub use rule::{RuleSchema, NormalizedRule, RuleSerializer};
+pub use rule::{RuleSpecification, NormalizedRule, RuleSerializer};
 
 mod regulator;
-pub use regulator::{RegulatorSchema, NormalizedRegulator};
+pub use regulator::{RegulatorSpecification, NormalizedRegulator};
 
 mod common_info;
-pub use common_info::CommonInfoSchema;
+pub use common_info::CommonInfoSpecification;
 
 mod policy;
 pub use policy::*;
 
 mod policy_name;
 mod feature;
-pub use feature::FeatureSchema;
+pub use feature::Specification;

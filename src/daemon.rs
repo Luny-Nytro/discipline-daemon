@@ -1,43 +1,38 @@
 use clap::{Parser, command};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
-use crate::{GenericError, IsOperation, State, StateSchema, DateTime, Duration};
-use crate::database::Connection;
+use crate::{GenericError, IsOperation, State, Specification, DateTime, Duration};
+use crate::database::Database;
 
 pub struct Daemon {
   pub state: State,
-  pub schema: StateSchema,
-  pub database_connection: Connection,
+  pub schema: Specification,
+  pub database_connection: Database,
   pub http_server_address: String,
   pub is_running: bool,
 }
 
 impl Daemon {
   pub fn open(
-    database_file_path: &str,
+    database_file_path: PathBuf,
     http_server_port: u32,
   ) -> 
     Result<DaemonMutex, GenericError> 
   {
-    let database_connection = Connection::new(database_file_path).map_err(|error|
+    let database = Database::open(database_file_path).map_err(|error|
       error
-        .change_context("open a connection to the database")
-        .change_context("create daemon")
+        .change_context("openning a connection to the database")
+        .change_context("creating daemon")
     )?;
 
-    let schema = StateSchema::new(database_connection.namespace()).map_err(|error|
+    let state_database_specification = Specification::new(database.namespace()).map_err(|error|
       error
-        .change_context("create state database schema")
-        .change_context("create daemon")
+        .change_context("creating state database specification")
+        .change_context("creating daemon")
     )?;
 
-    schema.initialize(&database_connection).map_err(|error|
-      error
-        .change_context("initialize database schema")
-        .change_context("create daemon")
-    )?;
-
-    let state = schema.load(&database_connection).map_err(|error|
+    let state = state_database_specification.load(&database).map_err(|error|
       error
         .change_context("load state from the database")
         .change_context("create daemon")
@@ -45,9 +40,9 @@ impl Daemon {
 
     Ok(DaemonMutex::new(Daemon {
       state,
-      schema,
+      schema: state_database_specification,
       is_running: false,
-      database_connection,
+      database_connection: database,
       http_server_address: format!("127.0.0.1:{http_server_port}"),
     }))
   }
@@ -96,7 +91,7 @@ impl DaemonMutex {
 #[command(name = "Discipline", version = "1.0", author = "LunyNytro")]
 struct Args {
   /// The path to the database file.
-  database_path: String,
+  database_path: PathBuf,
 
   /// Age of the Supreme Emperor (optional)
   http_server_port: u32,
@@ -105,16 +100,16 @@ struct Args {
 impl DaemonMutex {
   pub fn open_from_command_line_arguments() -> Result<Self, GenericError> {
     let arguments = Args::parse();
-    if arguments.database_path.len() > 300 {
+    if arguments.database_path.as_os_str().len() > 300 {
       return Err(
         GenericError::new("open Daemon from command line arguments")
           .add_error("the 'database_path' argument is longer than 300 characters")
-          .add_attachment("'database_path' argument", arguments.database_path)
+          .add_attachment("'database_path' argument", arguments.database_path.to_string_lossy())
       );
     }
     
     Daemon::open(
-      &arguments.database_path, 
+      arguments.database_path, 
       arguments.http_server_port,
     )
     .map_err(|error|

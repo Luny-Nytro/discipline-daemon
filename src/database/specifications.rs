@@ -1,6 +1,6 @@
 use crate::GenericError;
 
-fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
+pub(super) fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
   // // Check if it contains any underscores — disallowed in your case
   // if identifier.contains('_') {
   //   return Err(
@@ -46,9 +46,9 @@ fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
 
 #[derive(Debug)]
 pub struct ScalarFieldSpecification {
-  pub fully_qualified_identifier: String,
-  pub optional: bool,
-  pub writeable: bool,
+  pub(super) fully_qualified_identifier: String,
+  pub(super) optional: bool,
+  pub(super) writeable: bool,
 }
 
 pub struct ScalarFieldSpecificationBuilder {
@@ -92,12 +92,13 @@ impl ScalarFieldSpecificationBuilder {
   }
 }
 
-pub struct CompoundTypeSpecificationCreator {
+
+pub struct CollectionItemFieldsScope {
   fully_qualified_name: String,
   optional: bool,
 }
 
-impl CompoundTypeSpecificationCreator {
+impl CollectionItemFieldsScope {
   pub fn new() -> Self {
     Self {
       fully_qualified_name: String::new(),
@@ -105,21 +106,96 @@ impl CompoundTypeSpecificationCreator {
     }
   }
 
-  pub fn optional(mut self) -> Self {
+  fn optional(mut self) -> Self {
     self.optional = true;
     self
   }
 
-  pub fn scalar_field_specification(&self, identifier: &str) -> ScalarFieldSpecificationBuilder {
+  pub fn primary_scalar_field_specification(&mut self, identifier: &str) -> ScalarFieldSpecificationBuilder {
     ScalarFieldSpecificationBuilder::new(
       format!("{}_{}", self.fully_qualified_name, identifier), 
       self.optional,
     )
   }
 
-  pub fn compound_field_specification(&self, identifier: &str) -> Result<CompoundTypeSpecificationCreator, GenericError> {
+  pub fn scalar_field_specification(&mut self, identifier: &str) -> ScalarFieldSpecificationBuilder {
+    ScalarFieldSpecificationBuilder::new(
+      format!("{}_{}", self.fully_qualified_name, identifier), 
+      self.optional,
+    )
+  }
+
+  pub fn compound_field_specification(&mut self, identifier: &str) -> Result<CompoundTypeFieldsScope, GenericError> {
     verify_identifier(identifier)
-      .map(|_| CompoundTypeSpecificationCreator { 
+      .map(|_| CompoundTypeFieldsScope { 
+        fully_qualified_name: format!("{}_{}", self.fully_qualified_name, identifier), 
+        optional: self.optional,
+      })
+      .map_err(|error|
+        error
+          // TODO: update these error messages
+          .change_context("verify namespace name")
+          .change_context("create namespace")
+      )
+  }
+
+  pub fn optional_compound_field_specification(&mut self, identifier: &str) -> Result<CompoundTypeFieldsScope, GenericError> {
+    verify_identifier(identifier)
+      .map(|_| CompoundTypeFieldsScope { 
+        fully_qualified_name: format!("{}_{}", self.fully_qualified_name, identifier), 
+        optional: self.optional,
+      })
+      .map_err(|error|
+        error
+          // TODO: update these error messages
+          .change_context("verify namespace name")
+          .change_context("create namespace")
+      )
+  }
+}
+
+pub struct CompoundTypeFieldsScope {
+  fully_qualified_name: String,
+  optional: bool,
+}
+
+impl CompoundTypeFieldsScope {
+  fn optional(mut self) -> Self {
+    self.optional = true;
+    self
+  }
+
+  pub fn primary_scalar_field_specification(&mut self, identifier: &str) -> ScalarFieldSpecificationBuilder {
+    ScalarFieldSpecificationBuilder::new(
+      format!("{}_{}", self.fully_qualified_name, identifier), 
+      self.optional,
+    )
+  }
+
+  pub fn scalar_field_specification(&mut self, identifier: &str) -> ScalarFieldSpecificationBuilder {
+    ScalarFieldSpecificationBuilder::new(
+      format!("{}_{}", self.fully_qualified_name, identifier), 
+      self.optional,
+    )
+  }
+
+  pub fn compound_field_specification(&mut self, identifier: &str) -> Result<CompoundTypeFieldsScope, GenericError> {
+    verify_identifier(identifier)
+      .map(|_| CompoundTypeFieldsScope { 
+        fully_qualified_name: format!("{}_{}", self.fully_qualified_name, identifier), 
+        optional: self.optional,
+      })
+      .map_err(|error|
+        error
+          // TODO: update these error messages
+          .change_context("verify namespace name")
+          .change_context("create namespace")
+      )
+  }
+
+  pub fn optional_compound_field_specification(&mut self, identifier: &str) -> Result<CompoundTypeFieldsScope, GenericError> {
+    verify_identifier(identifier)
+      .map(|_| CompoundTypeFieldsScope { 
         fully_qualified_name: format!("{}_{}", self.fully_qualified_name, identifier), 
         optional: self.optional,
       })
@@ -155,6 +231,12 @@ pub struct CompoundTypeFieldsSpecification {
 }
 
 impl CompoundTypeFieldsSpecification {
+  pub fn new() -> Self {
+    Self {
+      column_specifications: Vec::new()
+    }
+  }
+  
   pub fn add_scalar_field(&mut self, scalar_field_specification: &ScalarFieldSpecification) -> Result<(), GenericError> {
     if self
       .column_specifications
@@ -214,13 +296,13 @@ impl CollectionSpecfication {
   }
 }
 
-pub struct Namespace {
+pub struct GlobalNamespace {
   pub(super) identifier: String,
   pub(super) fully_qualified_identifier: String,
 }
 
-impl Namespace {
-  pub fn namespace(&self, identifier: &str) -> Result<Namespace, GenericError> {
+impl GlobalNamespace {
+  pub fn namespace(&mut self, identifier: &str) -> Result<Namespace, GenericError> {
     verify_identifier(identifier)
       .map(|_| 
         Namespace { 
@@ -232,46 +314,70 @@ impl Namespace {
   }
 
   pub fn collection(
-    &self, 
+    &mut self, 
     collection_identifier: &str,
-    collection_item_fields_specification: CompoundTypeFieldsSpecification,
+    collection_item_fields_namespace: CollectionItemFieldsScope,
   ) -> 
     Result<CollectionSpecfication, GenericError> 
   {
+    todo!()
     // TODO: do proper error handling
 
-    if let Err(error) = verify_identifier(collection_identifier) {
-      return Err(error);
-    }
+    // if let Err(error) = verify_identifier(collection_identifier) {
+    //   return Err(error);
+    // }
 
-    if collection_item_fields_specification.column_specifications.is_empty() {
-      return Err(todo!());
-    }
+    // if collection_item_fields_namespace.column_specifications.is_empty() {
+    //   return Err(todo!());
+    // }
 
-    Ok(CollectionSpecfication::new(
-      collection_identifier.into(), 
-      format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
-      collection_item_fields_specification.column_specifications,
-    ))
-  }
+    // Ok(CollectionSpecfication::new(
+    //   collection_identifier.into(), 
+    //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
+    //   collection_item_fields_namespace.column_specifications,
+    // ))
+  } 
 }
 
-pub struct Database {}
+pub struct Namespace {
+  pub(super) identifier: String,
+  pub(super) fully_qualified_identifier: String,
+}
 
-impl Database {
-  pub fn new() -> Self {
-    Self {
-    }
-  }
-
-  pub fn namespace(&self, identifier: &str) -> Result<Namespace, GenericError> {
+impl Namespace {
+  pub fn namespace(&mut self, identifier: &str) -> Result<Namespace, GenericError> {
     verify_identifier(identifier)
-      .map(|_|
-        Namespace {
-          identifier: identifier.into(),
-          fully_qualified_identifier: identifier.into(),
+      .map(|_| 
+        Namespace { 
+          identifier: identifier.into(), 
+          fully_qualified_identifier: format!("{}_{}", self.fully_qualified_identifier, identifier),
         }
       )
-    // TODO: do proper error handling
+      // TODO: Do proper error handling
   }
+
+  pub fn collection(
+    &mut self, 
+    collection_identifier: &str,
+    collection_item_fields_namespace: CollectionItemFieldsScope,
+  ) -> 
+    Result<CollectionSpecfication, GenericError> 
+  {
+    todo!()
+    // TODO: do proper error handling
+
+    // if let Err(error) = verify_identifier(collection_identifier) {
+    //   return Err(error);
+    // }
+
+    // if collection_item_fields_namespace.column_specifications.is_empty() {
+    //   return Err(todo!());
+    // }
+
+    // Ok(CollectionSpecfication::new(
+    //   collection_identifier.into(), 
+    //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
+    //   collection_item_fields_namespace.column_specifications,
+    // ))
+  } 
 }

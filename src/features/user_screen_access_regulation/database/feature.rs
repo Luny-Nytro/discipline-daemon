@@ -1,47 +1,41 @@
 use super::{
-  PolicySchema, RuleSchema, DatabaseNamespace, GenericError,
-  CommonInfoSchema, CompoundTypeSpecificationCreator,
+  PolicySpecification, RuleSpecification, Namespace, GenericError,
+  CommonInfoSpecification, CompoundTypeFieldsScope,
 };
 
-pub struct FeatureSchema {
-  pub common_info: CommonInfoSchema,
-  pub policy: PolicySchema,
-  pub rule: RuleSchema,
+pub struct Specification {
+  pub common_info: CommonInfoSpecification,
+  pub policy: PolicySpecification,
+  pub rule: RuleSpecification,
 }
 
-impl FeatureSchema {
+impl Specification {
   pub fn new(
-    database_namespace: &DatabaseNamespace,
-    column_namespace: &CompoundTypeSpecificationCreator,
+    namespace: &mut Namespace,
+    scope: &mut CompoundTypeFieldsScope,
   ) ->
     Result<Self, GenericError>
   {
-    let common_info = CommonInfoSchema::new(column_namespace)
-      .map_err(|error| error.change_context("create user screen access regulation schema"))?;
-
-    let policy = PolicySchema::new(database_namespace)
-      .map_err(|error| error.change_context("create user screen access regulation schema"))?;
-
-    let rule = RuleSchema::new(database_namespace)
-      .map_err(|error| error.change_context("create user screen access regulation schema"))?;
+    let common_info = CommonInfoSpecification::new(scope)?;
+    let policy = PolicySpecification::new(namespace)?;
+    let rule = RuleSpecification::new(namespace)?;
 
     Ok(Self { common_info, policy, rule })
   }
 
-  pub fn singleton(&self) -> &CommonInfoSchema {
+  pub fn singleton(&self) -> &CommonInfoSpecification {
     &self.common_info
   }
 
-  pub fn generate_sql_initialize(
-    &self,
-    into: &mut String,
-  ) -> 
-    Result<(), GenericError>
-  {
-    // self.common_info.generate_sql_initialize(into)?;
-    self.policy.generate_sql_initialize(into)?;
-    self.rule.generate_sql_initialize(into)?;
-    Ok(())
-  }
-
+  // pub fn generate_sql_initialize(
+  //   &self,
+  //   into: &mut String,
+  // ) -> 
+  //   Result<(), GenericError>
+  // {
+  //   // self.common_info.generate_sql_initialize(into)?;
+  //   self.policy.generate_sql_initialize(into)?;
+  //   self.rule.generate_sql_initialize(into)?;
+  //   Ok(())
+  // }
 }

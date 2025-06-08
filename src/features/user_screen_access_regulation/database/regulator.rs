@@ -1,56 +1,63 @@
 use super::{
-  ScalarFieldSpecification, CompoundTypeSpecificationCreator, GenericError, CompoundValueSerializer,
-  Regulator, SerializeContext, OperatingSystemCalls,
-  CompoundValueDeserializer, CompoundValueDeserializerContext, Policy,
-  WriteColumns, WriteColumnsContext, UpdateStatement,
-  NormalizedPolicy, NormalizedRule,
+  ScalarFieldSpecification, CompoundTypeFieldsScope, GenericError, 
+  Regulator, CollectionItemModifications, CompoundValueSerializerContext,
+  CompoundValueDeserializer, CompoundValueDeserializerContext,
+  NormalizedPolicy, NormalizedRule, CompoundValueSerializer,
+  CompoundTypeSpecificationProvider, CompoundTypeFieldsSpecification,
+  OperatingSystemCalls,
 };
 
-pub struct RegulatorSchema {
+pub struct RegulatorSpecification {
   pub is_applying_enabled: ScalarFieldSpecification,
   pub is_user_screen_access_blocked: ScalarFieldSpecification,
 }
 
-impl RegulatorSchema {
-  pub fn new(column_namespace: &CompoundTypeSpecificationCreator) -> Result<Self, GenericError> {
+impl RegulatorSpecification {
+  pub fn new(creator: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
     Ok(Self {
-      is_applying_enabled: column_namespace
-        .scalar_field_specification("is_applying_enabled")
+      is_applying_enabled: creator
+        .scalar_field_specification("IsApplyingEnabled")
         .build()?,
 
-      is_user_screen_access_blocked: column_namespace
-        .scalar_field_specification("is_user_screen_access_blocked")
+      is_user_screen_access_blocked: creator
+        .scalar_field_specification("IsUserScreenAccessBlocked")
         .build()?,
     })
   }
 
-  pub fn set_is_applying_enabled(
+  pub fn update_is_applying_enabled(
     &self, 
     modifications: &mut CollectionItemModifications,
     new_value: bool,
-  ) {
-    modifications.modify_scalar_field(&self.is_applying_enabled, &new_value);
+  ) ->
+    Result<(), GenericError>
+  {
+    modifications.modify_scalar_field(&self.is_applying_enabled, &new_value)
   }
 
-  pub fn set_is_user_screen_access_blocked(
+  pub fn update_is_user_screen_access_blocked(
     &self, 
     modifications: &mut CollectionItemModifications,
     new_value: bool,
-  ) {
-    modifications.modify_scalar_field(&self.is_user_screen_access_blocked, &new_value);
+  ) ->
+    Result<(), GenericError>
+  {
+    modifications.modify_scalar_field(&self.is_user_screen_access_blocked, &new_value)
   }
 }
 
-impl CompoundValueSerializer for RegulatorSchema {
-  type Input = Regulator;
+impl CompoundValueSerializer for RegulatorSpecification {
+  type CompoundValue = Regulator;
 
   fn serialize_into(
     &self, 
     value: &Self::CompoundValue,
     context: &mut CompoundValueSerializerContext, 
-  ) {
-    context.serializable_scalar(&self.is_applying_enabled, &value.is_applying_enabled);
-    context.serializable_scalar(&self.is_user_screen_access_blocked, &value.is_user_screen_access_blocked);
+  ) -> 
+    Result<(), GenericError>
+  {
+    context.serializable_scalar(&self.is_applying_enabled, &value.is_applying_enabled)?;
+    context.serializable_scalar(&self.is_user_screen_access_blocked, &value.is_user_screen_access_blocked)
   }
 }
 
@@ -60,40 +67,20 @@ pub struct NormalizedRegulator {
   pub(super) is_user_screen_access_blocked: bool,
 }
 
-impl CompoundValueDeserializer for RegulatorSchema {
+impl CompoundValueDeserializer for RegulatorSpecification {
   type Output = NormalizedRegulator;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRegulator {
-      // id: context.deserializable_scalar(&self.id).map_err(|error|
-      //   error
-        // .change_context("deserialize Regulator: Failed to deserialize the 'id' field")
-        // .add_error("")
-      // )?,
-      // user_id: context.deserializable_scalar(&self.user_id).map_err(|error|
-      //   error
-        // .change_context("deserialize Regulator: Failed to deserialize the 'user_id' field")
-        // .add_error("")
-      // )?,
-      // username: context.deserializable_scalar(&self.user_id).map_err(|error|
-      //   error
-        // .change_context("deserialize Regulator: Failed to deserialize the 'username' field")
-        // .add_error("")
-      // )?,
-      // password: context.deserializable_scalar(&self.user_id).map_err(|error|
-      //   error
-        // .change_context("deserialize Regulator: Failed to deserialize the 'password' field")
-        // .add_error("")
-      // )?,
       is_applying_enabled: context.deserializable_scalar(&self.is_applying_enabled).map_err(|error|
         error
-          .change_context("deserialize NormalizedRegulator")
-          .add_error("Failed to deserialize the 'is_applying_enabled' field")
+          .change_context("deserializing NormalizedRegulator")
+          .add_error("failed deserialize the 'IsApplyingEnabled' field")
       )?,
       is_user_screen_access_blocked: context.deserializable_scalar(&self.is_user_screen_access_blocked).map_err(|error|
         error
-          .change_context("deserialize NormalizedRegulator")
-          .add_error("Failed to deserialize the 'is_user_screen_access_blocked' field")
+          .change_context("deserializing NormalizedRegulator")
+          .add_error("failed deserialize the 'IsUserScreenAccessBlocked' field")
       )?,
     })
   }
@@ -105,20 +92,18 @@ impl NormalizedRegulator {
     normalized_policies: &Vec<NormalizedPolicy>,
     normalized_rules: &Vec<NormalizedRule>,
   ) -> Regulator {
-    todo!()
-    // Regulator {
-    //   policies,
-    //   is_applying_enabled: self.is_applying_enabled,
-    //   operating_system_calls: OperatingSystemCalls::new(),
-    //   is_user_screen_access_blocked: self.is_user_screen_access_blocked,
-    // }
+    Regulator {
+      policies: normalized_policies.iter().map(|policy| (*policy).clone().denormalize(normalized_rules)).collect(),
+      is_applying_enabled: self.is_applying_enabled,
+      operating_system_calls: OperatingSystemCalls::new(),
+      is_user_screen_access_blocked: self.is_user_screen_access_blocked,
+    }
   }
 }
 
-impl WriteColumns for RegulatorSchema {
-  fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write_scalar_type(&self.is_applying_enabled)?;
-    context.write_scalar_type(&self.is_user_screen_access_blocked)?;
-    Ok(())
+impl CompoundTypeSpecificationProvider for RegulatorSpecification {
+  fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
+    context.add_scalar_field(&self.is_applying_enabled)?;
+    context.add_scalar_field(&self.is_user_screen_access_blocked)
   }
 }

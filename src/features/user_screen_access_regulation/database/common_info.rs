@@ -1,77 +1,73 @@
 use super::{
-  ScalarFieldSpecification, CompoundTypeSpecificationCreator, CompoundValueSerializer, CommonInfo,
-  SerializeContext, Duration, CompoundValueDeserializerContext,
-  CompoundValueDeserializer, GenericError, UpdateStatement,
-  WriteColumns, WriteColumnsContext,
+  ScalarFieldSpecification, CompoundTypeFieldsScope, 
+  CompoundValueSerializer, CommonInfo, 
+  Duration, CompoundValueDeserializerContext, CollectionItemModifications,
+  CompoundValueDeserializer, GenericError, CompoundValueSerializerContext,
 };
 
-pub struct CommonInfoSchema {
+pub struct CommonInfoSpecification {
   private_password: ScalarFieldSpecification,
   applying_interval: ScalarFieldSpecification,
 }
 
-impl CommonInfoSchema {
+impl CommonInfoSpecification {
   pub fn new(
-    column_namespace: &CompoundTypeSpecificationCreator,
+    scope: &mut CompoundTypeFieldsScope,
   ) -> 
     Result<Self, GenericError>
   {
     Ok(Self {
-      private_password: column_namespace
-        .scalar_field_specification("private_password")
+      private_password: scope
+        .scalar_field_specification("PrivatePassword")
         .build()?,
 
-      applying_interval: column_namespace
-        .scalar_field_specification("applying_interval")
+      applying_interval: scope
+        .scalar_field_specification("ApplyingInterval")
         .build()?,
     })
   }
 
-  pub fn set_applying_interval(
+  pub fn update_applying_interval(
     &self, 
     modifications: &mut CollectionItemModifications,
     new_value: Duration,
-  ) {
-    modifications.modify_scalar_field(&self.applying_interval, &new_value);
+  ) ->
+    Result<(), GenericError>
+  {
+    modifications.modify_scalar_field(&self.applying_interval, &new_value)
   }
 }
 
-impl CompoundValueSerializer for CommonInfoSchema {
-  type Input = CommonInfo;
+impl CompoundValueSerializer for CommonInfoSpecification {
+  type CompoundValue = CommonInfo;
 
   fn serialize_into(
     &self, 
     value: &Self::CompoundValue,
     context: &mut CompoundValueSerializerContext, 
-  ) {
-    context.serializable_scalar(&self.private_password, &value.private_password);
-    context.serializable_scalar(&self.applying_interval, &value.applying_interval);
+  ) ->
+    Result<(), GenericError>
+  {
+    context.serializable_scalar(&self.private_password, &value.private_password)?;
+    context.serializable_scalar(&self.applying_interval, &value.applying_interval)
   }
 }
 
-impl CompoundValueDeserializer for CommonInfoSchema {
+impl CompoundValueDeserializer for CommonInfoSpecification {
   type Output = CommonInfo;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(CommonInfo {
       applying_interval: context.deserializable_scalar(&self.applying_interval).map_err(|error|
         error
-          .change_context("deserialize CommonInfo")
-          .add_error("failed to deserialize the 'applying_interval' field")
+          .change_context("deserializing CommonInfo")
+          .add_error("failed to deserialize the 'ApplyingInterval' field")
       )?,
       private_password: context.deserializable_scalar(&self.private_password).map_err(|error|
         error
-          .change_context("deserialize CommonInfo")
-          .add_error("failed to deserialize the 'private_password' field")
+          .change_context("deserializing CommonInfo")
+          .add_error("failed to deserialize the 'PrivatePassword' field")
       )?,
     })
-  }
-}
-
-impl WriteColumns for CommonInfoSchema {
-  fn write_columns(&self, context: &mut WriteColumnsContext) -> Result<(), GenericError> {
-    context.write_scalar_type(&self.applying_interval)?;
-    context.write_scalar_type(&self.private_password)?;
-    Ok(())
   }
 }

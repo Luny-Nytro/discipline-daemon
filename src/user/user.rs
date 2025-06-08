@@ -1,4 +1,7 @@
-use crate::{user_screen_access_regulation, GenericError, OperatingSystemPassword, OperatingSystemUserId, OperatingSystemUsername, Uuid};
+use crate::{
+  user_screen_access_regulation, GenericError, OperatingSystemPassword, 
+  OperatingSystemUserId, OperatingSystemUsername, Uuid,
+};
 
 #[derive(Debug, Clone)]
 pub struct UserName(String);
@@ -8,19 +11,15 @@ impl UserName {
   pub const MAX_LENGTH: usize = 15;
 
   pub fn new(name: String) -> Result<Self, GenericError> {
-    if name.len() < Self::MIN_LENGTH {
-      return Err(GenericError::new("create user name")
-        .add_error("name is too short")
+    if name.len() < Self::MIN_LENGTH 
+    || name.len() > Self::MAX_LENGTH
+    {
+      return Err(
+        GenericError::new("creating UserName")
+        .add_error("user name length is outside valid length")
         .add_attachment("name", name)
-        .add_attachment("min length", Self::MIN_LENGTH.to_string())
-      );
-    }
-
-    if name.len() > Self::MAX_LENGTH {
-      return Err(GenericError::new("create user name")
-        .add_error("name is too long")
-        .add_attachment("name", name)
-        .add_attachment("max length", Self::MAX_LENGTH.to_string())
+        .add_attachment("minimum length", Self::MIN_LENGTH.to_string())
+        .add_attachment("maximum length", Self::MAX_LENGTH.to_string())
       );
     }
 

@@ -102,7 +102,7 @@ pub mod database_serde {
 
 
   impl CompoundTypeSerializer for Adapter {
-    type Input = PasswordEnabler;
+    type CompoundValue = PasswordEnabler;
 
     fn serialize_into(
       &self, 

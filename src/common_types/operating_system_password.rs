@@ -1,3 +1,5 @@
+use crate::GenericError;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperatingSystemPassword(String);
 
@@ -7,6 +9,17 @@ impl OperatingSystemPassword {
       None
     } else {
       Some(Self(password))
+    }
+  }
+
+  pub fn new_or_generic_error(password: String) -> Result<OperatingSystemPassword, GenericError> {
+    if password.is_empty() {
+      Err(
+        GenericError::new("creating an OperatingSystemPassword")
+          .add_error("password may not be the empty string")
+      )
+    } else {
+      Ok(Self(password))
     }
   }
 
@@ -28,26 +41,25 @@ impl OperatingSystemPassword {
   }
 }
 
-mod database_serde {
+mod database {
   use crate::database::*;
   use super::OperatingSystemPassword;
   use crate::GenericError;
 
   impl SerializableScalarValue for OperatingSystemPassword {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_string(&self.0);
+      context.write_string(&self.0)
     }
   }
 
   impl DeserializableScalarValue for OperatingSystemPassword {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      let string = value.as_string().map_err(|error|
-        error.change_context("Failed to deserialize OperatingSystemPassword: Failed to cast value to string")
-      )?;
-
-      OperatingSystemPassword::new(string).ok_or_else(||
-        GenericError::new("Failed to deserialize OperatingSystemPassword: Provided string is empty")
-      )
+      value
+        .as_string()
+        .and_then(OperatingSystemPassword::new_or_generic_error)
+        .map_err(|error|
+          error.change_context("deserializing an OperatingSystemPassword")
+        )
     }
   }
 }

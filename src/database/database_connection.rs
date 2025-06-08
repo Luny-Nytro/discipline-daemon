@@ -4,6 +4,8 @@ use super::{
   CollectionSpecfication, CompoundValueDeserializer, 
   CollectionItemMatcher, CollectionItemModifications,
   CompoundValueSerializer, DatabaseSpecificationsProvider,
+  GlobalNamespace,
+  verify_identifier,
   deserialize_compound_value,
   generate_code_find_all_collection_items,
   generate_code_find_one_collection_item,
@@ -13,11 +15,11 @@ use super::{
   generate_code_update_collection_item,
 };
 
-pub struct DatabaseConnection {
+pub struct Database {
   connection: rusqlite::Connection,
 }
 
-impl DatabaseConnection {
+impl Database {
   pub fn open(database_directory_path: PathBuf) -> Result<Self, GenericError> {
     if database_directory_path.is_relative() {
       return Err(
@@ -29,7 +31,7 @@ impl DatabaseConnection {
 
     match rusqlite::Connection::open(database_directory_path.join("data.db")) {
       Ok(connection) => {
-        Ok(DatabaseConnection {
+        Ok(Database {
           connection
         })
       }
@@ -270,5 +272,18 @@ impl DatabaseConnection {
     .map_err(|error|
       error.change_context("initializing database schema")
     )
+  }
+
+
+  pub fn namespace(&mut self) -> &mut GlobalNamespace {
+    todo!()
+    // verify_identifier("main")
+    //   .map(|_|
+    //     GlobalNamespace {
+    //       identifier: "main".into(),
+    //       fully_qualified_identifier: "main".into(),
+    //     }
+    //   )
+    // TODO: do proper error handling
   }
 }

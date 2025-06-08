@@ -20,3 +20,4 @@ mod actions;
 pub use actions::*;
 
 mod database_connection;
+pub use database_connection::Database;

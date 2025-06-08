@@ -66,14 +66,14 @@ impl OperatingSystemUserId {
   }
 }
 
-mod database_serde {
+mod database {
   use crate::database::*;
   use super::OperatingSystemUserId;
   use crate::GenericError;
 
   impl SerializableScalarValue for OperatingSystemUserId {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_u32(self.0);
+      context.write_u32(self.0)
     }
   }
 
@@ -82,7 +82,7 @@ mod database_serde {
       value.as_u32()
         .map(OperatingSystemUserId)
         .map_err(|error|
-          error.change_context("Failed to deserialize OperatingSystemUserId: Failed to cast value to u32")
+          error.change_context("deserializing an OperatingSystemUserId")
         )
     }
   }

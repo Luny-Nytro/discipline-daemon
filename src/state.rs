@@ -1,5 +1,5 @@
 pub mod database;
-pub use database::{NormaizedState, StateSchema};
+pub use database::{NormaizedState, Specification};
 
 use crate::{user_screen_access_regulation, User, Uuid};
 
