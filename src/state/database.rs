@@ -1,7 +1,8 @@
 use crate::database::{
   ScalarFieldSpecification, CompoundValueDeserializer, CompoundValueSerializer, 
   GlobalNamespace, CompoundValueDeserializerContext, CompoundValueSerializerContext, 
-  CollectionSpecfication, CollectionItemFieldsScope
+  CollectionSpecification, CollectionItemFieldsScope, Database,
+  CollectionItemMatcher,
 };
 
 use crate::{
@@ -10,7 +11,7 @@ use crate::{
 };
 
 pub struct Specification {
-  collection_specification: CollectionSpecfication,
+  collection_specification: CollectionSpecification,
   id_field_specification: ScalarFieldSpecification,
   user_specification: user::database::Specification,
   pub user_screen_access_regulation: user_screen_access_regulation::database::Specification,
@@ -64,156 +65,182 @@ impl CompoundValueSerializer for Specification {
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.id_field_specification, &ROW_ID)?;
+    context.serializable_scalar(&self.id_field_specification, &ITEM_ID)?;
     context.serializable_compound(self.user_screen_access_regulation.singleton(), &value.user_screen_access_regulation_common_info)
   }
 }
 
-pub struct NormaizedState {
+pub struct NormalizedState {
   id: u8,
   user_access: user_screen_access_regulation::CommonInfo,
 }
 
-const ROW_ID: u8 = 0;
+const ITEM_ID: u8 = 0;
 
-impl Default for NormaizedState {
+impl Default for NormalizedState {
   fn default() -> Self {
     Self {
-      id: ROW_ID,
+      id: ITEM_ID,
       user_access: user_screen_access_regulation::CommonInfo::default(),
     }
   }
 }
 
 impl CompoundValueDeserializer for Specification {
-  type Output = NormaizedState;
+  type Output = NormalizedState;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
-    Ok(NormaizedState {
+    Ok(NormalizedState {
       id: context.deserializable_scalar(&self.id_field_specification)?,
       user_access: context.deserialize_compound(self.user_screen_access_regulation.singleton())?,
     })
   }
 }
 
-// impl Specification {
-//   pub fn generate_sql_initialize(
-//     &self, 
-//     into: &mut String,
-//   ) ->
-//     Result<(), GenericError>
-//   {
-//     let mut statement = InitializeTableStatement::new(into, &self.collection_specification);
-//     statement
-//       .add_compound_type(self)
-//       .map_err(|error| 
-//         error
-//           .change_context("generate sql code that initializes the app state singleton table")
-//       )?;
+impl Specification {
+  // pub fn generate_sql_initialize(
+  //   &self, 
+  //   into: &mut String,
+  // ) ->
+  //   Result<(), GenericError>
+  // {
+  //   let mut statement = InitializeTableStatement::new(into, &self.collection_specification);
+  //   statement
+  //     .add_compound_type(self)
+  //     .map_err(|error| 
+  //       error
+  //         .change_context("generate sql code that initializes the daemon state singleton table")
+  //     )?;
 
-//     self
-//       .user_screen_access_regulation
-//       .generate_sql_initialize(into)
-//       .map_err(|error| 
-//         error
-//           .change_context("generate sql code that initializes the app state singleton table")
-//       )?;
+  //   self
+  //     .user_screen_access_regulation
+  //     .generate_sql_initialize(into)
+  //     .map_err(|error| 
+  //       error
+  //         .change_context("generate sql code that initializes the daemon state singleton table")
+  //     )?;
 
-//     Ok(())
-//   }
+  //   Ok(())
+  // }
 
-//   pub fn initialize(
-//     &self,
-//     connection: &Connection
-//   ) -> 
-//     Result<(), GenericError>
-//   {
-//     let mut code = String::new();
-//     self
-//       .generate_sql_initialize(&mut code)
-//       .map_err(|error|
-//         error.change_context("initialize database schema")
-//       )
-//   }
+  // pub fn initialize(
+  //   &self,
+  //   connection: &Database,
+  // ) -> 
+  //   Result<(), GenericError>
+  // {
+  //   let mut code = String::new();
+  //   self
+  //     .generate_sql_initialize(&mut code)
+  //     .map_err(|error|
+  //       error.change_context("initialize database schema")
+  //     )
+  // }
   
-//   fn load_normalized_state(
-//     &self,
-//     connection: &Connection,
-//   ) -> 
-//     Result<NormaizedState, GenericError>
-//   {
-//     connection.find_some_row(
-//       &self.collection_specification, 
-//       self,
-//     )
-//   }
+  // fn load_normalized_state(
+  //   &self,
+  //   connection: &Connection,
+  // ) -> 
+  //   Result<NormaizedState, GenericError>
+  // {
+  //   connection.find_some_row(
+  //     &self.collection_specification, 
+  //     self,
+  //   )
+  // }
 
-//   fn load_denormalized_state(
-//     &self, 
-//     connection: &Connection,
-//   ) -> 
-//     Result<State, GenericError> 
-//   {
-//     let users_in_normalized_form = self
-//       .user_specification
-//       .retrieve_all_normalized(connection)
-//       .map_err(|error| 
-//         error
-//           .change_context("load all users from the database")
-//           .change_context("load denormalized state")
-//       )?;
+  fn initialize(&self, database: &Database) -> Result<State, GenericError> {
+    let default_state = State {
+      users: Vec::new(),
+      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default(),
+    };
+
+    database.add_collection_item(
+      &self.collection_specification, 
+      self,
+      &default_state, 
+
+    ).map_err(|error| 
+      error
+        .change_context("adding the default daemon state item to the collection")
+    )?;
+
+    Ok(default_state)
+  }
+
+  pub fn load(
+    &self, 
+    database: &Database,
+  ) -> 
+    Result<State, GenericError> 
+  {
+    let users = database.find_all_collection_items(
+      &self.user_specification.collection_specification, 
+      &self.user_specification,
+    ).map_err(|error| 
+      error
+        .change_context("loading all users from the database")
+        .change_context("loading daemon state")
+    )?;
     
-//     let user_screen_access_regulation_policies_in_normalized_form = self
-//       .user_screen_access_regulation
-//       .policy
-//       .load_all_normalized_policies(connection)
-//       .map_err(|error| 
-//         error
-//           .change_context("load all user screen access regulation policies from the database in normalized form")
-//           .change_context("load denormalized state")
-//       )?;
+    let user_screen_access_regulation_policies = database.find_all_collection_items(
+      &self.user_screen_access_regulation.policy.collection_specification, 
+      &self.user_screen_access_regulation.policy,
+    ).map_err(|error| 
+      error
+        .change_context("loading all user screen access regulation policies from the database in normalized form")
+        .change_context("loading daemon state")
+    )?;
 
         
-//     let user_screen_access_regulation_rules_in_normalized_form = self
-//       .user_screen_access_regulation
-//       .rule
-//       .load_all_rules_normalized(connection)
-//       .map_err(|error| 
-//         error
-//           .change_context("load all user screen access regulation rules from the database in normalized form")
-//           .change_context("load denormalized state")
-//       )?;
+    let user_screen_access_regulation_rules = database.find_all_collection_items(
+      &self.user_screen_access_regulation.rule.collection_specification, 
+      &self.user_screen_access_regulation.rule,
+    ).map_err(|error| 
+      error
+        .change_context("loading all user screen access regulation rules from the database in normalized form")
+        .change_context("loading daemon state")
+    )?;
 
-//     let state_in_normalized_form = self
-//       .load_normalized_state(connection)
-//       .map_err(|error| 
-//         error
-//           .change_context("load state from the database in normalized form")
-//           .change_context("load denormalized state")
-//       )?;
+    let matcher = CollectionItemMatcher::match_by_scalar_field(
+      &self.id_field_specification, 
+      &ITEM_ID,
+    ).map_err(|error| 
+      error
+        .change_context("creating a matcher that matches the single daemon state item in its singleton collection")
+        .change_context("loading daemon state")
+    )?;
+    
+    let state = database.find_one_collection_item(
+      &self.collection_specification, 
+      &matcher, 
+      self,
+    ).map_err(|error| 
+      error
+        .change_context("loading the single daemon state item in its singleton collection")
+        .change_context("loading daemon state")
+    )?;
 
-//     let users_in_denormalized_form = users_in_normalized_form
-//       .into_iter()
-//       .map(|user| user.denormalize(
-//         &user_screen_access_regulation_policies_in_normalized_form, 
-//         &user_screen_access_regulation_rules_in_normalized_form,
-//       ))
-//       .collect();
+    let Some(state) = state else {
+      return self.initialize(database).map_err(|error|
+        error.change_context("loading daemon state")
+      );
+    };
 
-//     let denormalized_state = State {
-//       users: users_in_denormalized_form,
-//       user_screen_access_regulation_common_info: state_in_normalized_form.user_access,
-//     };
+    let users = users
+      .into_iter()
+      .map(|user| user.denormalize(
+        &user_screen_access_regulation_policies, 
+        &user_screen_access_regulation_rules,
+      ))
+      .collect();
 
-//     Ok(denormalized_state)
-//   }
+    let state = State {
+      users,
+      user_screen_access_regulation_common_info: state.user_access,
+    };
 
-//   pub fn load(
-//     &self, 
-//     connection: &Connection,
-//   ) -> 
-//     Result<State, GenericError>
-//   {
-//     self.load_denormalized_state(connection)
-//   }
-// }
+    Ok(state)
+  }
+
+}

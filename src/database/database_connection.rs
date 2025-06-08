@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use crate::GenericError;
 use super::{
-  CollectionSpecfication, CompoundValueDeserializer, 
+  CollectionSpecification, CompoundValueDeserializer, 
   CollectionItemMatcher, CollectionItemModifications,
   CompoundValueSerializer, DatabaseSpecificationsProvider,
   GlobalNamespace,
@@ -59,7 +59,7 @@ impl Database {
 
   pub fn find_all_collection_items<Deserializer>(
     &self,
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
     collection_item_deserializer: &Deserializer,
   ) ->
     Result<Vec<Deserializer::Output>, GenericError>
@@ -123,7 +123,7 @@ impl Database {
 
   pub fn find_one_collection_item<Deserializer>(
     &self,
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
     collection_item_matcher: &CollectionItemMatcher,
     collection_item_deserializer: &Deserializer,
   ) ->
@@ -184,7 +184,7 @@ impl Database {
 
   pub fn update_collection_items(
     &self,
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
     collection_item_matcher: &CollectionItemMatcher,
     collection_item_modifications: &CollectionItemModifications,
   ) -> 
@@ -209,7 +209,7 @@ impl Database {
 
   pub fn delete_collection_items(
     &self,
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
     collection_item_matcher: &CollectionItemMatcher,
   ) -> 
     Result<(), GenericError> 
@@ -232,7 +232,7 @@ impl Database {
 
   pub fn add_collection_item<Serializer: CompoundValueSerializer>(
     &self,
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
     collection_item_serializer: &Serializer,
     new_collection_item: &Serializer::CompoundValue,
   ) -> 

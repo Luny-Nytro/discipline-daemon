@@ -33,7 +33,7 @@ pub mod user;
 pub use user::User;
 
 pub mod state;
-pub use state::{State, NormaizedState, Specification};
+pub use state::{State, NormalizedState, Specification};
 
 pub mod daemon;
 pub use daemon::*;

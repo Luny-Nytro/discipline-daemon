@@ -1,5 +1,5 @@
 use super::{
-  GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecfication,
+  GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecification,
   Namespace, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   Policy, Uuid, DateTime, PolicyEnabler, CompoundValueDeserializerContext,
   CollectionItemFieldsScope, CollectionItemModifications, 
@@ -7,7 +7,7 @@ use super::{
 };
 
 pub struct PolicySpecification {
-  pub collection_specification: CollectionSpecfication,
+  pub collection_specification: CollectionSpecification,
   pub id_field_specification: ScalarFieldSpecification,
   pub name_field_specification: ScalarFieldSpecification,
   pub enabler_field_specification: PolicyEnablerSpecification,

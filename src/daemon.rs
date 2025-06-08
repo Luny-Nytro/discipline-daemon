@@ -7,7 +7,7 @@ use crate::database::Database;
 
 pub struct Daemon {
   pub state: State,
-  pub schema: Specification,
+  pub state_database_specification: Specification,
   pub database_connection: Database,
   pub http_server_address: String,
   pub is_running: bool,
@@ -20,7 +20,7 @@ impl Daemon {
   ) -> 
     Result<DaemonMutex, GenericError> 
   {
-    let database = Database::open(database_file_path).map_err(|error|
+    let mut database = Database::open(database_file_path).map_err(|error|
       error
         .change_context("openning a connection to the database")
         .change_context("creating daemon")
@@ -34,13 +34,13 @@ impl Daemon {
 
     let state = state_database_specification.load(&database).map_err(|error|
       error
-        .change_context("load state from the database")
-        .change_context("create daemon")
+        .change_context("loading daemon state from the database")
+        .change_context("creating daemon")
     )?;
 
     Ok(DaemonMutex::new(Daemon {
       state,
-      schema: state_database_specification,
+      state_database_specification,
       is_running: false,
       database_connection: database,
       http_server_address: format!("127.0.0.1:{http_server_port}"),

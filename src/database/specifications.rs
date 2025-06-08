@@ -264,14 +264,14 @@ impl CompoundTypeFieldsSpecification {
   }
 }
 
-pub struct CollectionSpecfication {
+pub struct CollectionSpecification {
   pub(super) identifier: String,
   pub(super) fully_qualified_identifier: String,
   pub(super) column_specifications: Vec<ColumnSpecification>,
   pub(super) has_multiple_primary_key_columns: bool,
 }
 
-impl CollectionSpecfication {
+impl CollectionSpecification {
   fn new(
     identifier: String,
     fully_qualified_identifier: String,
@@ -318,7 +318,7 @@ impl GlobalNamespace {
     collection_identifier: &str,
     collection_item_fields_namespace: CollectionItemFieldsScope,
   ) -> 
-    Result<CollectionSpecfication, GenericError> 
+    Result<CollectionSpecification, GenericError> 
   {
     todo!()
     // TODO: do proper error handling
@@ -331,7 +331,7 @@ impl GlobalNamespace {
     //   return Err(todo!());
     // }
 
-    // Ok(CollectionSpecfication::new(
+    // Ok(CollectionSpecification::new(
     //   collection_identifier.into(), 
     //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
     //   collection_item_fields_namespace.column_specifications,
@@ -361,7 +361,7 @@ impl Namespace {
     collection_identifier: &str,
     collection_item_fields_namespace: CollectionItemFieldsScope,
   ) -> 
-    Result<CollectionSpecfication, GenericError> 
+    Result<CollectionSpecification, GenericError> 
   {
     todo!()
     // TODO: do proper error handling
@@ -374,7 +374,7 @@ impl Namespace {
     //   return Err(todo!());
     // }
 
-    // Ok(CollectionSpecfication::new(
+    // Ok(CollectionSpecification::new(
     //   collection_identifier.into(), 
     //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
     //   collection_item_fields_namespace.column_specifications,

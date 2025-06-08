@@ -1,12 +1,12 @@
 use super::{
   Rule, RuleActivator, GenericError, Uuid, CompoundValueSerializerContext,
-  ScalarFieldSpecification, CompoundValueSerializer, CollectionSpecfication,
+  ScalarFieldSpecification, CompoundValueSerializer, CollectionSpecification,
   CompoundValueDeserializer, CompoundValueDeserializerContext, Namespace,
   CollectionItemFieldsScope, RuleActivatorSpecification, CollectionItemModifications
 };
 
 pub struct RuleSpecification {
-  pub collection_specification: CollectionSpecfication,
+  pub collection_specification: CollectionSpecification,
   pub(super) id_field_specification: ScalarFieldSpecification,
   pub(super) user_id_field_specification: ScalarFieldSpecification,
   pub(super) policy_id_field_specification: ScalarFieldSpecification,

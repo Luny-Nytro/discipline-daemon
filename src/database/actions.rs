@@ -1,6 +1,6 @@
 use crate::GenericError;
 use super::{
-  ScalarFieldSpecification, CollectionSpecfication, SerializableScalarValue,
+  ScalarFieldSpecification, CollectionSpecification, SerializableScalarValue,
   serialize_scalar_value_into, ColumnType, ColumnSpecification,
   CompoundValueSerializer, serialize_compound_value_into,
 };
@@ -172,19 +172,19 @@ impl CollectionItemMatcher {
 }
 
 pub struct CompoundTypeSpecifcationProviderContext {
-  column_specfications: Vec<ColumnSpecification>
+  column_specifications: Vec<ColumnSpecification>
 }
 
 impl CompoundTypeSpecifcationProviderContext {
   fn new() -> Self {
     Self {
-      column_specfications: Vec::new(),
+      column_specifications: Vec::new(),
     }
   }
 
   pub fn write_field(&mut self, scalar_field_description: &ScalarFieldSpecification) -> Result<(), GenericError> {
     if self
-      .column_specfications
+      .column_specifications
       .iter()
       .any(|column_specification| column_specification.fully_qualified_name == scalar_field_description.fully_qualified_identifier)
     {
@@ -192,7 +192,7 @@ impl CompoundTypeSpecifcationProviderContext {
       return Err(todo!());
     }
     
-    self.column_specfications.push(ColumnSpecification {
+    self.column_specifications.push(ColumnSpecification {
       column_type: ColumnType::Required,
       fully_qualified_name: scalar_field_description.fully_qualified_identifier.clone(),
     });
@@ -235,7 +235,7 @@ impl MlutiColumnPrimaryKeyConstraint {
 
 pub fn generate_code_define_collection(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
 ) ->
   Result<(), GenericError>
 {
@@ -289,18 +289,18 @@ pub fn generate_code_define_collection(
 }
 
 pub struct WriteCompoundTypeSpecificationContext {
-  column_specfications: Vec<ColumnSpecification>
+  column_specifications: Vec<ColumnSpecification>
 }
 
 impl WriteCompoundTypeSpecificationContext {
   fn new() -> Self {
     Self {
-      column_specfications: Vec::new(),
+      column_specifications: Vec::new(),
     }
   }
 
   pub fn write_field(&mut self, scalar_field_description: &ScalarFieldSpecification) -> Result<(), GenericError> {
-    self.column_specfications.push(ColumnSpecification {
+    self.column_specifications.push(ColumnSpecification {
       column_type: ColumnType::Required,
       fully_qualified_name: scalar_field_description.fully_qualified_identifier.clone(),
     });
@@ -310,7 +310,7 @@ impl WriteCompoundTypeSpecificationContext {
 
   pub fn mark_field_as_primary(&mut self, scalar_field_description: &ScalarFieldSpecification) -> Result<(), GenericError> {
     let Some(column_specification) = self
-      .column_specfications
+      .column_specifications
       .iter_mut()
       .find(|column_specification| 
         column_specification.fully_qualified_name 
@@ -336,7 +336,7 @@ pub trait IsCompoundTypeSpecifcation {
 
 pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
   collection_item_serializer: &Serializer,
   new_collection_item: &Serializer::CompoundValue,
 ) ->
@@ -362,7 +362,7 @@ where
 
 pub(super) fn generate_code_delete_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
   collection_item_matcher: &CollectionItemMatcher,
 ) ->
   Result<(), GenericError>
@@ -385,7 +385,7 @@ pub(super) fn generate_code_delete_collection_item(
 
 pub(super) fn generate_code_update_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
   collection_item_matcher: &CollectionItemMatcher,
   collection_item_modifications: &CollectionItemModifications,
 ) -> 
@@ -416,7 +416,7 @@ pub(super) fn generate_code_update_collection_item(
 
 pub(super) fn generate_code_find_all_collection_items(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
 ) -> 
   Result<(), GenericError>
 {
@@ -428,7 +428,7 @@ pub(super) fn generate_code_find_all_collection_items(
 
 pub(super) fn generate_code_find_one_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecfication,
+  collection_specification: &CollectionSpecification,
   collection_item_matcher: &CollectionItemMatcher,
 ) -> 
   Result<(), GenericError>
@@ -461,7 +461,7 @@ impl<'a> DatabaseSpecificationsProviderContext<'a> {
 
   pub fn add_collection_specification(
     &mut self, 
-    collection_specification: &CollectionSpecfication,
+    collection_specification: &CollectionSpecification,
   ) -> 
     Result<(), GenericError>
   {

@@ -12,7 +12,7 @@ use crate::database::{
   CompoundValueSerializer, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext,
-  ScalarValue, CollectionSpecfication, Namespace, CollectionItemModifications,
+  ScalarValue, CollectionSpecification, Namespace, CollectionItemModifications,
 };
 
 impl SerializableScalarValue for UserName {
@@ -31,7 +31,7 @@ impl DeserializableScalarValue for UserName {
 }
 
 pub struct Specification {
-  collection_specification: CollectionSpecfication,
+  pub collection_specification: CollectionSpecification,
   id_field_specification: ScalarFieldSpecification,
   name_field_specification: ScalarFieldSpecification,
   operating_system_user_id_field_specification: ScalarFieldSpecification,
