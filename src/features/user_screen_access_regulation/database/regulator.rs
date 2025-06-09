@@ -1,6 +1,6 @@
 use super::{
   ScalarFieldSpecification, CompoundTypeFieldsScope, GenericError, 
-  Regulator, CollectionItemModifications, CompoundValueSerializerContext,
+  Regulator, CollectionItemModificationsDraft, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   NormalizedPolicy, NormalizedRule, CompoundValueSerializer,
   CompoundTypeSpecificationProvider, CompoundTypeFieldsSpecification,
@@ -27,7 +27,7 @@ impl RegulatorSpecification {
 
   pub fn update_is_applying_enabled(
     &self, 
-    modifications: &mut CollectionItemModifications,
+    modifications: &mut CollectionItemModificationsDraft,
     new_value: bool,
   ) ->
     Result<(), GenericError>
@@ -37,7 +37,7 @@ impl RegulatorSpecification {
 
   pub fn update_is_user_screen_access_blocked(
     &self, 
-    modifications: &mut CollectionItemModifications,
+    modifications: &mut CollectionItemModificationsDraft,
     new_value: bool,
   ) ->
     Result<(), GenericError>

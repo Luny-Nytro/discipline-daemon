@@ -213,7 +213,7 @@ pub mod database {
 
     pub fn set_from(
       &self,
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &Weekday
     ) ->
       Result<(), GenericError>
@@ -223,7 +223,7 @@ pub mod database {
 
     pub fn set_till(
       &self,
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &Weekday
     ) ->
       Result<(), GenericError>
@@ -231,9 +231,9 @@ pub mod database {
       modifications.modify_scalar_field(&self.till, new_value)
     }
 
-    pub fn set_range(
+    pub fn update_range(
       &self,
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &WeekdayRange
     ) ->
       Result<(), GenericError>

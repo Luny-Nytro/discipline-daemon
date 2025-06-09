@@ -5,11 +5,11 @@ use super::{
   CompoundValueSerializer, serialize_compound_value_into,
 };
 
-pub struct CollectionItemModifications {
+pub struct CollectionItemModificationsDraft {
   code: String,
 }
 
-impl CollectionItemModifications {
+impl CollectionItemModificationsDraft {
   pub fn new() -> Self {
     Self {
       code: String::new(),
@@ -75,7 +75,7 @@ enum CollectionItemMatcherInner {
 //   And(Vec<CollectionItemMatchOperation>),
 // }
 
-struct CollectionItemAndMatchWriter {
+pub struct CollectionItemAndMatchWriter {
   code: String,
 }
 
@@ -91,18 +91,18 @@ impl CollectionItemAndMatchWriter {
   }
 
   pub fn and_scalar_field_is(
-    &mut self, 
+    mut self, 
     scalar_field_specification: &ScalarFieldSpecification,
     scalar_field_value: &impl SerializableScalarValue,
   ) -> 
-    Result<(), GenericError>
+    Result<Self, GenericError>
   {
     let mut temp = String::new();
     if let Err(error) = serialize_scalar_value_into(scalar_field_value, &mut temp) {
       return Err(
         // TODO: Use proper error messages
         error
-          .change_context("creating a collection item matcher that matches based a single scalar field value")
+          .change_context("creating a collection item matcher that matches based on the values of multiple scalar fields")
           .add_error("failed to serialize scalar field value")
           .add_attachment("scalar field specification", format!("{scalar_field_specification:?}"))
       );
@@ -118,17 +118,20 @@ impl CollectionItemAndMatchWriter {
     self.code.push_str(" = ");
     self.code.push_str(&temp);
 
-    Ok(())
+    Ok(self)
   }
 
-  fn finish(self) -> Result<CollectionItemMatcher, GenericError> {
-    Ok(CollectionItemMatcher {
-      inner: if self.did_write_a_match() {
-        CollectionItemMatcherInner::WhereClause(self.code)
-      } else {
-        CollectionItemMatcherInner::NoWhereClause
-      }
-    })
+  pub fn finalize(self) -> Result<CollectionItemMatcher, GenericError> {
+    if self.did_write_a_match() {
+      Ok(CollectionItemMatcher {
+        inner: CollectionItemMatcherInner::WhereClause(self.code)
+      })
+    } else {
+      Err(
+        GenericError::new("finalizing a collection item matcher that matches based on the values of multiple scalar fields")
+          .add_error("no scalar fields were specified. use `.and_scalar_field_is()` to add to specify fields to match against. if this was intentional, use `CollectionItemMatcher::match_all()` to match all items in the collection.")
+      )
+    }
   }
 }
 
@@ -387,7 +390,7 @@ pub(super) fn generate_code_update_collection_item(
   code: &mut String,
   collection_specification: &CollectionSpecification,
   collection_item_matcher: &CollectionItemMatcher,
-  collection_item_modifications: &CollectionItemModifications,
+  collection_item_modifications: &CollectionItemModificationsDraft,
 ) -> 
   Result<(), GenericError>
 {

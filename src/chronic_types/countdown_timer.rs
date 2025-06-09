@@ -91,7 +91,7 @@ pub mod database {
     
     pub fn update_remaining_duration(
       &self,
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_remaining_duration: &Duration,
     ) -> 
       Result<(), GenericError>
@@ -101,7 +101,7 @@ pub mod database {
 
     pub fn update_after_synchronization(
       &self,
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       countdown_timer: &CountdownTimer,
     ) -> 
       Result<(), GenericError>

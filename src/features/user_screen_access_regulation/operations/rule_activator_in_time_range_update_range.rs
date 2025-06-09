@@ -34,20 +34,20 @@ impl IsOperation for Operation {
   fn execute(self, daemon: &mut Daemon) -> Self::Outcome {
     let Some(user) = daemon
       .state
-      .get_user_by_id_mut(&self.user_id) else 
+      .find_user_by_id_mut(&self.user_id) else 
     {
       return Outcome::NoSuchUser;
     };
 
     let Some(policy) = user
       .screen_access_regulator
-      .get_policy_by_id_mut(&self.policy_id) else 
+      .find_policy_by_id_mut(&self.policy_id) else 
     {
       return Outcome::NoSuchPolicy;
     };
 
     let Some(rule) = policy
-      .get_rule_by_id_mut(&self.rule_id) else 
+      .find_rule_by_id_mut(&self.rule_id) else 
     {
       return Outcome::NoSuchRule;
     };
@@ -60,21 +60,35 @@ impl IsOperation for Operation {
       return Outcome::MayNotMakeRuleLessRestrictive;
     }
 
-    let mut updater = daemon
-      .schema
+    let mut modifications_draft = daemon
+      .state_database_specification
       .user_screen_access_regulation
       .rule
-      .create_updater(&self.rule_id, &self.policy_id, &self.user_id);
+      .create_modifications_draft();
 
-    daemon
-      .schema
+    if let Err(error) = daemon
+      .state_database_specification
       .user_screen_access_regulation
       .rule
       .activator()
       .in_time_range()
-      .set_range(&mut updater, &self.new_time_range);
+      .update_range(&mut modifications_draft, &self.new_time_range)
+    {
+      return Outcome::InternalError(error);
+    }
 
-    if let Err(error) = updater.execute(&daemon.database_connection) {
+    if let Err(error) = daemon
+      .state_database_specification
+      .user_screen_access_regulation
+      .rule
+      .apply_modifications_draft(
+        &daemon.database_connection, 
+        &modifications_draft, 
+        &self.user_id, 
+        &self.policy_id, 
+        &self.rule_id,
+      )
+    {
       return Outcome::InternalError(error);
     }
 

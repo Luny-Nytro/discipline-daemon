@@ -22,7 +22,7 @@ impl IsOperation for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
-    let Some(user) = daemon.state.get_user_by_id_mut(&self.user_id) else {
+    let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
       return Outcome::NoSuchUser;
     };
 
@@ -36,7 +36,7 @@ impl IsOperation for Operation {
     let mut policy = self.policy_creator.create(now);
 
     if let Err(error) = daemon
-      .schema
+      .state_database_specification
       .user_screen_access_regulation
       .policy
       .add_policy(&daemon.database_connection, &policy, &self.user_id)

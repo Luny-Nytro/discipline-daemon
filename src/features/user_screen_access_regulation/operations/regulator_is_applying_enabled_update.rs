@@ -23,7 +23,7 @@ impl IsOperation for Operation {
   fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon
       .state
-      .get_user_by_id_mut(&self.user_id) else 
+      .find_user_by_id_mut(&self.user_id) else 
     {
       return Outcome::NoSuchUser;
     };
@@ -39,18 +39,29 @@ impl IsOperation for Operation {
       return Outcome::MayNotSetToFalseWhenSomePoliciesAreEnabled;
     }
 
-    let mut updater = daemon
-      .schema
-      .user
-      .create_updater(&self.user_id);
+    let mut modifications_draft = daemon
+      .state_database_specification
+      .user_specification
+      .create_modifications_draft();
     
-    daemon
-      .schema
-      .user
-      .screen_access_regulator_type
-      .set_is_applying_enabled(&mut updater, self.new_value);
+    if let Err(error) = daemon
+      .state_database_specification
+      .user_specification
+      .screen_access_regulator_field_specification()
+      .update_is_applying_enabled(&mut modifications_draft, self.new_value)
+    {
+      return Outcome::InternalError(error);
+    }
       
-    if let Err(error) = updater.execute(&daemon.database_connection) {
+    if let Err(error) = daemon
+      .state_database_specification
+      .user_specification
+      .apply_modifications_draft(
+        &daemon.database_connection, 
+        &modifications_draft, 
+        &self.user_id,
+      )
+    {
       return Outcome::InternalError(error);
     }
 

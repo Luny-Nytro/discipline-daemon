@@ -1,7 +1,7 @@
 use crate::database::{
   ScalarFieldSpecification, CompoundValueDeserializer, CompoundValueSerializer, 
   GlobalNamespace, CompoundValueDeserializerContext, CompoundValueSerializerContext, 
-  CollectionSpecification, CollectionItemFieldsScope, Database,
+  CollectionSpecification, CollectionItemFieldsNamespace, Database,
   CollectionItemMatcher,
 };
 
@@ -13,7 +13,7 @@ use crate::{
 pub struct Specification {
   collection_specification: CollectionSpecification,
   id_field_specification: ScalarFieldSpecification,
-  user_specification: user::database::Specification,
+  pub user_specification: user::database::Specification,
   pub user_screen_access_regulation: user_screen_access_regulation::database::Specification,
   // pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
   // pub user_screen_access_regulation_rule: user_screen_access_regulation::database::RuleSchema,
@@ -21,7 +21,7 @@ pub struct Specification {
 
 impl Specification {
   pub fn new(namespace: &mut GlobalNamespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsScope::new();
+    let mut fields_namespace = CollectionItemFieldsNamespace::new();
 
     let id_column = fields_namespace
       .primary_scalar_field_specification("Id")

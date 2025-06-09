@@ -2,7 +2,8 @@ use super::{
   Rule, RuleActivator, GenericError, Uuid, CompoundValueSerializerContext,
   ScalarFieldSpecification, CompoundValueSerializer, CollectionSpecification,
   CompoundValueDeserializer, CompoundValueDeserializerContext, Namespace,
-  CollectionItemFieldsScope, RuleActivatorSpecification, CollectionItemModifications
+  CollectionItemFieldsNamespace, RuleActivatorSpecification, CollectionItemModificationsDraft,
+  Database, CollectionItemMatcher,
 };
 
 pub struct RuleSpecification {
@@ -16,7 +17,7 @@ pub struct RuleSpecification {
 
 impl RuleSpecification {
   pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsScope::new();
+    let mut fields_namespace = CollectionItemFieldsNamespace::new();
 
     let id_field_specification = fields_namespace
       .scalar_field_specification("Id")
@@ -62,12 +63,78 @@ impl RuleSpecification {
   
   pub fn update_position(
     &self, 
-    modifications: &mut CollectionItemModifications,
+    modifications: &mut CollectionItemModificationsDraft,
     new_value: u32
   ) ->
     Result<(), GenericError>
   {
     modifications.modify_scalar_field(&self.position_field_specification, &new_value)
+  }
+
+  pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
+    CollectionItemModificationsDraft::new()
+  }
+
+  pub fn apply_modifications_draft(
+    &self,
+    database: &Database,
+    modifications_draft: &CollectionItemModificationsDraft,
+    user_id: &Uuid,
+    policy_id: &Uuid,
+    rule_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.update_collection_items(
+      &self.collection_specification, 
+      &CollectionItemMatcher::match_by_multiple_scalar_fields()
+        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
+        .and_scalar_field_is(&self.policy_id_field_specification, policy_id)?
+        .and_scalar_field_is(&self.id_field_specification, rule_id)?
+        .finalize()?, 
+      modifications_draft,
+    )
+  }
+
+  pub fn add_rule(
+    &self,
+    database: &Database,
+    user_id: &Uuid,
+    policy_id: &Uuid,
+    rule_position: usize,
+    rule: &Rule,
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.add_collection_item(
+      &self.collection_specification, 
+      &RuleSerializer::new(
+        user_id, 
+        policy_id, 
+        rule_position,
+        self, 
+      ), 
+      rule,
+    )
+  }
+
+  pub fn delete_rule(
+    &self,
+    database: &Database,
+    user_id: &Uuid,
+    policy_id: &Uuid,
+    rule_id: &Uuid
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.delete_collection_items(
+      &self.collection_specification, 
+      &CollectionItemMatcher::match_by_multiple_scalar_fields()
+        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
+        .and_scalar_field_is(&self.policy_id_field_specification, policy_id)?
+        .and_scalar_field_is(&self.id_field_specification, rule_id)?
+        .finalize()?
+    )
   }
 }
 
@@ -82,8 +149,8 @@ impl<'a> RuleSerializer<'a> {
   pub fn new(
     user_id: &'a Uuid,
     policy_id: &'a Uuid,
-    rule_specification: &'a RuleSpecification,
     rule_position: usize,
+    rule_specification: &'a RuleSpecification,
   ) -> Self {
     Self {
       user_id,
@@ -107,6 +174,7 @@ impl<'a> CompoundValueSerializer for RuleSerializer<'a> {
     context.serializable_scalar(&self.rule_specification.id_field_specification, &value.id)?;
     context.serializable_scalar(&self.rule_specification.position_field_specification, &self.rule_position)?;
     context.serializable_scalar(&self.rule_specification.user_id_field_specification, self.user_id)?;
+    context.serializable_scalar(&self.rule_specification.policy_id_field_specification, self.policy_id)?;
     context.serializable_compound(&self.rule_specification.activator_field_specification, &value.activator)
   }
 }

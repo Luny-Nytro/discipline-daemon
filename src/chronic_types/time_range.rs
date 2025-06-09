@@ -234,7 +234,7 @@ pub mod database {
   impl Specification {
     pub fn set_from(
       &self, 
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &Time,
     ) -> 
       Result<(), GenericError> 
@@ -244,7 +244,7 @@ pub mod database {
 
     pub fn set_till(
       &self, 
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &Time,
     ) -> 
       Result<(), GenericError>
@@ -252,9 +252,9 @@ pub mod database {
       modifications.modify_scalar_field(&self.from, new_value)
     }
 
-    pub fn set_range(
+    pub fn update_range(
       &self, 
-      modifications: &mut CollectionItemModifications,
+      modifications: &mut CollectionItemModificationsDraft,
       new_value: &TimeRange,
     ) -> 
       Result<(), GenericError>

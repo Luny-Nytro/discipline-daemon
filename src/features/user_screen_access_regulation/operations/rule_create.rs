@@ -26,14 +26,14 @@ impl IsOperation for Operation {
   fn execute(self, daemon: &mut Daemon) -> Self::Outcome {
     let Some(user) = daemon
       .state
-      .get_user_by_id_mut(&self.user_id) else 
+      .find_user_by_id_mut(&self.user_id) else 
     {
       return Outcome::NoSuchUser;
     };
     
     let Some(policy) = user
       .screen_access_regulator
-      .get_policy_by_id_mut(&self.policy_id) else 
+      .find_policy_by_id_mut(&self.policy_id) else 
     {
       return Outcome::NoSuchPolicy;
     };
@@ -50,15 +50,15 @@ impl IsOperation for Operation {
 
     let mut rule = self.rule_creator.create();
     if let Err(error) = daemon
-      .schema
+      .state_database_specification
       .user_screen_access_regulation
       .rule
       .add_rule(
         &daemon.database_connection, 
         &self.user_id, 
         &self.policy_id,
-        &rule, 
         policy.rules.len(), 
+        &rule, 
       ) 
     {
       return Outcome::InternalError(error);

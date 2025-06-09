@@ -93,12 +93,12 @@ impl ScalarFieldSpecificationBuilder {
 }
 
 
-pub struct CollectionItemFieldsScope {
+pub struct CollectionItemFieldsNamespace {
   fully_qualified_name: String,
   optional: bool,
 }
 
-impl CollectionItemFieldsScope {
+impl CollectionItemFieldsNamespace {
   pub fn new() -> Self {
     Self {
       fully_qualified_name: String::new(),
@@ -316,7 +316,7 @@ impl GlobalNamespace {
   pub fn collection(
     &mut self, 
     collection_identifier: &str,
-    collection_item_fields_namespace: CollectionItemFieldsScope,
+    collection_item_fields_namespace: CollectionItemFieldsNamespace,
   ) -> 
     Result<CollectionSpecification, GenericError> 
   {
@@ -359,7 +359,7 @@ impl Namespace {
   pub fn collection(
     &mut self, 
     collection_identifier: &str,
-    collection_item_fields_namespace: CollectionItemFieldsScope,
+    collection_item_fields_namespace: CollectionItemFieldsNamespace,
   ) -> 
     Result<CollectionSpecification, GenericError> 
   {

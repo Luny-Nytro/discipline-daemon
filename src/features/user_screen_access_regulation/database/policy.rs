@@ -2,8 +2,8 @@ use super::{
   GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecification,
   Namespace, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   Policy, Uuid, DateTime, PolicyEnabler, CompoundValueDeserializerContext,
-  CollectionItemFieldsScope, CollectionItemModifications, 
-  CompoundValueSerializerContext, NormalizedRule,
+  CollectionItemFieldsNamespace, CollectionItemModificationsDraft, Database,
+  CompoundValueSerializerContext, NormalizedRule, CollectionItemMatcher,
 };
 
 pub struct PolicySpecification {
@@ -21,7 +21,7 @@ impl PolicySpecification {
   ) -> 
     Result<Self, GenericError>
   {
-    let mut fields_namespace = CollectionItemFieldsScope::new();
+    let mut fields_namespace = CollectionItemFieldsNamespace::new();
 
     let id_field_specification = fields_namespace
       .primary_scalar_field_specification("Id")
@@ -63,7 +63,7 @@ impl PolicySpecification {
 
   pub fn update_name(
     &self,
-    modifications: &mut CollectionItemModifications,
+    modifications: &mut CollectionItemModificationsDraft,
     new_value: &PolicyName,
   ) -> 
     Result<(), GenericError>
@@ -160,6 +160,28 @@ impl NormalizedPolicy {
 }
 
 impl PolicySpecification {
+  pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
+    CollectionItemModificationsDraft::new()
+  }
+
+  pub fn apply_modifications_draft(
+    &self,
+    database: &Database,
+    modifications_draft: &CollectionItemModificationsDraft,
+    policy_id: &Uuid,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.update_collection_items(
+      &self.collection_specification, 
+      &CollectionItemMatcher::match_by_multiple_scalar_fields()
+        .and_scalar_field_is(&self.id_field_specification, policy_id)?
+        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
+        .finalize()?, 
+      modifications_draft,
+    )
+  }
   // pub fn generate_sql_initialize(
   //   &self,
   //   into: &mut String,
@@ -189,28 +211,20 @@ impl PolicySpecification {
   //     )
   // }
 
-  // pub fn add_policy(
-  //   &self,
-  //   connection: &Connection,
-  //   policy: &Policy,
-  //   user_id: &Uuid,
-  // ) -> 
-  //   Result<(), GenericError>
-  // {
-  //   let mut sql = String::new();
-
-  //   self
-  //     .generate_sql_insert_policy(&mut sql, policy, user_id)
-  //     .map_err(|error|
-  //       error.change_context("insert a policy into the database")
-  //     )?;
-
-  //   connection 
-  //     .execute(&sql)
-  //     .map_err(|error|
-  //       error.change_context("insert a policy into the database")
-  //     )
-  // }
+  pub fn add_policy(
+    &self,
+    database: &Database,
+    policy: &Policy,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.add_collection_item(
+      &self.collection_specification, 
+      &PolicySerializer::new(user_id, self), 
+      policy,
+    )
+  }
 
   // pub fn generate_sql_delete_policy(
   //   &self,
@@ -228,25 +242,22 @@ impl PolicySpecification {
   //   )
   // }
 
-  // pub fn delete_policy(
-  //   &self,
-  //   connection: &Connection,
-  //   policy_id: &Uuid,
-  //   user_id: &Uuid,
-  // ) -> 
-  //   Result<(), GenericError> 
-  // {
-  //   let mut sql = String::new();
-
-  //   self
-  //     .generate_sql_delete_policy(&mut sql, policy_id, user_id);
-
-  //   connection
-  //     .execute(&sql)
-  //     .map_err(|error|
-  //       error.change_context("delete a policy from the database")
-  //     )
-  // }
+  pub fn delete_policy(
+    &self,
+    database: &Database,
+    policy_id: &Uuid,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError> 
+  {
+    database.delete_collection_items(
+      &self.collection_specification, 
+      &CollectionItemMatcher::match_by_multiple_scalar_fields()
+        .and_scalar_field_is(&self.id_field_specification, policy_id)?
+        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
+        .finalize()?
+    )
+  }
 
   // pub fn load_all_normalized_policies(
   //   &self,

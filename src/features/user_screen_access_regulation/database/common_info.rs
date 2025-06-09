@@ -1,7 +1,7 @@
 use super::{
   ScalarFieldSpecification, CompoundTypeFieldsScope, 
   CompoundValueSerializer, CommonInfo, 
-  Duration, CompoundValueDeserializerContext, CollectionItemModifications,
+  Duration, CompoundValueDeserializerContext, CollectionItemModificationsDraft,
   CompoundValueDeserializer, GenericError, CompoundValueSerializerContext,
 };
 
@@ -29,7 +29,7 @@ impl CommonInfoSpecification {
 
   pub fn update_applying_interval(
     &self, 
-    modifications: &mut CollectionItemModifications,
+    modifications: &mut CollectionItemModificationsDraft,
     new_value: Duration,
   ) ->
     Result<(), GenericError>

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use crate::GenericError;
 use super::{
   CollectionSpecification, CompoundValueDeserializer, 
-  CollectionItemMatcher, CollectionItemModifications,
+  CollectionItemMatcher, CollectionItemModificationsDraft,
   CompoundValueSerializer, DatabaseSpecificationsProvider,
   GlobalNamespace,
   verify_identifier,
@@ -186,7 +186,7 @@ impl Database {
     &self,
     collection_specification: &CollectionSpecification,
     collection_item_matcher: &CollectionItemMatcher,
-    collection_item_modifications: &CollectionItemModifications,
+    collection_item_modifications: &CollectionItemModificationsDraft,
   ) -> 
     Result<(), GenericError> 
   {

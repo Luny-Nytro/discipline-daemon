@@ -26,14 +26,14 @@ impl IsOperation for Operation {
   fn execute(self, daemon: &mut Daemon) -> Self::Outcome {
     let Some(user) = daemon
       .state
-      .get_user_by_id_mut(&self.user_id) else 
+      .find_user_by_id_mut(&self.user_id) else 
     {
       return Outcome::NoSuchUser;
     };
 
     let Some(policy) = user
       .screen_access_regulator
-      .get_policy_by_id_mut(&self.policy_id) else 
+      .find_policy_by_id_mut(&self.policy_id) else 
     {
       return Outcome::NoSuchPolicy;
     };
@@ -51,21 +51,34 @@ impl IsOperation for Operation {
       return Outcome::WouldBeEffectiveForTooLong;
     }
 
-    let mut updater = daemon
-      .schema
+    let mut modifications_draft = daemon
+      .state_database_specification
       .user_screen_access_regulation
       .policy
-      .create_updater(&self.policy_id, &self.user_id);
+      .create_modifications_draft();
 
-    daemon
-      .schema
+    if let Err(error) = daemon
+      .state_database_specification
       .user_screen_access_regulation
       .policy
-      .enabler
+      .enabler_field_specification
       .timer()
-      .set_remaining_duration(&mut updater, &new_remaining_duration);
+      .update_remaining_duration(&mut modifications_draft, &new_remaining_duration)
+    {
+      return Outcome::InternalError(error);
+    }
 
-    if let Err(error) = updater.execute(&daemon.database_connection) {
+    if let Err(error) = daemon
+      .state_database_specification
+      .user_screen_access_regulation
+      .policy
+      .apply_modifications_draft(
+        &daemon.database_connection, 
+        &modifications_draft, 
+        &self.policy_id, 
+        &self.user_id,
+      )
+    {
       return Outcome::InternalError(error);
     }
 

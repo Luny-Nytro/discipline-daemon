@@ -16,7 +16,7 @@ impl State {
     self.users.iter().find(|user| user.id == *user_id)
   }
 
-  pub fn get_user_by_id_mut(&mut self, user_id: &Uuid) -> Option<&mut User> {
+  pub fn find_user_by_id_mut(&mut self, user_id: &Uuid) -> Option<&mut User> {
     self.users.iter_mut().find(|user| user.id == *user_id)
   }
 }

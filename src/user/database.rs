@@ -8,11 +8,12 @@ use crate::{
 };
 
 use crate::database::{
-  ScalarFieldSpecification, CollectionItemFieldsScope,
+  ScalarFieldSpecification, CollectionItemFieldsNamespace, Database,
   CompoundValueSerializer, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext,
-  ScalarValue, CollectionSpecification, Namespace, CollectionItemModifications,
+  ScalarValue, CollectionSpecification, Namespace, CollectionItemModificationsDraft,
+  CollectionItemMatcher,
 };
 
 impl SerializableScalarValue for UserName {
@@ -42,7 +43,7 @@ pub struct Specification {
 
 impl Specification {
   pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsScope::new();
+    let mut fields_namespace = CollectionItemFieldsNamespace::new();
 
     let id_field_specification = fields_namespace
     .primary_scalar_field_specification("Id")
@@ -96,10 +97,29 @@ impl Specification {
 
   pub fn update_name(
     &self, 
-    modifications: &mut CollectionItemModifications, 
+    modifications: &mut CollectionItemModificationsDraft, 
     new_value: &UserName,
   ) {
     modifications.modify_scalar_field(&self.name_field_specification, new_value);
+  }
+
+  pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
+    CollectionItemModificationsDraft::new()
+  }
+
+  pub fn apply_modifications_draft(
+    &self,
+    database: &Database,
+    modifications_draft: &CollectionItemModificationsDraft,
+    user_id: &Uuid
+  ) -> 
+    Result<(), GenericError>
+  {
+    database.update_collection_items(
+      &self.collection_specification, 
+      &CollectionItemMatcher::match_by_scalar_field(&self.id_field_specification, user_id)?, 
+      modifications_draft,
+    )
   }
 }
 

@@ -118,7 +118,7 @@ impl Policy {
     self.rules.iter().find(|rule| rule.id == *rule_id)
   }
 
-  pub fn get_rule_by_id_mut(&mut self, rule_id: &Uuid) -> Option<&mut Rule> {
+  pub fn find_rule_by_id_mut(&mut self, rule_id: &Uuid) -> Option<&mut Rule> {
     self.rules.iter_mut().find(|rule| rule.id == *rule_id)
   }
 
@@ -251,7 +251,7 @@ impl Regulator {
     self.policies.iter().find(|policy| policy.id == *policy_id)
   }
   
-  pub fn get_policy_by_id_mut(&mut self, policy_id: &Uuid) -> Option<&mut Policy> {
+  pub fn find_policy_by_id_mut(&mut self, policy_id: &Uuid) -> Option<&mut Policy> {
     self.policies.iter_mut().find(|policy| policy.id == *policy_id)
   }
 
