@@ -3,7 +3,7 @@
   "editor.fontSize": 26,
   "editor.indentSize": 2,
   "rust-analyzer.linkedProjects": [
-    "./Cargo.toml"
+    "./discipline_daemon_lib/Cargo.toml"
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "rust-analyzer.diagnostics.disabled": [
