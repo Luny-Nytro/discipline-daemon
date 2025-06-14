@@ -1,11 +1,11 @@
 use super::{
-  Serialize, Deserialize, Uuid, Daemon, ToPublicRepr,
-  GenericError, PolicyCreator, DateTime, PolicyPublicRepr,
-  IsOperation,
+  Serialize, Deserialize, Uuid, Daemon, 
+  PolicyCreator, DateTime, PolicyPublicRepr,
+  IsOperation, IntoPublic, InternalOperationOutcome,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Operation {
+pub struct CreatePolicy {
   user_id: Uuid,
   policy_creator: PolicyCreator
 }
@@ -17,22 +17,22 @@ pub enum Outcome {
   Success(PolicyPublicRepr),
 }
 
-impl IsOperation for Operation {
+impl IsOperation for CreatePolicy {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
-      return Ok(Outcome::NoSuchUser);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
     let regulator = &mut user.screen_access_regulator;
 
     if regulator.reached_maximum_polices_allowed() {
-      return Ok(Outcome::ReachedMaximumPolicesAllowed);
+      return InternalOperationOutcome::public_outcome(Outcome::ReachedMaximumPolicesAllowed);
     }
 
     let now = DateTime::now();
-    let mut policy = self.policy_creator.create(now);
+    let policy = self.policy_creator.create(now);
 
     if let Err(error) = daemon
       .state_database_specification
@@ -44,19 +44,10 @@ impl IsOperation for Operation {
         &policy, 
       )
     {
-      return Err(error);
+      return InternalOperationOutcome::internal_error(error);
     }
 
-    let public_repr = policy.to_public_repr();
-    regulator.add_policy(policy);
-    Ok(Outcome::Success(public_repr))
+    regulator.add_policy(policy.clone());
+    InternalOperationOutcome::public_outcome(Outcome::Success(policy.into_public()))
   }
-}
-
-#[derive(Debug, Clone)]
-pub enum OutcomePublicRepr {
-  NoSuchUser,
-  ReachedMaximumPolicesAllowed,
-  Success(PolicyPublicRepr),
-  InternalError,
 }

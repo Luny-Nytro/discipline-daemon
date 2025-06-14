@@ -23,7 +23,7 @@ pub struct UserPublicRepr {
 impl IntoPublic for User {
   type Output = UserPublicRepr;
 
-  fn into_public(mut self) -> Self::Output {
+  fn into_public(self) -> Self::Output {
     UserPublicRepr {
       id: self.id,
       name: self.name,

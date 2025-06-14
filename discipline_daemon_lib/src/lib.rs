@@ -9,7 +9,7 @@ pub mod to_public_repr;
 pub use to_public_repr::ToPublicRepr;
 
 pub mod operation;
-pub use operation::IsOperation;
+pub use operation::*;
 
 pub mod chronic_types;
 pub use chronic_types::*;

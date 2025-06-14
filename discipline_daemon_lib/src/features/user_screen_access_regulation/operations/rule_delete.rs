@@ -1,6 +1,6 @@
 use super::{
-  Serialize, Deserialize, Uuid, GenericError, IsOperation,
-  Daemon, DateTime,
+  Serialize, Deserialize, Uuid, IsOperation,
+  Daemon, DateTime, InternalOperationOutcome,
 };
 
 #[derive(Debug, Clone)]
@@ -22,12 +22,12 @@ pub struct Operation {
 impl IsOperation for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else
     {
-      return Ok(Outcome::NoSuchUser);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
     let regulator = &mut user
@@ -36,16 +36,16 @@ impl IsOperation for Operation {
     let Some(policy) = regulator
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return Ok(Outcome::NoSuchPolicy);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);
     };
 
     if policy.there_is_rule_with_id(&self.rule_id) {
-      return Ok(Outcome::NoSuchRule);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchRule);
     }
 
     let now = DateTime::now();
     if policy.is_enabled(now) {
-      return Ok(Outcome::MayNotDeleteRuleWhilePolicyEnabled);
+      return InternalOperationOutcome::public_outcome(Outcome::MayNotDeleteRuleWhilePolicyEnabled);
     }
 
     if let Err(error) = daemon
@@ -59,10 +59,10 @@ impl IsOperation for Operation {
         &self.rule_id,
       )
     {
-      return Err(error.change_context("delete rule"));
+      return InternalOperationOutcome::internal_error(error.change_context("delete rule"));
     }
 
     policy.remove_rule_by_id(&self.rule_id);
-    Ok(Outcome::Success)
+    InternalOperationOutcome::public_outcome(Outcome::Success)
   }
 }

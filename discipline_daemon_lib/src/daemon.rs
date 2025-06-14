@@ -2,7 +2,11 @@ use clap::{Parser, command};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
-use crate::{GenericError, IsOperation, State, Specification, DateTime, Duration};
+use crate::{
+  GenericError, IsOperation, State, 
+  Specification, DateTime, Duration,
+  InternalOperationOutcome,
+};
 use crate::database::Database;
 
 pub struct Daemon {
@@ -56,7 +60,7 @@ impl Daemon {
   //   Ok(app)
   // }
 
-  fn http_server_address(&self) -> &String {
+  fn api_server_address(&self) -> &String {
     &self.http_server_address
   }
 
@@ -64,7 +68,7 @@ impl Daemon {
     &mut self, 
     operation: Operation,
   ) -> 
-    Result<<Operation as IsOperation>::Outcome, GenericError>
+    InternalOperationOutcome<Operation::Outcome>
   where 
     Operation: IsOperation
   {

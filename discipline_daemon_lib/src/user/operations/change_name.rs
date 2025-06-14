@@ -1,10 +1,10 @@
 use super::{
   Daemon, IsOperation, Serialize, Deserialize, Uuid, UserName,
-  GenericError,
+  InternalOperationOutcome,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChangeName {
+pub struct Operation {
   user_id: Uuid,
   new_user_name: UserName
 }
@@ -15,12 +15,12 @@ pub enum Outcome {
   Success,
 }
 
-impl IsOperation for ChangeName {
+impl IsOperation for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
-      return Ok(Outcome::NoSuchUser);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
     let mut modifications_draft = daemon
@@ -33,7 +33,7 @@ impl IsOperation for ChangeName {
       .user_specification
       .update_name(&mut modifications_draft, &self.new_user_name)
     {
-      return Err(
+      return InternalOperationOutcome::internal_error(
         error
           .change_context("changing a user name")
           .add_attachment("user id", self.user_id.to_string())
@@ -42,6 +42,6 @@ impl IsOperation for ChangeName {
     }
 
     user.name = self.new_user_name;
-    Ok(Outcome::Success)
+    InternalOperationOutcome::public_outcome(Outcome::Success)
   }
 }

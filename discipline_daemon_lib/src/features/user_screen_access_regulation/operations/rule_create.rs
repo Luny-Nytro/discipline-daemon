@@ -1,6 +1,6 @@
 use super::{
   Serialize, Deserialize, Daemon, IsOperation, Uuid,
-  ToPublicRepr, RuleCreator, Policy, GenericError, RulePublicRepr,
+  IntoPublic, RuleCreator, Policy, InternalOperationOutcome, RulePublicRepr,
 };
 
 #[derive(Debug, Clone)]
@@ -22,32 +22,32 @@ pub struct Operation {
 impl IsOperation for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else 
     {
-      return Ok(Outcome::ThereIsNoUserWithId(self.user_id));
+      return InternalOperationOutcome::public_outcome(Outcome::ThereIsNoUserWithId(self.user_id));
     };
     
     let Some(policy) = user
       .screen_access_regulator
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return Ok(Outcome::ThereIsNoPolicyWithId(self.policy_id));
+      return InternalOperationOutcome::public_outcome(Outcome::ThereIsNoPolicyWithId(self.policy_id));
     };
 
     if policy.rules.len() >= Policy::MAX_RULES {
-      return Ok(Outcome::RuleCreationLimitReached);
+      return InternalOperationOutcome::public_outcome(Outcome::RuleCreationLimitReached);
     }
 
     if let Some(rule_id) = self.rule_creator.id {
       if policy.rules.iter().any(|rule| rule.id == rule_id) {
-        return Ok(Outcome::ProvidedRuleIdIsUsedByAnotherRule);
+        return InternalOperationOutcome::public_outcome(Outcome::ProvidedRuleIdIsUsedByAnotherRule);
       }
     }
 
-    let mut rule = self.rule_creator.create();
+    let rule = self.rule_creator.create();
     if let Err(error) = daemon
       .state_database_specification
       .user_screen_access_regulation
@@ -59,11 +59,10 @@ impl IsOperation for Operation {
         &rule, 
       ) 
     {
-      return Err(error);
+      return InternalOperationOutcome::internal_error(error);
     }
 
-    let public_repr = rule.to_public_repr();
-    policy.rules.push(rule);
-    Ok(Outcome::Success(public_repr))
+    policy.rules.push(rule.clone());
+    InternalOperationOutcome::public_outcome(Outcome::Success(rule.into_public()))
   }
 }

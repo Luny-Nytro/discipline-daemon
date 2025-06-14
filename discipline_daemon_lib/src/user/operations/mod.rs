@@ -3,8 +3,8 @@ use serde::{Serialize, Deserialize};
 use crate::{
   Uuid, OperatingSystemPassword, OperatingSystemUserId,
   OperatingSystemUsername, IsOperation, Daemon,
-  GenericError, user_screen_access_regulation, ToPublicRepr,
-  IntoPublic,
+  user_screen_access_regulation,
+  IntoPublic, InternalOperationOutcome
 };
 
 use super::{

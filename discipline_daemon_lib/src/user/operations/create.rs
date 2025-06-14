@@ -1,8 +1,8 @@
 use super::{
   Uuid, OperatingSystemPassword, OperatingSystemUserId,
   OperatingSystemUsername, User, UserName, Serialize, Deserialize,
-  IsOperation, Daemon, GenericError, user_screen_access_regulation,
-  UserPublicRepr, IntoPublic
+  IsOperation, Daemon, InternalOperationOutcome, user_screen_access_regulation,
+  UserPublicRepr, IntoPublic, 
 }; 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,10 +23,10 @@ pub enum Outcome {
 impl IsOperation for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     if let Some(user_id) = &self.user_id {
       if daemon.state.users.iter().any(|user| user.id == *user_id) {
-        return Ok(Outcome::UserIdIsUsedByAnotherUser);
+        return InternalOperationOutcome::public_outcome(Outcome::UserIdIsUsedByAnotherUser);
       }
     }
 
@@ -36,7 +36,7 @@ impl IsOperation for Operation {
       .iter()
       .any(|user| user.operating_system_username == self.operating_system_user_name)
     {
-      return Ok(Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged);
+      return InternalOperationOutcome::public_outcome(Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged);
     }
 
     let operating_system_user_id = match OperatingSystemUserId::from_username(&self.operating_system_user_name) {
@@ -44,7 +44,9 @@ impl IsOperation for Operation {
         value
       }
       Err(error) => {
-        return Err(error.change_context("creating a user"));
+        return InternalOperationOutcome::internal_error(
+          error.change_context("creating a user")
+        );
       }
     };
 
@@ -55,7 +57,7 @@ impl IsOperation for Operation {
       .iter()
       .any(|user| user.operating_system_user_id == operating_system_user_id)
     {
-      return Ok(Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged);
+      return InternalOperationOutcome::public_outcome(Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged);
     }
 
     let user = User {
@@ -72,10 +74,12 @@ impl IsOperation for Operation {
       .user_specification
       .add_user(&daemon.database_connection, &user)
     {
-      return Err(error.change_context("creating a user"));
+      return InternalOperationOutcome::internal_error(
+        error.change_context("creating a user")
+      );
     }
 
     daemon.state.users.push(user.clone());
-    Ok(Outcome::Success(user.into_public()))
+    InternalOperationOutcome::public_outcome(Outcome::Success(user.into_public()))
   }
 }

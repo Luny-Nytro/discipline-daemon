@@ -1,6 +1,6 @@
 use super::{
   Serialize, Deserialize, Daemon, IsOperation, TimeRange, Uuid, 
-  RuleActivator, GenericError,
+  RuleActivator, InternalOperationOutcome,
 };
 
 #[derive(Debug, Clone)]
@@ -30,33 +30,33 @@ impl IsOperation for Operation {
   // This is crucial for safety to prevent the app user from accidently 
   // blocking himself outside of his account forever or most of the time.
 
-  fn execute(self, daemon: &mut Daemon) -> Result<Outcome, GenericError> {
+  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else 
     {
-      return Ok(Outcome::NoSuchUser);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
     let Some(policy) = user
       .screen_access_regulator
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return Ok(Outcome::NoSuchPolicy);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);
     };
 
     let Some(rule) = policy
       .find_rule_by_id_mut(&self.rule_id) else 
     {
-      return Ok(Outcome::NoSuchRule);
+      return InternalOperationOutcome::public_outcome(Outcome::NoSuchRule);
     };
 
     let RuleActivator::InTimeRange(time_range) = &mut rule.activator else {
-      return Ok(Outcome::WrongActivatorType);
+      return InternalOperationOutcome::public_outcome(Outcome::WrongActivatorType);
     };
     
     if self.new_time_range.is_narrower_than(time_range) {
-      return Ok(Outcome::MayNotMakeRuleLessRestrictive);
+      return InternalOperationOutcome::public_outcome(Outcome::MayNotMakeRuleLessRestrictive);
     }
 
     let mut modifications_draft = daemon
@@ -73,7 +73,7 @@ impl IsOperation for Operation {
       .in_time_range()
       .update_range(&mut modifications_draft, &self.new_time_range)
     {
-      return Err(error);
+      return InternalOperationOutcome::internal_error(error);
     }
 
     if let Err(error) = daemon
@@ -88,10 +88,10 @@ impl IsOperation for Operation {
         &self.rule_id,
       )
     {
-      return Err(error);
+      return InternalOperationOutcome::internal_error(error);
     }
 
     *time_range = self.new_time_range;
-    Ok(Outcome::Success)
+    InternalOperationOutcome::public_outcome(Outcome::Success)
   }
 }

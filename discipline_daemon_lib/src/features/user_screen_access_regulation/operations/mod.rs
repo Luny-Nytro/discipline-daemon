@@ -3,8 +3,8 @@ use serde::{
 };
 
 use crate::{
-  Daemon, DateTime, GenericError, Uuid, Duration, WeekdayRange, 
-  TimeRange, IsOperation, ToPublicRepr,
+  Daemon, DateTime, Uuid, Duration, WeekdayRange, 
+  TimeRange, IsOperation, IntoPublic, InternalOperationOutcome,
 };
 
 use crate::user_screen_access_regulation::{
