@@ -73,13 +73,13 @@ mod database {
   use super::OperatingSystemUserId;
   use crate::GenericError;
 
-  impl SerializableScalarValue for OperatingSystemUserId {
+  impl IntoScalarValue for OperatingSystemUserId {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_u32(self.0)
     }
   }
 
-  impl DeserializableScalarValue for OperatingSystemUserId {
+  impl FromScalarValue for OperatingSystemUserId {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_u32()
         .map(OperatingSystemUserId)

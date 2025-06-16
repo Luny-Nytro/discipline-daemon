@@ -1,18 +1,5 @@
 use std::path::PathBuf;
-use crate::GenericError;
-use super::{
-  CollectionSpecification, CompoundValueDeserializer, 
-  CollectionItemMatcher, CollectionItemModificationsDraft,
-  CompoundValueSerializer, DatabaseSpecificationsProvider,
-  GlobalNamespace,
-  deserialize_compound_value,
-  generate_code_find_all_collection_items,
-  generate_code_find_one_collection_item,
-  generate_code_add_collection_item,
-  generate_code_define_database_schema,
-  generate_code_delete_collection_item,
-  generate_code_update_collection_item,
-};
+use super::*;
 
 pub struct Database {
   connection: rusqlite::Connection,
@@ -79,7 +66,7 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code.clone())
         .change_context("retrieving all the items of a collection")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )?;
     
     let mut iterator = statement.query(()).map_err(|error|
@@ -87,7 +74,7 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code.clone())
         .change_context("retrieving all the items of a collection")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )?;
 
     let mut collection_items = Vec::new();
@@ -97,7 +84,7 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code.clone())
         .change_context("retrieving all the items of a collection")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
       )?;
 
       let Some(raw_collection_item) = raw_collection_item else {
@@ -111,7 +98,7 @@ impl Database {
         error
           .change_context("deserializing a collection item")
           .change_context("retrieving all the items of a collection")
-          .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+          .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
       )?;
 
       collection_items.push(collection_item);
@@ -144,7 +131,7 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code.clone())
         .change_context("retreive one collection item")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )?;
     
     let mut iterator = statement.query(()).map_err(|error|
@@ -152,7 +139,7 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code.clone())
         .change_context("retreive one collection item")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )?;
 
     loop {
@@ -161,7 +148,7 @@ impl Database {
           .add_attachment("error", error.to_string())
           .add_attachment("code", code.clone())
           .change_context("retreive one collection item")
-          .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+          .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
       )?;
 
       let Some(raw_collection_item) = raw_collection_item else {
@@ -176,7 +163,7 @@ impl Database {
       .map_err(|error|
         error
           .change_context("retrieving one collection item")
-          .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+          .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
       );
     }
   }
@@ -202,7 +189,7 @@ impl Database {
     self.execute(&code).map_err(|error| 
       error
         .change_context("updating collection items")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )
   }
 
@@ -225,7 +212,7 @@ impl Database {
     self.execute(&code).map_err(|error| 
       error
         .change_context("deleting collection items")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )
   }
 
@@ -250,7 +237,7 @@ impl Database {
     self.execute(&code).map_err(|error| 
       error
         .change_context("adding collection a new item")
-        .add_attachment("collection fully qualified identifier", collection_specification.fully_qualified_identifier.clone())
+        .add_attachment("collection fully qualified identifier", collection_specification.path.clone())
     )
   }
 

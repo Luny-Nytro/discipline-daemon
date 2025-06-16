@@ -1,5 +1,5 @@
 use super::{
-  DeserializableScalarValue, SerializableScalarValue, GenericError,
+  FromScalarValue, IntoScalarValue, GenericError,
   SerializeScalarValueContext, ScalarValue,
 };
 
@@ -12,7 +12,7 @@ pub enum RuleActivatorVariant {
   InWeekdayRange,
 }
 
-impl SerializableScalarValue for RuleActivatorVariant {
+impl IntoScalarValue for RuleActivatorVariant {
   fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
     match self {
       RuleActivatorVariant::AllTheTime => context.write_u8(0),
@@ -23,7 +23,7 @@ impl SerializableScalarValue for RuleActivatorVariant {
   }
 }
 
-impl DeserializableScalarValue for RuleActivatorVariant {
+impl FromScalarValue for RuleActivatorVariant {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     let number = value.as_u8().map_err(|error|
       error.change_context("deserializing RuleActivatorVariant")

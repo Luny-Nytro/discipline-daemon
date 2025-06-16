@@ -1,7 +1,7 @@
 use crate::database::{
   ScalarFieldSpecification, CompoundValueDeserializer, CompoundValueSerializer, 
   GlobalNamespace, CompoundValueDeserializerContext, CompoundValueSerializerContext, 
-  CollectionSpecification, CollectionItemFieldsNamespace, Database,
+  CollectionSpecification, CollectionItemDefiner, Database,
   CollectionItemMatcher,
 };
 
@@ -21,10 +21,10 @@ pub struct Specification {
 
 impl Specification {
   pub fn new(namespace: &mut GlobalNamespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsNamespace::new();
+    let mut fields_namespace = CollectionItemDefiner::new();
 
     let id_column = fields_namespace
-      .primary_scalar_field_specification("Id")
+      .define_primary_scalar_field("Id")
       .build()
       .map_err(|error| error.change_context("creating Specification"))?;
 

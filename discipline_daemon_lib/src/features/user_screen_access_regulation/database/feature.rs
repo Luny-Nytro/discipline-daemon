@@ -1,6 +1,6 @@
 use super::{
   PolicySpecification, RuleSpecification, Namespace, GenericError,
-  CommonInfoSpecification, CompoundTypeFieldsScope,
+  CommonInfoSpecification, CompoundTypeDefiner,
 };
 
 pub struct Specification {
@@ -12,7 +12,7 @@ pub struct Specification {
 impl Specification {
   pub fn new(
     namespace: &mut Namespace,
-    scope: &mut CompoundTypeFieldsScope,
+    scope: &mut CompoundTypeDefiner,
   ) ->
     Result<Self, GenericError>
   {

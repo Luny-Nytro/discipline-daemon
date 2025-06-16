@@ -1,6 +1,6 @@
 use crate::GenericError;
 use super::{
-  ScalarFieldSpecification, SerializableScalarValue, 
+  ScalarFieldSpecification, IntoScalarValue, 
   escape_string_for_sqilte_into, serialize_scalar_value_into,
 };
 
@@ -44,7 +44,7 @@ impl CompoundValueSerializerContext {
     scalar_field_value: &str,
   ) {
     self.write_separating_comma();
-    self.column_names.push_str(&scalar_field_specification.fully_qualified_identifier);
+    self.column_names.push_str(&scalar_field_specification.path);
     self.column_values.push_str(scalar_field_value);
   }
 
@@ -108,13 +108,13 @@ impl CompoundValueSerializerContext {
   
   pub fn write_string(&mut self, scalar_field_specification: &ScalarFieldSpecification, string: &String) -> Result<(), GenericError> {
     self.write_separating_comma();
-    self.column_names.push_str(&scalar_field_specification.fully_qualified_identifier);
+    self.column_names.push_str(&scalar_field_specification.path);
     // TODO
     escape_string_for_sqilte_into(string, &mut self.column_values);
     Ok(())
   }
 
-  pub fn serializable_scalar<Value: SerializableScalarValue>(
+  pub fn serializable_scalar<Value: IntoScalarValue>(
     &mut self, 
     scalar_field_specification: &ScalarFieldSpecification, 
     scalar_field_value: &Value,
@@ -126,12 +126,12 @@ impl CompoundValueSerializerContext {
     serialize_scalar_value_into(scalar_field_value, &mut temp)
       .map_err(|error| 
         error
-          .change_context("writing a SerializableScalarValue into a CompoundValueSerializerContext")
+          .change_context("writing a IntoScalarValue into a CompoundValueSerializerContext")
           .add_error("failed to serialize the scalar value")
       )?;
       
     self.write_separating_comma();
-    self.column_names.push_str(&scalar_field_specification.fully_qualified_identifier);
+    self.column_names.push_str(&scalar_field_specification.path);
     self.column_values.push_str(&temp);
     Ok(())
   }

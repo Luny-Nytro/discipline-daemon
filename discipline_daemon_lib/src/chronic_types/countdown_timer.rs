@@ -73,7 +73,7 @@ pub mod database {
   }
 
   impl Specification {
-    pub fn new(scope: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
+    pub fn new(scope: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
       Ok(Self {
         duration: scope
           .scalar_field_specification("Duraion")

@@ -2,43 +2,22 @@ use super::*;
 
 pub struct GlobalNamespace {
   pub(super) identifier: String,
-  pub(super) fully_qualified_identifier: String,
 }
 
 impl GlobalNamespace {
   pub fn namespace(&mut self, identifier: &str) -> Result<Namespace, GenericError> {
+    // TODO: check whether there is already a namespace with the given identifier
     verify_identifier(identifier)
       .map(|_| 
         Namespace { 
-          identifier: identifier.into(), 
-          fully_qualified_identifier: format!("{}_{}", self.fully_qualified_identifier, identifier),
+          path: identifier.into(), 
+          fully_qualified_identifier: format!("{}_{}", self.identifier, identifier),
         }
       )
-      // TODO: Do proper error handling
+      .map_err(|error|
+        error
+          .change_context("creating a new namespace within the global namespace")
+          .add_error("invalid namespace identifier")
+      )
   }
-
-  pub fn collection(
-    &mut self, 
-    collection_identifier: &str,
-    collection_item_fields_namespace: CollectionItemFieldsNamespace,
-  ) -> 
-    Result<CollectionSpecification, GenericError> 
-  {
-    todo!()
-    // TODO: do proper error handling
-
-    // if let Err(error) = verify_identifier(collection_identifier) {
-    //   return Err(error);
-    // }
-
-    // if collection_item_fields_namespace.column_specifications.is_empty() {
-    //   return Err(todo!());
-    // }
-
-    // Ok(CollectionSpecification::new(
-    //   collection_identifier.into(), 
-    //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
-    //   collection_item_fields_namespace.column_specifications,
-    // ))
-  } 
 }

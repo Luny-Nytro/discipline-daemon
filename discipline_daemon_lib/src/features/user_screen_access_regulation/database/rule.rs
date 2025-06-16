@@ -2,7 +2,7 @@ use super::{
   Rule, RuleActivator, GenericError, Uuid, CompoundValueSerializerContext,
   ScalarFieldSpecification, CompoundValueSerializer, CollectionSpecification,
   CompoundValueDeserializer, CompoundValueDeserializerContext, Namespace,
-  CollectionItemFieldsNamespace, RuleActivatorSpecification, CollectionItemModificationsDraft,
+  CollectionItemDefiner, RuleActivatorSpecification, CollectionItemModificationsDraft,
   Database, CollectionItemMatcher,
 };
 
@@ -17,7 +17,7 @@ pub struct RuleSpecification {
 
 impl RuleSpecification {
   pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsNamespace::new();
+    let mut fields_namespace = CollectionItemDefiner::new();
 
     let id_field_specification = fields_namespace
       .scalar_field_specification("Id")
@@ -44,7 +44,7 @@ impl RuleSpecification {
       .map_err(|error| error.change_context("creating RuleSpecification"))?;
 
     let collection_specification = namespace
-      .collection("Rules", fields_namespace)
+      .define_collection("Rules", fields_namespace)
       .map_err(|error| error.change_context("creating RuleSpecification"))?;
 
     Ok(Self {

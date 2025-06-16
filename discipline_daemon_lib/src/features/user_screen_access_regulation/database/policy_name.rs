@@ -1,15 +1,15 @@
 use super::{
-  PolicyName, SerializableScalarValue, DeserializableScalarValue,
+  PolicyName, IntoScalarValue, FromScalarValue,
   SerializeScalarValueContext, ScalarValue,
 };
 
-impl SerializableScalarValue for PolicyName {
+impl IntoScalarValue for PolicyName {
   fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), crate::GenericError> {
     context.write_string(self.as_ref())
   }
 }
 
-impl DeserializableScalarValue for PolicyName {
+impl FromScalarValue for PolicyName {
   fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {
     value
       .as_string()

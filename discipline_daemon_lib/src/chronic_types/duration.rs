@@ -237,13 +237,13 @@ pub mod database_serde {
   //   }
   // }
 
-  impl SerializableScalarValue for Duration {
+  impl IntoScalarValue for Duration {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_u64(self.total_milliseconds())
     }
   }
 
-  impl DeserializableScalarValue for Duration {
+  impl FromScalarValue for Duration {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value
         .as_u64()

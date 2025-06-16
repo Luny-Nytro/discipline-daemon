@@ -1,44 +1,53 @@
 use super::*;
 
 pub struct Namespace {
-  pub(super) identifier: String,
-  pub(super) fully_qualified_identifier: String,
+  pub(super) path: DatabaseEntityPath,
 }
 
 impl Namespace {
-  pub fn namespace(&mut self, identifier: &str) -> Result<Namespace, GenericError> {
-    verify_identifier(identifier)
-      .map(|_| 
+  pub fn define_namespace(
+    &mut self, 
+    database: &mut Database,
+    new_namespace_identifier: &str,
+  ) -> 
+    Result<Namespace, GenericError> 
+  {
+    // TODO: check whether there is a namespace with the given identifier
+
+    self.path.then(new_namespace_identifier)
+      .map(|path| 
         Namespace { 
-          identifier: identifier.into(), 
-          fully_qualified_identifier: format!("{}_{}", self.fully_qualified_identifier, identifier),
+          path 
         }
       )
-      // TODO: Do proper error handling
+      .map_err(|error|
+        error
+          .change_context("creating a new namespace within a non-global namespace")
+          .add_error("invalid namespace identifier")
+          .add_attachment("super namespace fully qualified identifier", self.path.as_str())
+      )
   }
 
-  pub fn collection(
+  pub fn define_collection(
     &mut self, 
     collection_identifier: &str,
-    collection_item_fields_namespace: CollectionItemFieldsNamespace,
+    collection_item_namespace: CompoundTypeNamepace,
   ) -> 
     Result<CollectionSpecification, GenericError> 
   {
-    todo!()
-    // TODO: do proper error handling
-
-    // if let Err(error) = verify_identifier(collection_identifier) {
-    //   return Err(error);
-    // }
-
-    // if collection_item_fields_namespace.column_specifications.is_empty() {
-    //   return Err(todo!());
-    // }
-
-    // Ok(CollectionSpecification::new(
-    //   collection_identifier.into(), 
-    //   format!("{}_{}", self.fully_qualified_identifier, collection_identifier), 
-    //   collection_item_fields_namespace.column_specifications,
-    // ))
+    // TODO: check if there is a collection or a namespace with the given identifier
+    self.path.then(collection_identifier)
+      .map_err(|error|
+        error
+          .change_context("definning a new collection")
+          .add_error("invalid collection identifier")
+          .add_attachment("namespace path", self.path.as_str())
+      )
+      .and_then(|collection_path|
+        CollectionSpecification::new(
+          collection_path,
+          collection_item_namespace,
+        )
+      )
   } 
 }

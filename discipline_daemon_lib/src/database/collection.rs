@@ -1,33 +1,35 @@
 use super::*;
 
 pub struct CollectionSpecification {
-  pub(super) identifier: String,
-  pub(super) fully_qualified_identifier: String,
-  pub(super) column_specifications: Vec<ColumnSpecification>,
-  pub(super) has_multiple_primary_key_columns: bool,
+  pub(super) path: DatabaseEntityPath,
+  pub(super) collection_item_namespace: CompoundTypeNamepace,
 }
 
 impl CollectionSpecification {
-  fn new(
-    identifier: String,
-    fully_qualified_identifier: String,
-    column_specifications: Vec<ColumnSpecification>,
-  ) -> Self {
-    let mut primary_key_columns_count = 0;
-    for column_specification in &column_specifications {
-      if column_specification.column_type == ColumnType::Primary {
-        primary_key_columns_count += 1;
-      }
-      if primary_key_columns_count > 1 {
-        break;
-      }
+  pub(super) fn new(
+    path: DatabaseEntityPath,
+    collection_item_namespace: CompoundTypeNamepace,
+  ) -> 
+    Result<Self, GenericError>
+  {
+    if collection_item_namespace.columns.is_empty() {
+      return Err(
+        GenericError::new("creating a collection")
+          .add_error("you didn't define any fields for the collection item! define one or more by calling the 'define_*_field' methods of the CollectionItemDefiner")
+          .add_attachment("collection path", path.as_str())
+      );
+    }
+    if collection_item_namespace.primary_columns_number == 0 {
+      return Err(
+        GenericError::new("creating a collection")
+          .add_error("you didn't define any primary fields for the collection item! define one or more by calling the 'define_primary_scalar_field' method of the CollectionItemDefiner")
+          .add_attachment("collection path", path.as_str())
+      );
     }
 
-    Self {
-      identifier,
-      fully_qualified_identifier,
-      column_specifications,
-      has_multiple_primary_key_columns: primary_key_columns_count > 1,
-    }
+    Ok(Self {
+      path,
+      collection_item_namespace,
+    })
   }
 }

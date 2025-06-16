@@ -2,7 +2,7 @@ use super::{
   GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecification,
   Namespace, PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   Policy, Uuid, PolicyEnabler, CompoundValueDeserializerContext,
-  CollectionItemFieldsNamespace, CollectionItemModificationsDraft, Database,
+  CollectionItemDefiner, CollectionItemModificationsDraft, Database,
   CompoundValueSerializerContext, NormalizedRule, CollectionItemMatcher,
 };
 
@@ -21,10 +21,10 @@ impl PolicySpecification {
   ) -> 
     Result<Self, GenericError>
   {
-    let mut fields_namespace = CollectionItemFieldsNamespace::new();
+    let mut fields_namespace = CollectionItemDefiner::new();
 
     let id_field_specification = fields_namespace
-      .primary_scalar_field_specification("Id")
+      .define_primary_scalar_field("Id")
       .build()
       .map_err(|error| error.change_context("creating PolicySpecification"))?;
     
@@ -38,7 +38,7 @@ impl PolicySpecification {
       .map_err(|error| error.change_context("creating PolicySpecification"))?;
       
     let user_id_field_specification = fields_namespace
-      .primary_scalar_field_specification("UserId")
+      .define_primary_scalar_field("UserId")
       .build()
       .map_err(|error| error.change_context("creating PolicySpecification"))?;
       
@@ -48,7 +48,7 @@ impl PolicySpecification {
     //   .map_err(|error| error.change_context("creating PolicySpecification"))?;
 
     let collection_specification = namespace
-      .collection("Policies", fields_namespace)
+      .define_collection("Policies", fields_namespace)
       .map_err(|error| error.change_context("creating PolicySpecification"))?;
 
     Ok(Self {

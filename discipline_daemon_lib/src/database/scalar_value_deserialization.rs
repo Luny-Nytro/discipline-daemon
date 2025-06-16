@@ -1,5 +1,4 @@
 use std::num::TryFromIntError;
-
 use crate::GenericError;
 use rusqlite::types::ValueRef;
 
@@ -438,7 +437,7 @@ impl<'a> ScalarValue<'a> {
 
   pub fn as_optional_deserializable<T>(self) -> Result<Option<T>, GenericError> 
   where 
-    T: DeserializableScalarValue
+    T: FromScalarValue
   {
     if let ValueRef::Null = self.value {
       return Ok(None);
@@ -450,92 +449,92 @@ impl<'a> ScalarValue<'a> {
   }
 }
 
-pub trait DeserializableScalarValue: Sized {
+pub trait FromScalarValue: Sized {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError>;
 }
 
-impl DeserializableScalarValue for bool {
+impl FromScalarValue for bool {
   fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {
     value.as_boolean()
   }
 }
 
-impl DeserializableScalarValue for String {
+impl FromScalarValue for String {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_string()
   }
 }
 
-impl<T> DeserializableScalarValue for Option<T> 
+impl<T> FromScalarValue for Option<T> 
 where 
-  T: DeserializableScalarValue
+  T: FromScalarValue
 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_optional_deserializable()
   }
 }
 
-impl DeserializableScalarValue for i8 {
+impl FromScalarValue for i8 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_i8()
   }
 }
 
-impl DeserializableScalarValue for i16 {
+impl FromScalarValue for i16 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_i16()
   }
 }
 
-impl DeserializableScalarValue for i32 {
+impl FromScalarValue for i32 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_i32()
   }
 }
 
-impl DeserializableScalarValue for i64 {
+impl FromScalarValue for i64 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_i64()
   }
 }
 
-impl DeserializableScalarValue for u8 {
+impl FromScalarValue for u8 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_u8()
   }
 }
 
-impl DeserializableScalarValue for u16 {
+impl FromScalarValue for u16 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_u16()
   }
 }
 
-impl DeserializableScalarValue for u32 {
+impl FromScalarValue for u32 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_u32()
   }
 }
 
-impl DeserializableScalarValue for u64 {
+impl FromScalarValue for u64 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_u64()
   }
 }
 
-impl DeserializableScalarValue for f32 {
+impl FromScalarValue for f32 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_f32()
   }
 }
 
-impl DeserializableScalarValue for f64 {
+impl FromScalarValue for f64 {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_f64()
   }
 }
 
-impl DeserializableScalarValue for usize {
+impl FromScalarValue for usize {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_usize()
   }

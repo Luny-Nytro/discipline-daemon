@@ -107,13 +107,13 @@ pub mod database_serde {
   use crate::database::*;
   use crate::GenericError;
 
-  impl SerializableScalarValue for OperatingSystemUsername {
+  impl IntoScalarValue for OperatingSystemUsername {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_string(&self.0)
     }
   }
 
-  impl DeserializableScalarValue for OperatingSystemUsername {
+  impl FromScalarValue for OperatingSystemUsername {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_string()
         .and_then(OperatingSystemUsername::new_or_generic_error)

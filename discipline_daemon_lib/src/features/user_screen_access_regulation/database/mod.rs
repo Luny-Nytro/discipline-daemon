@@ -7,8 +7,8 @@ use crate::database::*;
 //   generate_sql_insert_row, 
 //   generate_sql_delete_where_1_column, 
 //   generate_sql_initialize_table,
-// ColumnValue, DeserializableScalarValue, SerializableScalarValue, 
-// ToSerializableScalarValue,
+// ColumnValue, DeserializableScalarValue, IntoScalarValue, 
+// ToIntoScalarValue,
 // };
 
 use crate::{

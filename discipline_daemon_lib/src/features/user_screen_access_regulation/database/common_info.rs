@@ -1,5 +1,5 @@
 use super::{
-  ScalarFieldSpecification, CompoundTypeFieldsScope, 
+  ScalarFieldSpecification, CompoundTypeDefiner, 
   CompoundValueSerializer, CommonInfo, 
   Duration, CompoundValueDeserializerContext, CollectionItemModificationsDraft,
   CompoundValueDeserializer, GenericError, CompoundValueSerializerContext,
@@ -12,7 +12,7 @@ pub struct CommonInfoSpecification {
 
 impl CommonInfoSpecification {
   pub fn new(
-    scope: &mut CompoundTypeFieldsScope,
+    scope: &mut CompoundTypeDefiner,
   ) -> 
     Result<Self, GenericError>
   {

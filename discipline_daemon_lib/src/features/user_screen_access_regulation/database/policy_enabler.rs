@@ -1,5 +1,5 @@
 use super::{
-  CompoundTypeFieldsScope, CompoundValueSerializer, 
+  CompoundTypeDefiner, CompoundValueSerializer, 
   CompoundValueDeserializer, CompoundValueDeserializerContext, 
   CompoundValueSerializerContext, CountdownTimerSpecification,
   PolicyEnabler, GenericError
@@ -10,7 +10,7 @@ pub struct PolicyEnablerSpecification {
 }
 
 impl PolicyEnablerSpecification {
-  pub fn new(scope: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
+  pub fn new(scope: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
       timer: CountdownTimerSpecification::new(scope)?,
     })

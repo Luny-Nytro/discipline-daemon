@@ -130,13 +130,13 @@ pub mod database_serde {
   //   }
   // }
 
-  impl SerializableScalarValue for Hour {
+  impl IntoScalarValue for Hour {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_u32(self.value())
     }
   }
 
-  impl DeserializableScalarValue for Hour {
+  impl FromScalarValue for Hour {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value
         .as_u32()

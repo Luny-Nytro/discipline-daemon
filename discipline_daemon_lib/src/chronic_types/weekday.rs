@@ -199,7 +199,7 @@ pub mod database_serde {
   use crate::GenericError;
   use super::*;
 
-  impl SerializableScalarValue for Weekday {
+  impl IntoScalarValue for Weekday {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       match self {
         Sunday => context.write_u8(0),
@@ -213,7 +213,7 @@ pub mod database_serde {
     }
   }
 
-  impl DeserializableScalarValue for Weekday {
+  impl FromScalarValue for Weekday {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       let number = value
         .as_u8()

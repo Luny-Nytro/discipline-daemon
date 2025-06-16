@@ -8,21 +8,21 @@ use crate::{
 };
 
 use crate::database::{
-  ScalarFieldSpecification, CollectionItemFieldsNamespace, Database,
+  ScalarFieldSpecification, CollectionItemDefiner, Database,
   CompoundValueSerializer, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
-  DeserializableScalarValue, SerializableScalarValue, SerializeScalarValueContext,
+  FromScalarValue, IntoScalarValue, SerializeScalarValueContext,
   ScalarValue, CollectionSpecification, Namespace, CollectionItemModificationsDraft,
   CollectionItemMatcher,
 };
 
-impl SerializableScalarValue for UserName {
+impl IntoScalarValue for UserName {
   fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
     context.write_string(self.as_ref())
   }
 }
 
-impl DeserializableScalarValue for UserName {
+impl FromScalarValue for UserName {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value
       .as_string()
@@ -43,10 +43,10 @@ pub struct Specification {
 
 impl Specification {
   pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemFieldsNamespace::new();
+    let mut fields_namespace = CollectionItemDefiner::new();
 
     let id_field_specification = fields_namespace
-    .primary_scalar_field_specification("Id")
+    .define_primary_scalar_field("Id")
     .build()
     .map_err(|error| error.change_context("creating UserSpecification"))?;
 
@@ -77,7 +77,7 @@ impl Specification {
       .map_err(|error| error.change_context("creating UserSpecification"))?;
 
     let collection_specification = namespace
-      .collection("Users", fields_namespace)
+      .define_collection("Users", fields_namespace)
       .map_err(|error| error.change_context("creating UserSpecification"))?;
 
     Ok(Self {

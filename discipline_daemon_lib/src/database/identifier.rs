@@ -1,6 +1,41 @@
 use crate::GenericError;
 
-pub(super) fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
+enum IdentifierInner {
+  Global(String),
+  Scoped(String),
+}
+
+pub struct DatabaseEntityPath(String);
+
+impl DatabaseEntityPath {
+  pub fn new(identifier: &str) -> Result<(), GenericError> {
+    verify_identifier(identifier)
+      .map(|_| 
+        DatabaseEntityPath(identifier.into())
+      )
+      .map_err(|error| 
+        error.change_context("creating a path")
+      )
+  }
+
+  pub fn then(&self, identifier: &str) -> Result<(), GenericError> {
+    verify_identifier(identifier)
+      .map(|_| 
+        DatabaseEntityPath(format!("{}_{}", self.value(), identifier))
+      )
+      .map_err(|error| 
+        error
+          .change_context("creating a new scoped identifier")
+          .add_attachment("super identifier", self.value())
+      )
+  }
+
+  pub fn as_str(&self) -> &str {
+    &self.0
+  }
+}
+
+fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
   // // Check if it contains any underscores — disallowed in your case
   // if identifier.contains('_') {
   //   return Err(

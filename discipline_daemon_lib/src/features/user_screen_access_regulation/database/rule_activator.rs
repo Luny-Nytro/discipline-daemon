@@ -1,5 +1,5 @@
 use super::{
-  RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeFieldsScope,
+  RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeDefiner,
   CompoundValueDeserializer, CompoundValueSerializer, CompoundValueDeserializerContext, 
   RuleActivator, time_range, weekday_range, CompoundValueSerializerContext,
 };
@@ -12,7 +12,7 @@ pub struct RuleActivatorSpecification {
 }
 
 impl RuleActivatorSpecification {
-  pub fn new(namespace: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
+  pub fn new(namespace: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
       variant: namespace
         .scalar_field_specification("Variant")

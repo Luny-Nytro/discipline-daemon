@@ -46,13 +46,13 @@ mod database {
   use super::OperatingSystemPassword;
   use crate::GenericError;
 
-  impl SerializableScalarValue for OperatingSystemPassword {
+  impl IntoScalarValue for OperatingSystemPassword {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_string(&self.0)
     }
   }
 
-  impl DeserializableScalarValue for OperatingSystemPassword {
+  impl FromScalarValue for OperatingSystemPassword {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value
         .as_string()

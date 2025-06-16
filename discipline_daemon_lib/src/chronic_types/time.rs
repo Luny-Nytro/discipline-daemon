@@ -149,13 +149,13 @@ mod database_serde {
   use crate::GenericError;
   use super::Time;
 
-  impl SerializableScalarValue for Time {
+  impl IntoScalarValue for Time {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_u32(self.0)
     }
   }
 
-  impl DeserializableScalarValue for Time {
+  impl FromScalarValue for Time {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value
         .as_u32()

@@ -5,7 +5,7 @@ use super::*;
 // CollectionItemMatcher::match_by_multiple_scalar_fields()
 // CollectionItemMatcher::match_by_either_scalar_field()
 
-enum CollectionItemMatcherInner {
+pub(super) enum CollectionItemMatcherInner {
   NoWhereClause,
   WhereClause(String),
 }
@@ -34,16 +34,18 @@ impl CollectionItemAndMatchWriter {
   pub fn and_scalar_field_is(
     mut self, 
     scalar_field_specification: &ScalarFieldSpecification,
-    scalar_field_value: &impl SerializableScalarValue,
+    scalar_field_value: &impl IntoScalarValue,
   ) -> 
     Result<Self, GenericError>
   {
-    let mut temp = String::new();
-    if let Err(error) = serialize_scalar_value_into(scalar_field_value, &mut temp) {
+    // TODO: Err if the scalar field is already added
+
+    let mut serialized_scalar_field_value = String::new();
+    if let Err(error) = serialize_scalar_value_into(scalar_field_value, &mut serialized_scalar_field_value) {
       return Err(
         // TODO: Use proper error messages
         error
-          .change_context("creating a collection item matcher that matches based on the values of multiple scalar fields")
+          .change_context("adding a scalar field match condition to a CollectionItemAndMatcher")
           .add_error("failed to serialize scalar field value")
           .add_attachment("scalar field specification", format!("{scalar_field_specification:?}"))
       );
@@ -55,9 +57,9 @@ impl CollectionItemAndMatchWriter {
       self.code.push_str("WHERE ");
     }
 
-    self.code.push_str(&scalar_field_specification.fully_qualified_identifier);
+    self.code.push_str(&scalar_field_specification.path);
     self.code.push_str(" = ");
-    self.code.push_str(&temp);
+    self.code.push_str(&serialized_scalar_field_value);
 
     Ok(self)
   }
@@ -77,7 +79,7 @@ impl CollectionItemAndMatchWriter {
 }
 
 pub struct CollectionItemMatcher {
-  inner: CollectionItemMatcherInner
+  pub(super) inner: CollectionItemMatcherInner
 }
 
 impl CollectionItemMatcher {
@@ -89,13 +91,13 @@ impl CollectionItemMatcher {
 
   pub fn match_by_scalar_field(
     scalar_field_specification: &ScalarFieldSpecification,
-    scalar_field_value: &impl SerializableScalarValue,
+    scalar_field_value: &impl IntoScalarValue,
   ) -> 
     Result<CollectionItemMatcher, GenericError>
   {
     let mut code = String::new();
     code.push_str("WHERE ");
-    code.push_str(&scalar_field_specification.fully_qualified_identifier);
+    code.push_str(&scalar_field_specification.path);
     code.push_str(" = ");
     serialize_scalar_value_into(scalar_field_value, &mut code)
       .map_err(|error|

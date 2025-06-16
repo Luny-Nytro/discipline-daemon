@@ -18,15 +18,15 @@ impl CollectionItemModificationsDraft {
   pub fn modify_scalar_field(
     &mut self, 
     scalar_field_specification: &ScalarFieldSpecification, 
-    new_scalar_field_value: &impl SerializableScalarValue,
+    new_scalar_field_value: &impl IntoScalarValue,
   ) ->
     Result<(), GenericError>
   {
-    let mut temp = String::new();
+    let mut serialized_scalar_field_value = String::new();
 
     if let Err(error) = serialize_scalar_value_into(
       new_scalar_field_value, 
-      &mut temp,
+      &mut serialized_scalar_field_value,
     ) {
       return Err(
         error
@@ -42,14 +42,14 @@ impl CollectionItemModificationsDraft {
       self.code.push_str("SET ");
     }
 
-    self.code.push_str(&scalar_field_specification.fully_qualified_identifier);
+    self.code.push_str(&scalar_field_specification.path);
     self.code.push_str(" = ");
-    self.code.push_str(&temp);
+    self.code.push_str(&serialized_scalar_field_value);
 
     Ok(())
   }
 
-  fn finish(&self) -> Option<&String> {
+  pub(super) fn finish(&self) -> Option<&String> {
     Some(&self.code)
   }
 }

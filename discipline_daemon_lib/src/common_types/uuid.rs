@@ -3,13 +3,13 @@ pub mod database {
   use crate::database::*;
   use crate::GenericError;
 
-  impl SerializableScalarValue for Uuid {
+  impl IntoScalarValue for Uuid {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_string(&self.to_string())
     }
   }
 
-  impl DeserializableScalarValue for Uuid {
+  impl FromScalarValue for Uuid {
     fn deserialize(value: ScalarValue) -> Result<Self, crate::GenericError> {
       value
         .as_string()

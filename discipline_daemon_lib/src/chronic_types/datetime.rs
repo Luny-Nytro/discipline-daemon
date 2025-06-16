@@ -210,13 +210,13 @@ pub mod database {
   //   }
   // }
 
-  impl SerializableScalarValue for DateTime {
+  impl IntoScalarValue for DateTime {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_i64(self.timestamp())
     }
   }
 
-  impl DeserializableScalarValue for DateTime {
+  impl FromScalarValue for DateTime {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value
         .as_i64()

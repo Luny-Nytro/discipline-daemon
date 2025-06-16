@@ -218,7 +218,7 @@ pub mod database {
   }
 
   impl Specification {
-    pub fn new(namespace: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
+    pub fn new(namespace: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
       Ok(Self {
         from: namespace
           .scalar_field_specification("from")

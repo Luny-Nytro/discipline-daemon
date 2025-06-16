@@ -1,5 +1,5 @@
 use super::{
-  ScalarFieldSpecification, CompoundTypeFieldsScope, GenericError, 
+  ScalarFieldSpecification, CompoundTypeDefiner, GenericError, 
   Regulator, CollectionItemModificationsDraft, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   NormalizedPolicy, NormalizedRule, CompoundValueSerializer,
@@ -13,7 +13,7 @@ pub struct RegulatorSpecification {
 }
 
 impl RegulatorSpecification {
-  pub fn new(creator: &mut CompoundTypeFieldsScope) -> Result<Self, GenericError> {
+  pub fn new(creator: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
       is_applying_enabled: creator
         .scalar_field_specification("IsApplyingEnabled")

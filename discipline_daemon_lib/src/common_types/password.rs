@@ -49,13 +49,13 @@ mod database {
   use crate::GenericError;
   use super::Password;
 
-  impl SerializableScalarValue for Password {
+  impl IntoScalarValue for Password {
     fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
       context.write_string(&self.0)
     }
   }
 
-  impl DeserializableScalarValue for Password {
+  impl FromScalarValue for Password {
     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
       value.as_string()
         .map(Password)
