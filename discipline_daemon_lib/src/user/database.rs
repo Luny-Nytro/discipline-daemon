@@ -9,7 +9,7 @@ use crate::{
 
 use crate::database::{
   ScalarFieldSpecification, CollectionItemDefiner, Database,
-  CompoundValueSerializer, CompoundValueSerializerContext,
+  CompoundTypeSerializer, CompoundTypeSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   FromScalarValue, IntoScalarValue, SerializeScalarValueContext,
   ScalarValue, CollectionSpecification, Namespace, CollectionItemModificationsDraft,
@@ -102,7 +102,7 @@ impl Specification {
   ) ->
     Result<(), GenericError>
   {
-    modifications.modify_scalar_field(&self.name_field_specification, new_value)
+    modifications.set_scalar_field(&self.name_field_specification, new_value)
   }
 
   pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
@@ -155,13 +155,13 @@ impl Specification {
   }
 }
 
-impl CompoundValueSerializer for Specification {
-  type CompoundValue = User;
+impl CompoundTypeSerializer for Specification {
+  type CompoundType = User;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) ->
     Result<(), GenericError>
   {

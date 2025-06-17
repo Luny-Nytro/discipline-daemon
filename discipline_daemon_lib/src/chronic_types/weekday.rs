@@ -200,15 +200,15 @@ pub mod database_serde {
   use super::*;
 
   impl IntoScalarValue for Weekday {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+    fn into_scalar_value(&self) -> impl IsScalarValue {
       match self {
-        Sunday => context.write_u8(0),
-        Monday => context.write_u8(1),
-        Tuesday => context.write_u8(2),
-        Wednesday => context.write_u8(3),
-        Thursday => context.write_u8(4),
-        Friday => context.write_u8(5),
-        Saturday => context.write_u8(6),
+        Sunday => 0,
+        Monday => 1,
+        Tuesday => 2,
+        Wednesday => 3,
+        Thursday => 4,
+        Friday => 5,
+        Saturday => 6,
       }
     }
   }

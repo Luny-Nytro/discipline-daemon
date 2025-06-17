@@ -15,8 +15,8 @@ pub use scalar_value_serialization::*;
 mod compound_type_deserialization;
 pub use compound_type_deserialization::*;
 
-mod database_connection;
-pub use database_connection::*;
+mod database;
+pub use database::*;
 
 mod database_modifications_draft;
 pub use database_modifications_draft::*;
@@ -32,9 +32,6 @@ pub use code_generators::*;
 
 mod namespace;
 pub use namespace::*;
-
-mod global_namespace;
-pub use global_namespace::*;
 
 mod collection;
 pub use collection::*;

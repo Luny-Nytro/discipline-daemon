@@ -4,22 +4,22 @@ use super::{
   escape_string_for_sqilte_into, serialize_scalar_value_into,
 };
 
-pub trait CompoundValueSerializer {
-  type CompoundValue;
+pub trait CompoundTypeSerializer {
+  type CompoundType;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) -> Result<(), GenericError>;
 }
 
-pub struct CompoundValueSerializerContext {
+pub struct CompoundTypeSerializerContext {
   column_names: String,
   column_values: String,
 }
 
-impl CompoundValueSerializerContext {
+impl CompoundTypeSerializerContext {
   fn new() -> Self {
     Self {
       column_names: String::new(),
@@ -138,7 +138,7 @@ impl CompoundValueSerializerContext {
 
   pub fn serializable_compound<Value>(
     &mut self, 
-    serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
+    serializer: &impl CompoundTypeSerializer<CompoundType = Value>,
     value: &Value,
   ) -> Result<(), GenericError> {
     serializer
@@ -148,11 +148,11 @@ impl CompoundValueSerializerContext {
 }
 
 pub(super) fn serialize_compound_value_into<Value>(
-  serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
+  serializer: &impl CompoundTypeSerializer<CompoundType = Value>,
   value: &Value,
   into: &mut String,
 ) -> Result<(), GenericError> {
-  let mut context = CompoundValueSerializerContext::new();
+  let mut context = CompoundTypeSerializerContext::new();
   serializer
     .serialize_into(value, &mut context)
     .map_err(|error| 

@@ -216,11 +216,11 @@ impl Database {
     )
   }
 
-  pub fn add_collection_item<Serializer: CompoundValueSerializer>(
+  pub fn add_collection_item<Serializer: CompoundTypeSerializer>(
     &self,
     collection_specification: &CollectionSpecification,
     collection_item_serializer: &Serializer,
-    new_collection_item: &Serializer::CompoundValue,
+    new_collection_item: &Serializer::CompoundType,
   ) -> 
     Result<(), GenericError> 
   {
@@ -241,35 +241,37 @@ impl Database {
     )
   }
 
-  pub fn initialize_database_schema(
-    &self,
-    database_specifications_provider: &impl DatabaseSpecificationsProvider,
+  // pub fn initialize_database_schema(
+  //   &self,
+  //   database_specifications_provider: &impl DatabaseSpecificationsProvider,
+  // ) -> 
+  //   Result<(), GenericError>
+  // {
+  //   let mut code = String::new();
+  //   generate_code_define_database_schema(
+  //     &mut code, 
+  //     database_specifications_provider,
+  //   )
+  //   .and_then(|_|
+  //     self.execute(&code)
+  //   )
+  //   .map_err(|error|
+  //     error.change_context("initializing database schema")
+  //   )
+  // }
+
+  pub fn define_namespace(
+    &mut self, 
+    identifier: &str,
   ) -> 
-    Result<(), GenericError>
+    Result<Namespace, GenericError> 
   {
-    let mut code = String::new();
-    generate_code_define_database_schema(
-      &mut code, 
-      database_specifications_provider,
-    )
-    .and_then(|_|
-      self.execute(&code)
-    )
-    .map_err(|error|
-      error.change_context("initializing database schema")
-    )
-  }
-
-
-  pub fn namespace(&mut self) -> &mut GlobalNamespace {
-    todo!()
-    // verify_identifier("main")
-    //   .map(|_|
-    //     GlobalNamespace {
-    //       identifier: "main".into(),
-    //       fully_qualified_identifier: "main".into(),
-    //     }
-    //   )
-    // TODO: do proper error handling
+    DatabaseEntityPath::new(identifier)
+      .map(|path| Namespace { path })
+      .map_err(|error|
+        error
+          .change_context("definning a new namespace")
+          .add_error("invalid namespace identifier")
+      )
   }
 }

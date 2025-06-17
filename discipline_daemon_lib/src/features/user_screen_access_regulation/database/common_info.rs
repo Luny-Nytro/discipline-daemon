@@ -1,8 +1,8 @@
 use super::{
   ScalarFieldSpecification, CompoundTypeDefiner, 
-  CompoundValueSerializer, CommonInfo, 
+  CompoundTypeSerializer, CommonInfo, 
   Duration, CompoundValueDeserializerContext, CollectionItemModificationsDraft,
-  CompoundValueDeserializer, GenericError, CompoundValueSerializerContext,
+  CompoundValueDeserializer, GenericError, CompoundTypeSerializerContext,
 };
 
 pub struct CommonInfoSpecification {
@@ -34,17 +34,17 @@ impl CommonInfoSpecification {
   ) ->
     Result<(), GenericError>
   {
-    modifications.modify_scalar_field(&self.applying_interval, &new_value)
+    modifications.set_scalar_field(&self.applying_interval, &new_value)
   }
 }
 
-impl CompoundValueSerializer for CommonInfoSpecification {
-  type CompoundValue = CommonInfo;
+impl CompoundTypeSerializer for CommonInfoSpecification {
+  type CompoundType = CommonInfo;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) ->
     Result<(), GenericError>
   {

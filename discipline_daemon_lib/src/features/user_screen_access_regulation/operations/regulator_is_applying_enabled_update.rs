@@ -48,7 +48,7 @@ impl IsOperation for Operation {
       .state_database_specification
       .user_specification
       .screen_access_regulator_field_specification()
-      .update_is_applying_enabled(&mut modifications_draft, self.new_value)
+      .set_is_applying_enabled(&mut modifications_draft, self.new_value)
     {
       return InternalOperationOutcome::internal_error(error);
     }

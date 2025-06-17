@@ -150,8 +150,8 @@ mod database_serde {
   use super::Time;
 
   impl IntoScalarValue for Time {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_u32(self.0)
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      self.0
     }
   }
 

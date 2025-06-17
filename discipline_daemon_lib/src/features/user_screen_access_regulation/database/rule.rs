@@ -1,6 +1,6 @@
 use super::{
-  Rule, RuleActivator, GenericError, Uuid, CompoundValueSerializerContext,
-  ScalarFieldSpecification, CompoundValueSerializer, CollectionSpecification,
+  Rule, RuleActivator, GenericError, Uuid, CompoundTypeSerializerContext,
+  ScalarFieldSpecification, CompoundTypeSerializer, CollectionSpecification,
   CompoundValueDeserializer, CompoundValueDeserializerContext, Namespace,
   CollectionItemDefiner, RuleActivatorSpecification, CollectionItemModificationsDraft,
   Database, CollectionItemMatcher,
@@ -161,13 +161,13 @@ impl<'a> RuleSerializer<'a> {
   }
 }
 
-impl<'a> CompoundValueSerializer for RuleSerializer<'a> {
-  type CompoundValue = Rule;
+impl<'a> CompoundTypeSerializer for RuleSerializer<'a> {
+  type CompoundType = Rule;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {

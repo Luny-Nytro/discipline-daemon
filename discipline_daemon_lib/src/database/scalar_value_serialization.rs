@@ -1,5 +1,4 @@
 use super::escape_string_for_sqilte_into;
-use crate::GenericError;
 
 // pub struct SerializeScalarValueContext<'a> {
 //   into: &'a mut String,
@@ -312,6 +311,15 @@ impl Serializable for String {
   }
 }
 
+impl<'a, T> Serializable for &'a T 
+where 
+  T: Serializable
+{
+  fn write_into(&self, into: &mut String) {
+    self.write_into(into);
+  }
+}
+
 impl<T> Serializable for Option<T> 
 where 
   T: Serializable
@@ -340,14 +348,14 @@ where
 }
 
 pub trait IntoScalarValue {
-  fn into_scalar_value(self) -> impl IsScalarValue;
+  fn into_scalar_value(&self) -> impl IsScalarValue;
 }
 
 impl<T> IntoScalarValue for T 
 where 
   T: IsScalarValue
 {
-  fn into_scalar_value(self) -> impl IsScalarValue {
+  fn into_scalar_value(&self) -> impl IsScalarValue {
     self
   }
 }

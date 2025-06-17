@@ -2,13 +2,13 @@ use super::*;
 
 pub struct CollectionSpecification {
   pub(super) path: DatabaseEntityPath,
-  pub(super) collection_item_namespace: CompoundTypeNamepace,
+  pub(super) collection_item_namespace: CompoundTypeNamespace,
 }
 
 impl CollectionSpecification {
   pub(super) fn new(
     path: DatabaseEntityPath,
-    collection_item_namespace: CompoundTypeNamepace,
+    collection_item_namespace: CompoundTypeNamespace,
   ) -> 
     Result<Self, GenericError>
   {

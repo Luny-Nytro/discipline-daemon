@@ -1,14 +1,21 @@
+use std::marker::PhantomData;
+
 use super::*;
 
-
 pub struct CollectionItemDefiner {
-  
+  lunar_dust: PhantomData<()>
 }
 
 impl CollectionItemDefiner {
+  pub fn new() -> Self {
+    Self {
+      lunar_dust: PhantomData,
+    }
+  }
+
   pub fn define_primary_scalar_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -40,7 +47,7 @@ impl CollectionItemDefiner {
 
   pub fn define_required_readonly_scalar_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -72,7 +79,7 @@ impl CollectionItemDefiner {
 
   pub fn define_required_writable_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -104,7 +111,7 @@ impl CollectionItemDefiner {
 
   pub fn define_optional_readonly_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -136,7 +143,7 @@ impl CollectionItemDefiner {
 
   pub fn define_optional_writable_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -168,7 +175,7 @@ impl CollectionItemDefiner {
 
   pub fn define_optional_readonly_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -195,7 +202,7 @@ impl CollectionItemDefiner {
   
   pub fn define_optional_writable_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -222,7 +229,7 @@ impl CollectionItemDefiner {
 
   pub fn define_required_readonly_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -249,7 +256,7 @@ impl CollectionItemDefiner {
   
   pub fn define_required_writable_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 

@@ -40,16 +40,16 @@ pub fn generate_code_define_collection(
   let mut multi_column_primary_key_constraint = MlutiColumnPrimaryKeyConstraint::new();
   let mut did_write_a_column_definition = false;
 
-  for column_specification in &collection_specification.collection_item_namespace {
+  for column_specification in &collection_specification.collection_item_namespace.columns {
     if did_write_a_column_definition {
       code.push_str(", ");
     }
 
-    code.push_str(&column_specification.fully_qualified_name);
+    code.push_str(column_specification.path.as_str());
     
     match column_specification.column_type {
       ColumnType::Primary => {
-        if collection_specification.has_multiple_primary_key_columns {
+        if collection_specification.collection_item_namespace.primary_columns_number > 1 {
           multi_column_primary_key_constraint.write(&column_specification);
         } else {
           code.push_str(" PRIMARY KEY");
@@ -72,7 +72,7 @@ pub fn generate_code_define_collection(
     did_write_a_column_definition = true;
   }
 
-  if collection_specification.has_multiple_primary_key_columns {
+  if collection_specification.collection_item_namespace.primary_columns_number > 0 {
     code.push_str(", ");
     code.push_str(&multi_column_primary_key_constraint.finish());
   }
@@ -86,11 +86,11 @@ pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
   collection_specification: &CollectionSpecification,
   collection_item_serializer: &Serializer,
-  new_collection_item: &Serializer::CompoundValue,
+  new_collection_item: &Serializer::CompoundType,
 ) ->
   Result<(), GenericError>
 where 
-  Serializer: CompoundValueSerializer
+  Serializer: CompoundTypeSerializer
 {
   let mut values_clause = String::new();
   serialize_compound_value_into(

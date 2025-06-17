@@ -1,6 +1,5 @@
 use std::process::Command;
 use crate::GenericError;
-
 use super::OperatingSystemUsername;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,8 +73,8 @@ mod database {
   use crate::GenericError;
 
   impl IntoScalarValue for OperatingSystemUserId {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_u32(self.0)
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      &self.0
     }
   }
 

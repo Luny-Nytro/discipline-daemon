@@ -1,11 +1,11 @@
 use super::{
   PolicyName, IntoScalarValue, FromScalarValue,
-  SerializeScalarValueContext, ScalarValue,
+  IsScalarValue, ScalarValue,
 };
 
 impl IntoScalarValue for PolicyName {
-  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), crate::GenericError> {
-    context.write_string(self.as_ref())
+  fn into_scalar_value(&self) -> impl IsScalarValue {
+    self.as_ref()
   }
 }
 

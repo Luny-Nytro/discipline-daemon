@@ -47,8 +47,8 @@ mod database {
   use crate::GenericError;
 
   impl IntoScalarValue for OperatingSystemPassword {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_string(&self.0)
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      &self.0
     }
   }
 

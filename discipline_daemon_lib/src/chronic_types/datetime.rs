@@ -211,8 +211,8 @@ pub mod database {
   // }
 
   impl IntoScalarValue for DateTime {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_i64(self.timestamp())
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      self.timestamp()
     }
   }
 

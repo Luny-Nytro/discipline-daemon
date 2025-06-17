@@ -239,7 +239,7 @@ pub mod database {
     ) -> 
       Result<(), GenericError> 
     {
-      modifications.modify_scalar_field(&self.from, new_value)
+      modifications.set_scalar_field(&self.from, new_value)
     }
 
     pub fn set_till(
@@ -249,7 +249,7 @@ pub mod database {
     ) -> 
       Result<(), GenericError>
     {
-      modifications.modify_scalar_field(&self.from, new_value)
+      modifications.set_scalar_field(&self.from, new_value)
     }
 
     pub fn update_range(
@@ -259,18 +259,18 @@ pub mod database {
     ) -> 
       Result<(), GenericError>
     {
-      modifications.modify_scalar_field(&self.from, &new_value.from)?;
-      modifications.modify_scalar_field(&self.till, &new_value.till)
+      modifications.set_scalar_field(&self.from, &new_value.from)?;
+      modifications.set_scalar_field(&self.till, &new_value.till)
     }
   }
 
-  impl<'a> CompoundValueSerializer for Specification {
-    type CompoundValue = TimeRange;
+  impl<'a> CompoundTypeSerializer for Specification {
+    type CompoundType = TimeRange;
 
     fn serialize_into(
       &self, 
-      value: &Self::CompoundValue,
-      context: &mut CompoundValueSerializerContext, 
+      value: &Self::CompoundType,
+      context: &mut CompoundTypeSerializerContext, 
     ) -> 
       Result<(), GenericError>
     {
@@ -298,13 +298,6 @@ pub mod database {
       TimeRange::from_numbers(from, till).map_err(|error|
         error.change_context("deserialize a TimeRange")
       )
-    }
-  }
-
-  impl CompoundTypeSpecificationProvider for Specification {
-    fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
-      context.add_scalar_field(&self.from)?;
-      context.add_scalar_field(&self.till)
     }
   }
 }

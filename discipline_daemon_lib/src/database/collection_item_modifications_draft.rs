@@ -15,13 +15,14 @@ impl CollectionItemModificationsDraft {
     self.code.len() > 0
   }
 
-  pub fn modify_scalar_field(
+  pub fn set_scalar_field(
     &mut self, 
     scalar_field_specification: &ScalarFieldSpecification, 
     new_scalar_field_value: &impl IntoScalarValue,
   ) ->
     Result<(), GenericError>
   {
+    // TODO: Return an error if the scalar field is readonly 
     let mut serialized_scalar_field_value = String::new();
 
     if let Err(error) = serialize_scalar_value_into(

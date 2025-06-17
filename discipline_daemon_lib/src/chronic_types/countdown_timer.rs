@@ -96,7 +96,7 @@ pub mod database {
     ) -> 
       Result<(), GenericError>
     {
-      modifications.modify_scalar_field(&self.remaining_duration, new_remaining_duration)
+      modifications.set_scalar_field(&self.remaining_duration, new_remaining_duration)
     }
 
     pub fn update_after_synchronization(
@@ -106,25 +106,25 @@ pub mod database {
     ) -> 
       Result<(), GenericError>
     {
-      modifications.modify_scalar_field(
+      modifications.set_scalar_field(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
       )?;
 
-      modifications.modify_scalar_field(
+      modifications.set_scalar_field(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
       )
     }
   }
 
-  impl CompoundValueSerializer for Specification {
-    type CompoundValue = CountdownTimer;
+  impl CompoundTypeSerializer for Specification {
+    type CompoundType = CountdownTimer;
 
     fn serialize_into(
       &self, 
-      value: &Self::CompoundValue,
-      context: &mut CompoundValueSerializerContext, 
+      value: &Self::CompoundType,
+      context: &mut CompoundTypeSerializerContext, 
     ) ->
       Result<(), GenericError>
     {

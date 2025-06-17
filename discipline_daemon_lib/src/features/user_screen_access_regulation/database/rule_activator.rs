@@ -1,7 +1,7 @@
 use super::{
   RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeDefiner,
-  CompoundValueDeserializer, CompoundValueSerializer, CompoundValueDeserializerContext, 
-  RuleActivator, time_range, weekday_range, CompoundValueSerializerContext,
+  CompoundValueDeserializer, CompoundTypeSerializer, CompoundValueDeserializerContext, 
+  RuleActivator, time_range, weekday_range, CompoundTypeSerializerContext,
 };
 
 pub struct RuleActivatorSpecification {
@@ -42,13 +42,13 @@ impl RuleActivatorSpecification {
   }
 }
 
-impl CompoundValueSerializer for RuleActivatorSpecification {
-  type CompoundValue = RuleActivator;
+impl CompoundTypeSerializer for RuleActivatorSpecification {
+  type CompoundType = RuleActivator;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {

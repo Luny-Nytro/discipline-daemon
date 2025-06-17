@@ -1,11 +1,10 @@
 pub mod database {
-  use uuid::Uuid;
   use crate::database::*;
-  use crate::GenericError;
+  use crate::{GenericError, Uuid};
 
   impl IntoScalarValue for Uuid {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_string(&self.to_string())
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      self.to_string()
     }
   }
 

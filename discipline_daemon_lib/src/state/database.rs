@@ -1,6 +1,6 @@
 use crate::database::{
-  ScalarFieldSpecification, CompoundValueDeserializer, CompoundValueSerializer, 
-  GlobalNamespace, CompoundValueDeserializerContext, CompoundValueSerializerContext, 
+  ScalarFieldSpecification, CompoundValueDeserializer, CompoundTypeSerializer, 
+  GlobalNamespace, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
   CollectionSpecification, CollectionItemDefiner, Database,
   CollectionItemMatcher,
 };
@@ -55,13 +55,13 @@ impl Specification {
   }
 }
 
-impl CompoundValueSerializer for Specification {
-  type CompoundValue = State;
+impl CompoundTypeSerializer for Specification {
+  type CompoundType = State;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) ->
     Result<(), GenericError>
   {

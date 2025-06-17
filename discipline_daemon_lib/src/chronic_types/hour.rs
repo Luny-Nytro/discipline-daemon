@@ -98,7 +98,7 @@ impl<'de> Deserialize<'de> for Hour {
   }
 }
 
-pub mod database_serde {
+pub mod database {
   use crate::database::*;
   use crate::GenericError;
   use super::Hour;
@@ -131,8 +131,8 @@ pub mod database_serde {
   // }
 
   impl IntoScalarValue for Hour {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_u32(self.value())
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      self.value()
     }
   }
 

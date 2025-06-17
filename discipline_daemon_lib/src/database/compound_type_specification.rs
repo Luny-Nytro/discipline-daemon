@@ -62,12 +62,12 @@ pub struct ScalarFieldSpecification {
 //   }
 // }
 
-pub struct CompoundTypeNamepace {
+pub struct CompoundTypeNamespace {
   pub(super) columns: Vec<ColumnSpecification>,
   pub(super) primary_columns_number: usize,
 }
 
-impl CompoundTypeNamepace {
+impl CompoundTypeNamespace {
   pub fn new() -> Self {
     Self {
       columns: Vec::new(),
@@ -89,7 +89,7 @@ pub struct CompoundTypeDefiner {
 impl CompoundTypeDefiner {
   pub fn define_required_readonly_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -121,7 +121,7 @@ impl CompoundTypeDefiner {
 
   pub fn define_required_writable_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -153,7 +153,7 @@ impl CompoundTypeDefiner {
 
   pub fn define_optional_readonly_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -185,7 +185,7 @@ impl CompoundTypeDefiner {
 
   pub fn define_optional_writable_scalar_field(
     &mut self,
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<ScalarFieldSpecification, GenericError> 
@@ -217,7 +217,7 @@ impl CompoundTypeDefiner {
 
   pub fn define_optional_readonly_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -244,7 +244,7 @@ impl CompoundTypeDefiner {
   
   pub fn define_optional_writable_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -271,7 +271,7 @@ impl CompoundTypeDefiner {
 
   pub fn define_required_readonly_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -298,7 +298,7 @@ impl CompoundTypeDefiner {
   
   pub fn define_required_writable_compound_field(
     &mut self, 
-    namespace: &mut CompoundTypeNamepace,
+    namespace: &mut CompoundTypeNamespace,
     new_scalar_field_identifier: &str,
   ) -> 
     Result<CompoundTypeDefiner, GenericError> 
@@ -318,7 +318,7 @@ impl CompoundTypeDefiner {
 
     Ok(CompoundTypeDefiner {
       path: scalar_field_path,
-      optional: true,
+      optional: false,
       writable: true,
     })
   }

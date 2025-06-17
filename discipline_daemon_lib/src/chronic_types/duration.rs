@@ -238,8 +238,8 @@ pub mod database_serde {
   // }
 
   impl IntoScalarValue for Duration {
-    fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-      context.write_u64(self.total_milliseconds())
+    fn into_scalar_value(&self) -> impl IsScalarValue {
+      self.total_milliseconds()
     }
   }
 

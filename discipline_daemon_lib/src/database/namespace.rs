@@ -30,8 +30,9 @@ impl Namespace {
 
   pub fn define_collection(
     &mut self, 
+    database: &mut Database,
     collection_identifier: &str,
-    collection_item_namespace: CompoundTypeNamepace,
+    collection_item_namespace: CompoundTypeNamespace,
   ) -> 
     Result<CollectionSpecification, GenericError> 
   {

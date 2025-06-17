@@ -30,7 +30,7 @@ impl Daemon {
         .change_context("creating daemon")
     )?;
 
-    let state_database_specification = Specification::new(database.namespace()).map_err(|error|
+    let state_database_specification = Specification::new(database.define_namespace()).map_err(|error|
       error
         .change_context("creating state database specification")
         .change_context("creating daemon")

@@ -1,10 +1,9 @@
 use super::{
   ScalarFieldSpecification, CompoundTypeDefiner, GenericError, 
-  Regulator, CollectionItemModificationsDraft, CompoundValueSerializerContext,
+  Regulator, CollectionItemModificationsDraft, CompoundTypeSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
-  NormalizedPolicy, NormalizedRule, CompoundValueSerializer,
-  CompoundTypeSpecificationProvider, CompoundTypeFieldsSpecification,
-  OperatingSystemCalls, Uuid,
+  NormalizedPolicy, NormalizedRule, CompoundTypeSerializer,
+  OperatingSystemCalls, Uuid, CompoundTypeNamespace,
 };
 
 pub struct RegulatorSpecification {
@@ -13,46 +12,49 @@ pub struct RegulatorSpecification {
 }
 
 impl RegulatorSpecification {
-  pub fn new(creator: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+  pub fn new(
+    namespace: &mut CompoundTypeNamespace,
+    definer: &mut CompoundTypeDefiner,
+  ) -> 
+    Result<Self, GenericError> 
+  {
     Ok(Self {
-      is_applying_enabled: creator
-        .scalar_field_specification("IsApplyingEnabled")
-        .build()?,
+      is_applying_enabled: definer
+        .define_required_writable_scalar_field(namespace, "IsApplyingEnabled")?,
 
-      is_user_screen_access_blocked: creator
-        .scalar_field_specification("IsUserScreenAccessBlocked")
-        .build()?,
+      is_user_screen_access_blocked: definer
+        .define_required_writable_scalar_field(namespace, "IsUserScreenAccessBlocked")?,
     })
   }
 
-  pub fn update_is_applying_enabled(
+  pub fn set_is_applying_enabled(
     &self, 
-    modifications: &mut CollectionItemModificationsDraft,
+    draft: &mut CollectionItemModificationsDraft,
     new_value: bool,
   ) ->
     Result<(), GenericError>
   {
-    modifications.modify_scalar_field(&self.is_applying_enabled, &new_value)
+    draft.set_scalar_field(&self.is_applying_enabled, &new_value)
   }
 
-  pub fn update_is_user_screen_access_blocked(
+  pub fn set_is_user_screen_access_blocked(
     &self, 
-    modifications: &mut CollectionItemModificationsDraft,
+    draft: &mut CollectionItemModificationsDraft,
     new_value: bool,
   ) ->
     Result<(), GenericError>
   {
-    modifications.modify_scalar_field(&self.is_user_screen_access_blocked, &new_value)
+    draft.set_scalar_field(&self.is_user_screen_access_blocked, &new_value)
   }
 }
 
-impl CompoundValueSerializer for RegulatorSpecification {
-  type CompoundValue = Regulator;
+impl CompoundTypeSerializer for RegulatorSpecification {
+  type CompoundType = Regulator;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
+    value: &Self::CompoundType,
+    context: &mut CompoundTypeSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {
@@ -106,12 +108,5 @@ impl NormalizedRegulator {
       operating_system_calls: OperatingSystemCalls::new(),
       is_user_screen_access_blocked: self.is_user_screen_access_blocked,
     }
-  }
-}
-
-impl CompoundTypeSpecificationProvider for RegulatorSpecification {
-  fn add_fields(&self, context: &mut CompoundTypeFieldsSpecification) -> Result<(), GenericError> {
-    context.add_scalar_field(&self.is_applying_enabled)?;
-    context.add_scalar_field(&self.is_user_screen_access_blocked)
   }
 }
