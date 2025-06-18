@@ -41,12 +41,12 @@ impl IsOperation for Operation {
 
     let mut modifications_draft = daemon
       .state_database_specification
-      .user_specification
+      .user
       .create_modifications_draft();
     
     if let Err(error) = daemon
       .state_database_specification
-      .user_specification
+      .user
       .screen_access_regulator_field_specification()
       .set_is_applying_enabled(&mut modifications_draft, self.new_value)
     {
@@ -55,7 +55,7 @@ impl IsOperation for Operation {
       
     if let Err(error) = daemon
       .state_database_specification
-      .user_specification
+      .user
       .apply_modifications_draft(
         &daemon.database_connection, 
         &modifications_draft, 

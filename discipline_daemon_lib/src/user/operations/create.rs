@@ -71,7 +71,7 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .state_database_specification
-      .user_specification
+      .user
       .add_user(&daemon.database_connection, &user)
     {
       return InternalOperationOutcome::internal_error(

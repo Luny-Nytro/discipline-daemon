@@ -1,6 +1,6 @@
 use super::{
   FromScalarValue, IntoScalarValue, GenericError,
-  SerializeScalarValueContext, ScalarValue,
+  IsScalarValue, ScalarValue,
 };
 
 
@@ -13,12 +13,12 @@ pub enum RuleActivatorVariant {
 }
 
 impl IntoScalarValue for RuleActivatorVariant {
-  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
+  fn into_scalar_value(&self) -> impl IsScalarValue {
     match self {
-      RuleActivatorVariant::AllTheTime => context.write_u8(0),
-      RuleActivatorVariant::OnWeekday => context.write_u8(1),
-      RuleActivatorVariant::InTimeRange => context.write_u8(2),
-      RuleActivatorVariant::InWeekdayRange => context.write_u8(3),
+      RuleActivatorVariant::AllTheTime => 0,
+      RuleActivatorVariant::OnWeekday => 1,
+      RuleActivatorVariant::InTimeRange => 2,
+      RuleActivatorVariant::InWeekdayRange => 3,
     }
   }
 }

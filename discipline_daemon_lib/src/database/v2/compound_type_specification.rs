@@ -1,6 +1,53 @@
 use std::collections::HashSet;
 use super::*;
 
+pub trait IsCompoundType {
+  fn define(&mut self, definer: &mut impl CompoundTypeDefiner);
+}
+
+pub trait CompoundTypeDefiner {
+
+}
+
+#[derive(Debug)]
+pub struct Field {
+  pub(super) path: DatabaseEntityPath,
+  optional: bool,
+  writable: bool,
+  primary: bool,
+}
+
+enum FieldInner {
+  Undefined(UndefinedField),
+  Defined(DefinedField),
+}
+
+struct DefinedField {
+  name: String,
+  primary: bool,
+  writable: bool,
+  optional: bool,
+}
+
+struct UndefinedField {
+  name: String,
+  primary: bool,
+  writable: bool,
+  optional: bool,
+}
+
+impl Field {
+  pub(super) fn is_primary(&self) -> bool {
+    self.primary
+  }
+  pub(super) fn is_optional(&self) -> bool {
+    self.optional
+  }
+  pub(super) fn is_writable(&self) -> bool {
+    self.writable
+  }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub(super) enum ColumnType {
   Primary, 
@@ -13,13 +60,6 @@ pub(super) enum ColumnType {
 pub(super) struct ColumnSpecification {
   pub(super) path: DatabaseEntityPath,
   pub(super) column_type: ColumnType,
-}
-
-#[derive(Debug)]
-pub struct ScalarFieldSpecification {
-  pub(super) path: DatabaseEntityPath,
-  pub(super) optional: bool,
-  pub(super) writable: bool,
 }
 
 // pub struct ScalarFieldSpecificationBuilder {
@@ -87,7 +127,7 @@ impl CompoundTypeNamespace {
     super_type_path: &DatabaseEntityPath,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     let path = super_type_path.then(scalar_field_identifier)
       .map_err(|error|
@@ -107,7 +147,7 @@ impl CompoundTypeNamespace {
       path: path.clone(),
     });
 
-    Ok(ScalarFieldSpecification {
+    Ok(Field {
       path,
       optional: false,
       writable: false,
@@ -119,7 +159,7 @@ impl CompoundTypeNamespace {
     super_type_path: &DatabaseEntityPath,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     let scalar_field_path = super_type_path.then(scalar_field_identifier)
       .map_err(|error|
@@ -139,7 +179,7 @@ impl CompoundTypeNamespace {
       path: scalar_field_path.clone(),
     });
 
-    Ok(ScalarFieldSpecification {
+    Ok(Field {
       path: scalar_field_path,
       optional: false,
       writable: false,
@@ -151,7 +191,7 @@ impl CompoundTypeNamespace {
     super_type_path: &DatabaseEntityPath,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     let scalar_field_path = super_type_path.then(scalar_field_identifier)
       .map_err(|error|
@@ -171,7 +211,7 @@ impl CompoundTypeNamespace {
       path: scalar_field_path.clone(),
     });
 
-    Ok(ScalarFieldSpecification {
+    Ok(Field {
       path: scalar_field_path,
       optional: false,
       writable: true,
@@ -183,7 +223,7 @@ impl CompoundTypeNamespace {
     super_type_path: &DatabaseEntityPath,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     let scalar_field_path = super_type_path.then(scalar_field_identifier)
       .map_err(|error|
@@ -203,7 +243,7 @@ impl CompoundTypeNamespace {
       path: scalar_field_path.clone(),
     });
 
-    Ok(ScalarFieldSpecification {
+    Ok(Field {
       path: scalar_field_path,
       optional: true,
       writable: false,
@@ -215,7 +255,7 @@ impl CompoundTypeNamespace {
     super_type_path: &DatabaseEntityPath,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     let scalar_field_path = super_type_path.then(scalar_field_identifier)
       .map_err(|error|
@@ -235,7 +275,7 @@ impl CompoundTypeNamespace {
       path: scalar_field_path.clone(),
     });
 
-    Ok(ScalarFieldSpecification {
+    Ok(Field {
       path: scalar_field_path,
       optional: true,
       writable: true,
@@ -363,7 +403,7 @@ impl CompoundTypeDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_required_readonly_scalar_field(
       &self.path,
@@ -376,7 +416,7 @@ impl CompoundTypeDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_required_writable_scalar_field(
       &self.path,
@@ -389,7 +429,7 @@ impl CompoundTypeDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_optional_readonly_scalar_field(
       &self.path,
@@ -402,7 +442,7 @@ impl CompoundTypeDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_optional_writable_scalar_field(
       &self.path,

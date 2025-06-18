@@ -25,13 +25,13 @@ impl IsOperation for Operation {
 
     let mut modifications_draft = daemon
       .state_database_specification
-      .user_specification
+      .user
       .create_modifications_draft();
 
     if let Err(error) = daemon
       .state_database_specification
-      .user_specification
-      .update_name(&mut modifications_draft, &self.new_user_name)
+      .user
+      .set_name(&mut modifications_draft, &self.new_user_name)
     {
       return InternalOperationOutcome::internal_error(
         error

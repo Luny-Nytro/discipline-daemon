@@ -1,6 +1,6 @@
 use super::{
   GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecification,
-  Namespace, PolicyName, CompoundTypeSerializer, CompoundValueDeserializer,
+  DatabaseNamespace, PolicyName, CompoundTypeSerializer, CompoundValueDeserializer,
   Policy, Uuid, PolicyEnabler, CompoundValueDeserializerContext,
   CollectionItemDefiner, CollectionItemModificationsDraft, Database,
   CompoundTypeSerializerContext, NormalizedRule, CollectionItemMatcher,
@@ -19,7 +19,7 @@ pub struct PolicySpecification {
 impl PolicySpecification {
   pub fn new(
     database: &mut Database,
-    namespace: &mut Namespace,
+    namespace: &mut DatabaseNamespace,
   ) -> 
     Result<Self, GenericError>
   {
@@ -27,21 +27,20 @@ impl PolicySpecification {
     let mut policy_definer = CollectionItemDefiner::new();
 
     let id_field_specification = policy_definer
-      .define_primary_scalar_field(&mut policy_namespace, "Id")
-      .map_err(|error| error.change_context("creating PolicySpecification"))?;
+      .define_primary_scalar_field(&mut policy_namespace, "Id")?;
     
     let name_field_specification = policy_definer
-      .define_required_writable_scalar_field(&mut policy_namespace, "Name")
-      .map_err(|error| error.change_context("creating PolicySpecification"))?;
+      .define_required_writable_scalar_field(&mut policy_namespace, "Name")?;
       
-    let enabler_field_specification = PolicyEnablerSpecification
-      ::new(&mut policy_definer.compound_field_specification("Enabler")?)
-      .map_err(|error| error.change_context("creating PolicySpecification"))?;
+    let mut enabler_definer = policy_definer.define_required_writable_compound_field(&mut policy_namespace, "Enabler")?;
+
+    let enabler_field_specification = PolicyEnablerSpecification::new(
+      &mut policy_namespace,
+      &mut enabler_definer,
+    )?;
       
     let user_id_field_specification = policy_definer
-      .define_primary_scalar_field("UserId")
-      .build()
-      .map_err(|error| error.change_context("creating PolicySpecification"))?;
+      .define_primary_scalar_field(&mut policy_namespace, "UserId")?;
       
     // let position_field_specification = fields_namespace
     //   .scalar_field_specification("Position")
@@ -49,8 +48,11 @@ impl PolicySpecification {
     //   .map_err(|error| error.change_context("creating PolicySpecification"))?;
 
     let collection_specification = namespace
-      .define_collection("Policies", policy_definer)
-      .map_err(|error| error.change_context("creating PolicySpecification"))?;
+      .define_collection(
+        database,
+        "Policies", 
+        policy_namespace,
+      )?;
 
     Ok(Self {
       // position_field_specification,

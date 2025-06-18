@@ -17,7 +17,7 @@ impl CollectionItemModificationsDraft {
 
   pub fn set_scalar_field(
     &mut self, 
-    scalar_field_specification: &ScalarFieldSpecification, 
+    scalar_field_specification: &Field, 
     new_scalar_field_value: &impl IntoScalarValue,
   ) ->
     Result<(), GenericError>

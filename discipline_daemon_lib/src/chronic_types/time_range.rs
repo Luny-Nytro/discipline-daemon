@@ -218,15 +218,15 @@ pub mod database {
   }
 
   impl Specification {
-    pub fn new(namespace: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+    pub fn new(
+      namespace: &mut CompoundTypeNamespace,
+      definer: &mut CompoundTypeDefiner,
+    ) -> 
+      Result<Self, GenericError> 
+    {
       Ok(Self {
-        from: namespace
-          .scalar_field_specification("from")
-          .build()?,
-
-        till: namespace
-          .scalar_field_specification("till")
-          .build()?,
+        from: definer.define_required_writable_scalar_field(namespace, "from")?,
+        till: definer.define_required_writable_scalar_field(namespace, "till")?,
       })
     }
   }

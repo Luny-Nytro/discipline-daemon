@@ -11,14 +11,15 @@ use crate::database::{
   ScalarFieldSpecification, CollectionItemDefiner, Database,
   CompoundTypeSerializer, CompoundTypeSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
-  FromScalarValue, IntoScalarValue, SerializeScalarValueContext,
-  ScalarValue, CollectionSpecification, Namespace, CollectionItemModificationsDraft,
-  CollectionItemMatcher,
+  FromScalarValue, IntoScalarValue, IsScalarValue,
+  ScalarValue, CollectionSpecification, DatabaseNamespace, 
+  CollectionItemModificationsDraft,
+  CollectionItemMatcher, CompoundTypeNamespace,
 };
 
 impl IntoScalarValue for UserName {
-  fn write_into(&self, context: &mut SerializeScalarValueContext) -> Result<(), GenericError> {
-    context.write_string(self.as_ref())
+  fn into_scalar_value(&self) -> impl IsScalarValue {
+    self.as_ref()
   }
 }
 
@@ -32,77 +33,83 @@ impl FromScalarValue for UserName {
 }
 
 pub struct Specification {
-  pub collection_specification: CollectionSpecification,
-  id_field_specification: ScalarFieldSpecification,
-  name_field_specification: ScalarFieldSpecification,
-  operating_system_user_id_field_specification: ScalarFieldSpecification,
-  operating_system_username_field_specification: ScalarFieldSpecification,
-  operating_system_password_field_specification: ScalarFieldSpecification,
-  screen_access_regulator_field_specification: user_screen_access_regulation::database::RegulatorSpecification,
+  pub collection: CollectionSpecification,
+  id: ScalarFieldSpecification,
+  name: ScalarFieldSpecification,
+  operating_system_user_id: ScalarFieldSpecification,
+  operating_system_username: ScalarFieldSpecification,
+  operating_system_password: ScalarFieldSpecification,
+  screen_access_regulator: user_screen_access_regulation::database::RegulatorSpecification,
 }
 
 impl Specification {
-  pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemDefiner::new();
+  pub fn new(
+    database: &mut Database,
+    database_namespace: &mut DatabaseNamespace,
+  ) -> 
+    Result<Self, GenericError> 
+  {
+    let mut user_namespace = CompoundTypeNamespace::new();
+    let mut user_definer = CollectionItemDefiner::new();
 
-    let id_field_specification = fields_namespace
-    .define_primary_scalar_field("Id")
-    .build()
-    .map_err(|error| error.change_context("creating UserSpecification"))?;
+    let id = user_definer
+      .define_primary_scalar_field(&mut user_namespace, "Id")?;
 
-  let name_field_specification = fields_namespace
-    .scalar_field_specification("Name")
-    .build()
-    .map_err(|error| error.change_context("creating UserSpecification"))?;
+    let name = user_definer
+      .define_required_writable_scalar_field(&mut user_namespace, "Name")?;
 
-  let operating_system_user_id_field_specification = fields_namespace
-    .scalar_field_specification("OperatingSystemUserId")
-    .build()
-    .map_err(|error| error.change_context("creating UserSpecification"))?;
+    let operating_system_user_id = user_definer
+      .define_required_readonly_scalar_field(&mut user_namespace, "OperatingSystemUserId")?;
 
-  let operating_system_username_field_specification = fields_namespace
-    .scalar_field_specification("OperatingSystemUsername")
-    .build()
-    .map_err(|error| error.change_context("creating UserSpecification"))?;
+    let operating_system_username = user_definer
+      .define_required_readonly_scalar_field(&mut user_namespace, "OperatingSystemUsername")?;
 
-  let operating_system_password_field_specification = fields_namespace
-    .scalar_field_specification("OperatingSystemPassword")
-    .build()
-    .map_err(|error| error.change_context("creating UserSpecification"))?;
+    let operating_system_password = user_definer
+      .define_required_writable_scalar_field(&mut user_namespace, "OperatingSystemPassword")?;
 
-    let screen_access_regulator_field_specification = user_screen_access_regulation
+    let mut screen_access_regulator_definer = user_definer
+      .define_required_readonly_compound_field(
+        &mut user_namespace, 
+        "ScreenAccessRegulator",
+      )?;
+
+    let screen_access_regulator = user_screen_access_regulation
       ::database
-      ::RegulatorSpecification
-      ::new(&mut fields_namespace.compound_field_specification("ScreenAccessRegulator")?)        
-      .map_err(|error| error.change_context("creating UserSpecification"))?;
-
-    let collection_specification = namespace
-      .define_collection("Users", fields_namespace)
-      .map_err(|error| error.change_context("creating UserSpecification"))?;
+      ::RegulatorSpecification::new(
+        &mut user_namespace,
+        &mut screen_access_regulator_definer,
+      )?;
+      
+    let collection = database_namespace
+      .define_collection(
+        database, 
+        "Users", 
+        user_namespace,
+      )?;
 
     Ok(Self {
-      id_field_specification,
-      name_field_specification,
-      operating_system_password_field_specification,
-      operating_system_user_id_field_specification,
-      operating_system_username_field_specification,
-      screen_access_regulator_field_specification,
-      collection_specification,
+      id,
+      name,
+      operating_system_password,
+      operating_system_user_id,
+      operating_system_username,
+      screen_access_regulator,
+      collection,
     })
   }
 
   pub fn screen_access_regulator_field_specification(&self) -> &user_screen_access_regulation::database::RegulatorSpecification {
-    &self.screen_access_regulator_field_specification
+    &self.screen_access_regulator
   }
 
-  pub fn update_name(
+  pub fn set_name(
     &self, 
-    modifications: &mut CollectionItemModificationsDraft, 
+    draft: &mut CollectionItemModificationsDraft, 
     new_value: &UserName,
   ) ->
     Result<(), GenericError>
   {
-    modifications.set_scalar_field(&self.name_field_specification, new_value)
+    draft.set_scalar_field(&self.name, new_value)
   }
 
   pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
@@ -112,15 +119,15 @@ impl Specification {
   pub fn apply_modifications_draft(
     &self,
     database: &Database,
-    modifications_draft: &CollectionItemModificationsDraft,
+    draft: &CollectionItemModificationsDraft,
     user_id: &Uuid
   ) -> 
     Result<(), GenericError>
   {
     database.update_collection_items(
-      &self.collection_specification, 
-      &CollectionItemMatcher::match_by_scalar_field(&self.id_field_specification, user_id)?, 
-      modifications_draft,
+      &self.collection, 
+      &CollectionItemMatcher::match_by_scalar_field(&self.id, user_id)?, 
+      draft,
     )
   }
 
@@ -132,7 +139,7 @@ impl Specification {
     Result<(), GenericError>
   {
     database.add_collection_item(
-      &self.collection_specification, 
+      &self.collection, 
       self, 
       user,
     )
@@ -146,9 +153,9 @@ impl Specification {
     Result<(), GenericError>
   {
     database.delete_collection_items(
-      &self.collection_specification, 
+      &self.collection, 
       &CollectionItemMatcher::match_by_scalar_field(
-        &self.id_field_specification, 
+        &self.id, 
         user_id,
       )?,
     )
@@ -165,12 +172,12 @@ impl CompoundTypeSerializer for Specification {
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.id_field_specification, &value.id)?;  
-    context.serializable_scalar(&self.name_field_specification, &value.name)?;  
-    context.serializable_scalar(&self.operating_system_user_id_field_specification, &value.operating_system_user_id)?;  
-    context.serializable_scalar(&self.operating_system_username_field_specification, &value.operating_system_username)?;  
-    context.serializable_scalar(&self.operating_system_password_field_specification, &value.operating_system_password)?;  
-    context.serializable_compound(&self.screen_access_regulator_field_specification, &value.screen_access_regulator)
+    context.serializable_scalar(&self.id, &value.id)?;  
+    context.serializable_scalar(&self.name, &value.name)?;  
+    context.serializable_scalar(&self.operating_system_user_id, &value.operating_system_user_id)?;  
+    context.serializable_scalar(&self.operating_system_username, &value.operating_system_username)?;  
+    context.serializable_scalar(&self.operating_system_password, &value.operating_system_password)?;  
+    context.serializable_compound(&self.screen_access_regulator, &value.screen_access_regulator)
   }
 }
 
@@ -212,42 +219,42 @@ impl CompoundValueDeserializer for Specification {
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedUser {
       id: context
-        .deserializable_scalar(&self.id_field_specification)
+        .deserializable_scalar(&self.id)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'Id' field")
         )?,
 
       name: context
-        .deserializable_scalar(&self.name_field_specification)
+        .deserializable_scalar(&self.name)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'Name' field")
         )?,
 
       operating_system_user_id: context
-        .deserializable_scalar(&self.operating_system_user_id_field_specification)
+        .deserializable_scalar(&self.operating_system_user_id)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'OperatingSystemUserId' field")
         )?,
 
       operating_system_username: context
-        .deserializable_scalar(&self.operating_system_username_field_specification)
+        .deserializable_scalar(&self.operating_system_username)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'OperatingSystemUsername' field")
         )?,
 
       operating_system_password: context
-        .deserializable_scalar(&self.operating_system_password_field_specification)
+        .deserializable_scalar(&self.operating_system_password)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'OperatingSystemPassword' field")
         )?,
 
       screen_access_regulator: context
-        .deserialize_compound(&self.screen_access_regulator_field_specification)
+        .deserialize_compound(&self.screen_access_regulator)
         .map_err(|error| error
           .change_context("deserializing NormalizedUser")
           .add_error("failed to deserialize the 'ScreenAccessRegulator' field")

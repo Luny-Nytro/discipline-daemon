@@ -1,64 +1,64 @@
 use super::{
   Rule, RuleActivator, GenericError, Uuid, CompoundTypeSerializerContext,
   ScalarFieldSpecification, CompoundTypeSerializer, CollectionSpecification,
-  CompoundValueDeserializer, CompoundValueDeserializerContext, Namespace,
+  CompoundValueDeserializer, CompoundValueDeserializerContext, DatabaseNamespace,
   CollectionItemDefiner, RuleActivatorSpecification, CollectionItemModificationsDraft,
-  Database, CollectionItemMatcher,
+  Database, CollectionItemMatcher, CompoundTypeNamespace,
 };
 
 pub struct RuleSpecification {
-  pub collection_specification: CollectionSpecification,
-  pub(super) id_field_specification: ScalarFieldSpecification,
-  pub(super) user_id_field_specification: ScalarFieldSpecification,
-  pub(super) policy_id_field_specification: ScalarFieldSpecification,
-  // pub(super) position_field_specification: ScalarFieldSpecification,
-  pub(super) activator_field_specification: RuleActivatorSpecification,
+  pub collection: CollectionSpecification,
+  pub(super) id: ScalarFieldSpecification,
+  pub(super) user_id: ScalarFieldSpecification,
+  pub(super) policy_id: ScalarFieldSpecification,
+  pub(super) activator: RuleActivatorSpecification,
 }
 
 impl RuleSpecification {
-  pub fn new(namespace: &mut Namespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemDefiner::new();
+  pub fn new(
+    database: &mut Database,
+    namespace: &mut DatabaseNamespace,
+  ) -> 
+    Result<Self, GenericError> 
+  {
+    let mut rule_namespace = CompoundTypeNamespace::new();
+    let mut rule_definer = CollectionItemDefiner::new();
 
-    let id_field_specification = fields_namespace
-      .scalar_field_specification("Id")
-      .build()
-      .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let id = rule_definer
+      .define_primary_scalar_field(&mut rule_namespace, "Id")?;
 
-    let user_id_field_specification = fields_namespace
-      .scalar_field_specification("UserId")
-      .build()
-      .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let user_id = rule_definer
+      .define_primary_scalar_field(&mut rule_namespace, "UserId")?;
 
-    let policy_id_field_specification = fields_namespace
-      .scalar_field_specification("PolicyId")
-      .build()
-      .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let policy_id = rule_definer
+      .define_primary_scalar_field(&mut rule_namespace, "PolicyId")?;
 
-    // let position_field_specification = fields_namespace
-    //   .scalar_field_specification("Position")
-    //   .build()
-    //   .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let mut activator_definer = rule_definer
+      .define_required_writable_compound_field(&mut rule_namespace, "Activator")?;
 
-    let activator_field_specification = RuleActivatorSpecification
-      ::new(&mut fields_namespace.compound_field_specification("activator")?)
-      .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let activator = RuleActivatorSpecification::new(
+      &mut rule_namespace, 
+      &mut activator_definer,
+    )?;
 
-    let collection_specification = namespace
-      .define_collection("Rules", fields_namespace)
-      .map_err(|error| error.change_context("creating RuleSpecification"))?;
+    let collection = namespace
+      .define_collection(
+        database,
+        "Rules", 
+        rule_namespace,
+      )?;
 
     Ok(Self {
-      activator_field_specification,
-      id_field_specification,
-      policy_id_field_specification,
-      // position_field_specification,
-      user_id_field_specification,
-      collection_specification,
+      activator,
+      id,
+      policy_id,
+      user_id,
+      collection,
     })
   }
 
   pub fn activator(&self) -> &RuleActivatorSpecification {
-    &self.activator_field_specification
+    &self.activator
   }
   
   // pub fn update_position(
@@ -86,11 +86,11 @@ impl RuleSpecification {
     Result<(), GenericError>
   {
     database.update_collection_items(
-      &self.collection_specification, 
+      &self.collection, 
       &CollectionItemMatcher::match_by_multiple_scalar_fields()
-        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
-        .and_scalar_field_is(&self.policy_id_field_specification, policy_id)?
-        .and_scalar_field_is(&self.id_field_specification, rule_id)?
+        .and_scalar_field_is(&self.user_id, user_id)?
+        .and_scalar_field_is(&self.policy_id, policy_id)?
+        .and_scalar_field_is(&self.id, rule_id)?
         .finalize()?, 
       modifications_draft,
     )
@@ -101,17 +101,15 @@ impl RuleSpecification {
     database: &Database,
     user_id: &Uuid,
     policy_id: &Uuid,
-    // rule_position: usize,
     rule: &Rule,
   ) -> 
     Result<(), GenericError>
   {
     database.add_collection_item(
-      &self.collection_specification, 
+      &self.collection, 
       &RuleSerializer::new(
         user_id, 
         policy_id, 
-        // rule_position,
         self, 
       ), 
       rule,
@@ -128,11 +126,11 @@ impl RuleSpecification {
     Result<(), GenericError>
   {
     database.delete_collection_items(
-      &self.collection_specification, 
+      &self.collection, 
       &CollectionItemMatcher::match_by_multiple_scalar_fields()
-        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
-        .and_scalar_field_is(&self.policy_id_field_specification, policy_id)?
-        .and_scalar_field_is(&self.id_field_specification, rule_id)?
+        .and_scalar_field_is(&self.user_id, user_id)?
+        .and_scalar_field_is(&self.policy_id, policy_id)?
+        .and_scalar_field_is(&self.id, rule_id)?
         .finalize()?
     )
   }
@@ -171,11 +169,11 @@ impl<'a> CompoundTypeSerializer for RuleSerializer<'a> {
   ) -> 
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.rule_specification.id_field_specification, &value.id)?;
+    context.serializable_scalar(&self.rule_specification.id, &value.id)?;
     // context.serializable_scalar(&self.rule_specification.position_field_specification, &self.rule_position)?;
-    context.serializable_scalar(&self.rule_specification.user_id_field_specification, self.user_id)?;
-    context.serializable_scalar(&self.rule_specification.policy_id_field_specification, self.policy_id)?;
-    context.serializable_compound(&self.rule_specification.activator_field_specification, &value.activator)
+    context.serializable_scalar(&self.rule_specification.user_id, self.user_id)?;
+    context.serializable_scalar(&self.rule_specification.policy_id, self.policy_id)?;
+    context.serializable_compound(&self.rule_specification.activator, &value.activator)
   }
 }
 
@@ -202,17 +200,17 @@ impl CompoundValueDeserializer for RuleSpecification {
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRule {
-      user_id: context.deserializable_scalar(&self.id_field_specification).map_err(|error|
+      user_id: context.deserializable_scalar(&self.id).map_err(|error|
         error
           .change_context("deserializing NormalizedRule")
           .add_error("failed to deserialize the 'UserId' field")
       )?,
-      policy_id: context.deserializable_scalar(&self.id_field_specification).map_err(|error|
+      policy_id: context.deserializable_scalar(&self.id).map_err(|error|
         error
           .change_context("deserializing NormalizedRule")
           .add_error("failed to deserialize the 'PolicyId' field")
       )?,
-      id: context.deserializable_scalar(&self.id_field_specification).map_err(|error|
+      id: context.deserializable_scalar(&self.id).map_err(|error|
         error
           .change_context("deserializing NormalizedRule")
           .add_error("failed to deserialize the 'Id' field")
@@ -222,7 +220,7 @@ impl CompoundValueDeserializer for RuleSpecification {
       //     .change_context("deserializing NormalizedRule")
       //     .add_error("failed to deserialize the 'Position' field")
       // )?,
-      activator: context.deserialize_compound(&self.activator_field_specification).map_err(|error|
+      activator: context.deserialize_compound(&self.activator).map_err(|error|
         error
           .change_context("deserializing NormalizedRule")
           .add_error("failed to deserialize the 'Activator' field")

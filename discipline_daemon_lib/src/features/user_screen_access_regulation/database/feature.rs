@@ -1,6 +1,6 @@
 use super::{
-  PolicySpecification, RuleSpecification, Namespace, GenericError,
-  CommonInfoSpecification, CompoundTypeDefiner,
+  PolicySpecification, RuleSpecification, DatabaseNamespace, GenericError,
+  CommonInfoSpecification, CompoundTypeDefiner, Database, CompoundTypeNamespace,
 };
 
 pub struct Specification {
@@ -11,14 +11,27 @@ pub struct Specification {
 
 impl Specification {
   pub fn new(
-    namespace: &mut Namespace,
-    scope: &mut CompoundTypeDefiner,
+    database: &mut Database,
+    database_namespace: &mut DatabaseNamespace,
+    soleton_namespace: &mut CompoundTypeNamespace,
+    soleton_definer: &mut CompoundTypeDefiner,
   ) ->
     Result<Self, GenericError>
   {
-    let common_info = CommonInfoSpecification::new(scope)?;
-    let policy = PolicySpecification::new(namespace)?;
-    let rule = RuleSpecification::new(namespace)?;
+    let common_info = CommonInfoSpecification::new(
+      soleton_namespace,
+      soleton_definer,
+    )?;
+
+    let policy = PolicySpecification::new(
+      database,
+      database_namespace,
+    )?;
+
+    let rule = RuleSpecification::new(
+      database,
+      database_namespace,
+    )?;
 
     Ok(Self { common_info, policy, rule })
   }

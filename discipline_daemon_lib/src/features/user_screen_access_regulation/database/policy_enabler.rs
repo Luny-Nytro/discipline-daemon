@@ -2,7 +2,7 @@ use super::{
   CompoundTypeDefiner, CompoundTypeSerializer, 
   CompoundValueDeserializer, CompoundValueDeserializerContext, 
   CompoundTypeSerializerContext, CountdownTimerSpecification,
-  PolicyEnabler, GenericError
+  PolicyEnabler, GenericError, CompoundTypeNamespace,
 };
 
 pub struct PolicyEnablerSpecification {
@@ -10,9 +10,12 @@ pub struct PolicyEnablerSpecification {
 }
 
 impl PolicyEnablerSpecification {
-  pub fn new(scope: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+  pub fn new(
+    namespace: &mut CompoundTypeNamespace,
+    definer: &mut CompoundTypeDefiner,
+  ) -> Result<Self, GenericError> {
     Ok(Self {
-      timer: CountdownTimerSpecification::new(scope)?,
+      timer: CountdownTimerSpecification::new(namespace, definer)?,
     })
   }
 

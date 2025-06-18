@@ -1,8 +1,8 @@
 use crate::database::{
   ScalarFieldSpecification, CompoundValueDeserializer, CompoundTypeSerializer, 
-  GlobalNamespace, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
-  CollectionSpecification, CollectionItemDefiner, Database,
-  CollectionItemMatcher,
+  Database, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
+  CollectionSpecification, CollectionItemDefiner, DatabaseNamespace,
+  CollectionItemMatcher, CompoundTypeNamespace,
 };
 
 use crate::{
@@ -11,45 +11,57 @@ use crate::{
 };
 
 pub struct Specification {
-  collection_specification: CollectionSpecification,
-  id_field_specification: ScalarFieldSpecification,
-  pub user_specification: user::database::Specification,
+  collection: CollectionSpecification,
+  id: ScalarFieldSpecification,
+  pub user: user::database::Specification,
   pub user_screen_access_regulation: user_screen_access_regulation::database::Specification,
-  // pub user_screen_access_regulation_policy: user_screen_access_regulation::database::PolicySchema,
-  // pub user_screen_access_regulation_rule: user_screen_access_regulation::database::RuleSchema,
 }
 
 impl Specification {
-  pub fn new(namespace: &mut GlobalNamespace) -> Result<Self, GenericError> {
-    let mut fields_namespace = CollectionItemDefiner::new();
+  pub fn new(
+    database: &mut Database,
+    database_namespace: &mut DatabaseNamespace,
+  ) -> 
+    Result<Self, GenericError> 
+  {
+    let mut soleton_namespace = CompoundTypeNamespace::new();
+    let mut soleton_definer = CollectionItemDefiner::new();
 
-    let id_column = fields_namespace
-      .define_primary_scalar_field("Id")
-      .build()
-      .map_err(|error| error.change_context("creating Specification"))?;
+    let id = soleton_definer
+      .define_primary_scalar_field(&mut soleton_namespace, "Id")?;
 
-    
-    let user = user::database::Specification::new(
-      &mut namespace.namespace("user")?,
+    let mut user_namespace = database_namespace.define_namespace(
+      database, 
+      "User",
     )?;
 
+    let user = user::database::Specification::new(
+      database, 
+      &mut user_namespace,
+    );
 
-    let user_screen_access_regulation = user_screen_access_regulation
-      ::database
-      ::Specification
-      ::new(
-        &mut namespace.namespace("UserScreenAccessRegulation")?, 
-        &mut fields_namespace.compound_field_specification("UserScreenAccessRegulation")?
+    let user_screen_access_regulation_definer = soleton_definer
+      .define_required_writable_compound_field(
+        &mut soleton_namespace, 
+        "UserScreenAccessRegulation"
       )?;
 
-    let collection_specification = namespace
-      .collection("app", fields_namespace)
+    let user_screen_access_regulation = user_screen_access_regulation
+      ::database::Specification::new(
+        database, 
+        database_namespace, 
+        &mut soleton_namespace, 
+        &mut user_screen_access_regulation_definer,
+      )?;
+
+    let collection_specification = database_namespace
+      .collection("app", soleton_namespace)
       .map_err(|error| error.change_context("creating Specification"))?;
 
     Ok(Specification {
-      collection_specification, 
-      id_field_specification: id_column, 
-      user_specification: user,
+      collection: collection_specification, 
+      id, 
+      user,
       user_screen_access_regulation,
     })
   }
@@ -65,7 +77,7 @@ impl CompoundTypeSerializer for Specification {
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.id_field_specification, &ITEM_ID)?;
+    context.serializable_scalar(&self.id, &ITEM_ID)?;
     context.serializable_compound(self.user_screen_access_regulation.singleton(), &value.user_screen_access_regulation_common_info)
   }
 }
@@ -91,7 +103,7 @@ impl CompoundValueDeserializer for Specification {
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedState {
-      id: context.deserializable_scalar(&self.id_field_specification)?,
+      id: context.deserializable_scalar(&self.id)?,
       user_access: context.deserialize_compound(self.user_screen_access_regulation.singleton())?,
     })
   }
@@ -156,7 +168,7 @@ impl Specification {
     };
 
     database.add_collection_item(
-      &self.collection_specification, 
+      &self.collection, 
       self,
       &default_state, 
 
@@ -175,8 +187,8 @@ impl Specification {
     Result<State, GenericError> 
   {
     let users = database.find_all_collection_items(
-      &self.user_specification.collection_specification, 
-      &self.user_specification,
+      &self.user.collection, 
+      &self.user,
     ).map_err(|error| 
       error
         .change_context("loading all users from the database")
@@ -194,7 +206,7 @@ impl Specification {
 
         
     let user_screen_access_regulation_rules = database.find_all_collection_items(
-      &self.user_screen_access_regulation.rule.collection_specification, 
+      &self.user_screen_access_regulation.rule.collection, 
       &self.user_screen_access_regulation.rule,
     ).map_err(|error| 
       error
@@ -203,7 +215,7 @@ impl Specification {
     )?;
 
     let matcher = CollectionItemMatcher::match_by_scalar_field(
-      &self.id_field_specification, 
+      &self.id, 
       &ITEM_ID,
     ).map_err(|error| 
       error
@@ -212,7 +224,7 @@ impl Specification {
     )?;
     
     let state = database.find_one_collection_item(
-      &self.collection_specification, 
+      &self.collection, 
       &matcher, 
       self,
     ).map_err(|error| 

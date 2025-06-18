@@ -73,45 +73,47 @@ pub mod database {
   }
 
   impl Specification {
-    pub fn new(scope: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+    pub fn new(
+      namespace: &mut CompoundTypeNamespace,
+      definer: &mut CompoundTypeDefiner,
+    ) -> 
+      Result<Self, GenericError> 
+    {
       Ok(Self {
-        duration: scope
-          .scalar_field_specification("Duraion")
-          .build()?,
+        duration: definer
+          .define_required_writable_scalar_field(namespace, "Duraion")?,
 
-        remaining_duration: scope
-          .scalar_field_specification("RemainingDuration")
-          .build()?,
+        remaining_duration: definer
+          .define_required_writable_scalar_field(namespace, "RemainingDuration")?,
 
-        previous_synchronization_time: scope
-          .scalar_field_specification("PreviousSynchronizationTime")
-          .build()?,
+        previous_synchronization_time: definer
+          .define_required_writable_scalar_field(namespace, "PreviousSynchronizationTime")?,
       })
     }
     
-    pub fn update_remaining_duration(
+    pub fn set_remaining_duration(
       &self,
-      modifications: &mut CollectionItemModificationsDraft,
+      draft: &mut CollectionItemModificationsDraft,
       new_remaining_duration: &Duration,
     ) -> 
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.remaining_duration, new_remaining_duration)
+      draft.set_scalar_field(&self.remaining_duration, new_remaining_duration)
     }
 
-    pub fn update_after_synchronization(
+    pub fn set_after_synchronization(
       &self,
-      modifications: &mut CollectionItemModificationsDraft,
+      draft: &mut CollectionItemModificationsDraft,
       countdown_timer: &CountdownTimer,
     ) -> 
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(
+      draft.set_scalar_field(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
       )?;
 
-      modifications.set_scalar_field(
+      draft.set_scalar_field(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
       )

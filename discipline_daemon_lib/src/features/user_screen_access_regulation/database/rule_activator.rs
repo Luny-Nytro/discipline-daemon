@@ -2,6 +2,7 @@ use super::{
   RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeDefiner,
   CompoundValueDeserializer, CompoundTypeSerializer, CompoundValueDeserializerContext, 
   RuleActivator, time_range, weekday_range, CompoundTypeSerializerContext,
+  CompoundTypeNamespace,
 };
 
 pub struct RuleActivatorSpecification {
@@ -12,23 +13,33 @@ pub struct RuleActivatorSpecification {
 }
 
 impl RuleActivatorSpecification {
-  pub fn new(namespace: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
-    Ok(Self {
-      variant: namespace
-        .scalar_field_specification("Variant")
-        .build()?,
+  pub fn new(
+    namespace: &mut CompoundTypeNamespace,
+    definer: &mut CompoundTypeDefiner,
+  ) -> 
+    Result<Self, GenericError> 
+  {
+    let mut in_time_range_definer = definer
+      .define_optional_writable_compound_field(namespace, "InTimeRange")?;
 
-      weekday: namespace
-        .scalar_field_specification("Weekday")
-        .optional()
-        .build()?,
+    let mut in_weekday_range_definer = definer
+      .define_optional_writable_compound_field(namespace, "InWeekdayRange")?;
+
+    Ok(Self {
+      variant: definer
+        .define_required_writable_scalar_field(namespace, "Variant")?,
+        
+      weekday: definer
+        .define_optional_writable_scalar_field(namespace, "Weekday")?,
         
       in_time_range: time_range::database::Specification::new(
-        &mut namespace.optional_compound_field_specification("InTimeRange")?
+        namespace,
+        &mut in_time_range_definer,
       )?,
      
       in_weekday_range: weekday_range::database::Specification::new(
-        &mut namespace.optional_compound_field_specification("InWeekdayRange")?
+        namespace,
+        &mut in_weekday_range_definer,
       )?,
     })
   }

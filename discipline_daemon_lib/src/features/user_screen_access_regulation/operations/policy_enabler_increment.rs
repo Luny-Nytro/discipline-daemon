@@ -62,7 +62,7 @@ impl IsOperation for Operation {
       .policy
       .enabler_field_specification
       .timer()
-      .update_remaining_duration(&mut modifications_draft, &new_remaining_duration)
+      .set_remaining_duration(&mut modifications_draft, &new_remaining_duration)
     {
       return InternalOperationOutcome::internal_error(error);
     }
