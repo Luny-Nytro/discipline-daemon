@@ -7,7 +7,7 @@ There are serveral ways to go about this:
   - using IMEI
   - using the remote device's cpu identifier (cpuid).
   - manual authentication by the remote device
-    - adminstrator creates an Discipline Profile for the remote device
+    - adminstrator creates a Discipline Profile for the remote device
     - for a remote device to connect to the internet through the Host Device, it needs to first authenticate itself.
 
 ## CPU Identifier
