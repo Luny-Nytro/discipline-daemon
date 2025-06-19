@@ -1,0 +1,10 @@
+{
+  "editor.fontFamily": "_Monaco, _Monofur Nerd Font, SpaceMono Nerd Font, ProFontWindows Nerd Font, Comfortaa, Fira Code, JetBrains Mono, Consolas, Courier New, Monaco",
+  "editor.fontSize": 24,
+  "editor.indentSize": 2,
+  "editor.inlayHints.enabled": "offUnlessPressed",
+  "deno.enable": true,
+  "deno.path": "/opt/shared/dev/deno",
+  "git.enabled": true,
+  "files.autoSave": "afterDelay",
+}

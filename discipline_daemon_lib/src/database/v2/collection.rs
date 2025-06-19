@@ -1,11 +1,11 @@
 use super::*;
 
-pub struct CollectionSpecification {
+pub struct Collection {
   pub(super) path: DatabaseEntityPath,
   pub(super) collection_item_namespace: CompoundTypeNamespace,
 }
 
-impl CollectionSpecification {
+impl Collection {
   pub(super) fn new(
     path: DatabaseEntityPath,
     collection_item_namespace: CompoundTypeNamespace,

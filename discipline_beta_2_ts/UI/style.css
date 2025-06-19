@@ -1,0 +1,30 @@
+* {
+  box-sizing: inherit;
+}
+
+html, body {
+  display: block;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app {
+  background-color: #fff;
+  color: #333;
+  padding: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #333;
+
+}
+
+button {
+  background-color: #3e31fd;
+  color: #fff;
+  border: 0;
+  margin: 0;
+  padding: .5rem 1rem ;
+  border-radius: 10px;
+}

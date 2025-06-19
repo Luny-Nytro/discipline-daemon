@@ -45,7 +45,7 @@ impl Database {
 
   pub fn find_all_collection_items<Deserializer>(
     &self,
-    collection_specification: &CollectionSpecification,
+    collection_specification: &Collection,
     collection_item_deserializer: &Deserializer,
   ) ->
     Result<Vec<Deserializer::Output>, GenericError>
@@ -109,7 +109,7 @@ impl Database {
 
   pub fn find_one_collection_item<Deserializer>(
     &self,
-    collection_specification: &CollectionSpecification,
+    collection_specification: &Collection,
     collection_item_matcher: &CollectionItemMatcher,
     collection_item_deserializer: &Deserializer,
   ) ->
@@ -170,7 +170,7 @@ impl Database {
 
   pub fn update_collection_items(
     &self,
-    collection_specification: &CollectionSpecification,
+    collection_specification: &Collection,
     collection_item_matcher: &CollectionItemMatcher,
     collection_item_modifications: &CollectionItemModificationsDraft,
   ) -> 
@@ -195,7 +195,7 @@ impl Database {
 
   pub fn delete_collection_items(
     &self,
-    collection_specification: &CollectionSpecification,
+    collection_specification: &Collection,
     collection_item_matcher: &CollectionItemMatcher,
   ) -> 
     Result<(), GenericError> 
@@ -218,7 +218,7 @@ impl Database {
 
   pub fn add_collection_item<Serializer: CompoundTypeSerializer>(
     &self,
-    collection_specification: &CollectionSpecification,
+    collection_specification: &Collection,
     collection_item_serializer: &Serializer,
     new_collection_item: &Serializer::CompoundType,
   ) -> 

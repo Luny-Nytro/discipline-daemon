@@ -1,0 +1,1 @@
+export type Unique<T> = T & { readonly ______unique: unique symbol }

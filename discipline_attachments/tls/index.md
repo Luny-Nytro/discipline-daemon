@@ -1,0 +1,32 @@
+- Asymmetric Cryptography (aka. Public-key cryptography)
+  - RSA
+  - Elliptic Curve Cryptography (ECC)
+  - ECDSA
+  - EdDSA
+- Public Key Infrastructure (PKI)
+
+- symmetric pre-shared key (PSK)
+- key derivation functions
+  - HMAC-based Extract-and-Expand Key Derivation Function (HKDF)
+- Elliptic curve algorithms 
+- signature algorithms
+  - EdDSA
+- RSA padding
+- RSA Probabilistic Signature Scheme (RSASSA-PSS)
+- PSK-based cipher suites
+- key exchange modes:
+   - (EC)DHE (Diffie-Hellman over either finite fields or elliptic curves)
+   - PSK exchange
+   - PSK-only
+   - PSK with (EC)DHE
+
+- Hash function 
+- cryptographic hash functions (CHF)
+  - SHA-1
+  - SHA-2
+  - MD5
+  - PBKDF2
+  - Scrypt
+  - Argon2
+- Digital Signatire Standard (DDS)
+- Digital signature

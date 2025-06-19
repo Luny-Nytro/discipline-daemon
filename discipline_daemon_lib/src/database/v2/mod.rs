@@ -1,5 +1,7 @@
 use crate::GenericError;
 
+mod public;
+
 mod serializing_utiliites;
 use serializing_utiliites::*;
 

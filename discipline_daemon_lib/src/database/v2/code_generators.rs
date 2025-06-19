@@ -29,7 +29,7 @@ impl MlutiColumnPrimaryKeyConstraint {
 
 pub fn generate_code_define_collection(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
 ) ->
   Result<(), GenericError>
 {
@@ -84,7 +84,7 @@ pub fn generate_code_define_collection(
 
 pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
   collection_item_serializer: &Serializer,
   new_collection_item: &Serializer::CompoundType,
 ) ->
@@ -110,7 +110,7 @@ where
 
 pub(super) fn generate_code_delete_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
 ) ->
   Result<(), GenericError>
@@ -133,7 +133,7 @@ pub(super) fn generate_code_delete_collection_item(
 
 pub(super) fn generate_code_update_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
   collection_item_modifications: &CollectionItemModificationsDraft,
 ) -> 
@@ -164,7 +164,7 @@ pub(super) fn generate_code_update_collection_item(
 
 pub(super) fn generate_code_find_all_collection_items(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
 ) -> 
   Result<(), GenericError>
 {
@@ -176,7 +176,7 @@ pub(super) fn generate_code_find_all_collection_items(
 
 pub(super) fn generate_code_find_one_collection_item(
   code: &mut String,
-  collection_specification: &CollectionSpecification,
+  collection_specification: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
 ) -> 
   Result<(), GenericError>

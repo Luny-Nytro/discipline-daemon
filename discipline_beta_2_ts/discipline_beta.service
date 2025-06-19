@@ -1,0 +1,14 @@
+[Unit]
+Description=Your Service Description
+After=network.target
+
+[Service]
+ExecStart=/home/lunynytro/Documents/discipline_beta/deno run --allow-all ./Run.ts
+Restart=always
+User=root
+WorkingDirectory=/home/lunynytro/Documents/discipline_beta
+StandardOutput=append:/home/lunynytro/Documents/discipline_beta/stdout.log
+StandardError=append:/home/lunynytro/Documents/discipline_beta/stderr.log
+
+[Install]
+WantedBy=multi-user.target

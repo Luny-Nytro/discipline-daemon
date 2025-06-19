@@ -1,0 +1,3 @@
+- create a cli
+- we have some "doSomethingOrThrow" functions, make them return a Tried with with a generic error with a descriptive error message so that callers can decide whether to handle the error gracefully or potentially crash the program via Tried.unwrap.
+- Create a dedicated integer type that handles integer arthmetic in a safe way, for example, it should have a "checkedPlus" method that returns an error if the addition fails. 

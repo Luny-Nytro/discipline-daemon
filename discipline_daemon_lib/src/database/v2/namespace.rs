@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-
 use super::*;
+
 
 pub struct DatabaseNamespace {
   pub(super) path: DatabaseEntityPath,
@@ -45,7 +45,7 @@ impl DatabaseNamespace {
     collection_identifier: &str,
     collection_item_namespace: CompoundTypeNamespace,
   ) -> 
-    Result<CollectionSpecification, GenericError> 
+    Result<Collection, GenericError> 
   {
     // TODO: check if there is a collection or a namespace with the given identifier
     self.path.then(collection_identifier)
@@ -56,7 +56,7 @@ impl DatabaseNamespace {
           .add_attachment("namespace path", self.path.as_str())
       )
       .and_then(|collection_path|
-        CollectionSpecification::new(
+        Collection::new(
           collection_path,
           collection_item_namespace,
         )

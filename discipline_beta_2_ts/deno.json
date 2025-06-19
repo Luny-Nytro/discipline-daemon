@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "Prelude": "./Prelude.ts"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "beta-backend",
+  "main": "mod.ts",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "deno run mod.ts"
+  },
+  "imports": {
+    "Pkg": "./discipline/mod.ts"
+  }
+}

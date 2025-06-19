@@ -9,13 +9,6 @@ pub trait CompoundTypeDefiner {
 
 }
 
-#[derive(Debug)]
-pub struct Field {
-  pub(super) path: DatabaseEntityPath,
-  optional: bool,
-  writable: bool,
-  primary: bool,
-}
 
 enum FieldInner {
   Undefined(UndefinedField),

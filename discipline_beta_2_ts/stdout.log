@@ -1,0 +1,55 @@
+DailyAllowance
+Now: Wed Mar 26 2025 03:34:46 GMT+0300 (Arabian Standard Time)
+PreviousSynchronizationTime: Wed Mar 26 2025 01:52:18 GMT+0300 (Arabian Standard Time)
+Now.Midnight: Wed Mar 26 2025 03:00:00 GMT+0300 (Arabian Standard Time)
+PreviousSynchronizationTime.Midnight: Tue Mar 25 2025 03:00:00 GMT+0300 (Arabian Standard Time)
+Before
+DailyAllowance
+Now: Wed Mar 26 2025 03:34:46 GMT+0300 (Arabian Standard Time)
+PreviousSynchronizationTime: Wed Mar 26 2025 03:34:46 GMT+0300 (Arabian Standard Time)
+Now.Midnight: Wed Mar 26 2025 03:00:00 GMT+0300 (Arabian Standard Time)
+PreviousSynchronizationTime.Midnight: Wed Mar 26 2025 03:00:00 GMT+0300 (Arabian Standard Time)
+After
+{
+  type: 1,
+  value: {
+    app: {
+      dataHiders: [
+        {
+          name: "MyAndroidPhonePassword",
+          data: "fdspoiyuwetym",
+          countdownTimer: [Object]
+        }
+      ],
+      mainUserAccessRegulator: {
+        username: "luny",
+        isLocked: true,
+        publicPassword: "luny of the lunar lands",
+        privatePassword: "xnbsxuxeho",
+        dailyAllowance: {
+          type: 1,
+          allowance: 10800000,
+          remainingAllowance: 10800000,
+          previousSynchronizationTime: 2025-03-26T00:34:46.266Z
+        },
+        nightTime: { min: 68400000, max: 25200000 },
+        dhuherTime: { min: 41400000, max: 45000000 },
+        asrTime: { min: 52200000, max: 55800000 },
+        maghribTime: { min: 68400000, max: 25200000 }
+      },
+      superUserAccessRegulator: {
+        username: "lunynytro",
+        isLocked: true,
+        publicPassword: "luny of the lunar lands",
+        privatePassword: "fwevvktsmo",
+        countdownTimer: {
+          type: 0,
+          duration: 604800000,
+          remainingDuration: 94406817,
+          previousSynchronizationTime: 2025-03-26T00:34:46.266Z
+        }
+      }
+    },
+    storage: { load: [AsyncFunction: load], update: [AsyncFunction: write] }
+  }
+}
