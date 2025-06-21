@@ -1,10 +1,12 @@
-use std::{io::{Read, Write}, net::{Shutdown, TcpListener, TcpStream}, sync::{Arc, Mutex}, thread::spawn};
-use std::io;
-use std::thread;
+use std::io::{Read, Write};
+use std::net::{Shutdown, TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
+use std::thread::spawn;
 use httparse::{Request, Status};
 use http::Uri;
 use http::uri::Authority;
 use crate::{GenericError, DaemonMutex};
+use llhttp;
 
 struct HttpRequestHead {
   method: String,
@@ -24,7 +26,7 @@ pub struct Header {
 //   Version1_1,
 // }
 
-fn parse_req(request_as_bytes: &[u8]) -> Result<Option<(usize, HttpRequestHead)>, GenericError> {
+fn parse_request(request_as_bytes: &[u8]) -> Result<Option<(usize, HttpRequestHead)>, GenericError> {
   let mut headers = [httparse::EMPTY_HEADER; 64];
   let mut parser = Request::new(&mut headers);
   
@@ -109,6 +111,9 @@ fn parse_req(request_as_bytes: &[u8]) -> Result<Option<(usize, HttpRequestHead)>
   }
 }
 
+const MAX_REQUEST_HEAD_SIZE: usize = 64 * 1024; // 64KB
+const INITIAL_BUFFER_SIZE: usize = 8 * 1024;   // 8KB
+
 pub fn run(daemon: DaemonMutex) -> Result<(), GenericError> {
   let address = {
     daemon.lock()?.proxy_server_address().clone()
@@ -119,7 +124,7 @@ pub fn run(daemon: DaemonMutex) -> Result<(), GenericError> {
       GenericError::new("running a proxy server")
         .add_error("failed to bind a tcp listener")
         .add_attachment("address", address.to_string())
-        .add_attachment("io error", error.to_string())
+        .add_attachment("error", error.to_string())
     )?;
 
   loop {
@@ -129,7 +134,7 @@ pub fn run(daemon: DaemonMutex) -> Result<(), GenericError> {
       }
       Err(error) => {
         eprintln!("{:?}", 
-          GenericError::new("proxy server handling incoming connection")
+          GenericError::new("discipline proxy server intercepting a tcp connection")
             .add_error("tcp listener error")
             .add_attachment("address", address.to_string())
             .add_attachment("error", error.to_string())
@@ -157,15 +162,34 @@ fn intercept_tcp_connection(
 ) -> 
   Result<(), GenericError>
 {
-  let mut request_buffer = Vec::new();
-  let mut request_buffer_index = 0;
+  // let mut chunk = 
+  let mut req_buffer = vec![0; MAX_REQUEST_HEAD_SIZE];
+  let mut req_buffer_len = 0;
+  let mut read_end_of_input = false;
 
   loop {
-    let number_of_read_bytes = match upstream
-      .read(&mut request_buffer[request_buffer_index..]) 
-    {
-      Ok(value) => {
-        value
+    let req_buffer_len = req_buffer.len();
+
+    if req_buffer_len == MAX_REQUEST_HEAD_SIZE {
+      return Err(
+        GenericError::new("intercepting tcp connection")
+          .add_error("parsing data comming to us as http request head but it's too large")
+      );
+    }
+
+    if read_end_of_input {
+      return Err(
+        GenericError::new("intercepting tcp connection")
+          .add_error("tried data coming from upstream as http request, but upstream sent EOI before we finish parsing a request head")
+      );
+    }
+
+    match upstream.read(&mut req_buffer[req_buffer_len..]) {
+      Ok(0) => {
+        read_end_of_input = true;
+      }
+      Ok(_) => {
+        // noop
       }
       Err(error) => {
         return Err(
@@ -177,8 +201,7 @@ fn intercept_tcp_connection(
       }
     };
 
-    request_buffer_index += number_of_read_bytes;
-    match parse_req(&request_buffer[..request_buffer_index + 1]) {
+    match parse_request(&req_buffer[..req_buffer.len()]) {
       Ok(None) => {
         continue;
       }
@@ -191,13 +214,13 @@ fn intercept_tcp_connection(
             // TODO: Add data read so far
         );
       }
-      Ok(Some((request_buffer_body_start_index, request_head))) => {
+      Ok(Some((body_beginning_index, req_head))) => {
         return intercept_http_request(
           daemon,
           upstream,
-          request_buffer,
-          request_buffer_body_start_index,
-          request_head,
+          &req_buffer,
+          &req_buffer[body_beginning_index..],
+          req_head,
         ).map_err(|error|
           error.change_context("intercepting tcp connection")
         )
@@ -250,7 +273,7 @@ fn bidirectional_copy(stream1: TcpStream, stream2: TcpStream) -> Result<(), Gene
 
   let upstream_mutex_clone = Arc::clone(&upstream_mutex);
   let downstream_mutex_clone = Arc::clone(&downstream_mutex);
-  let upstream_to_downstream_thread = thread::spawn(move || {
+  let upstream_to_downstream_thread = spawn(move || {
     let mut buffer = [0u8; 4096];
     loop {
       let number_of_read_bytes = match upstream_mutex_clone
@@ -282,7 +305,7 @@ fn bidirectional_copy(stream1: TcpStream, stream2: TcpStream) -> Result<(), Gene
 
   let upstream_mutex_clone = Arc::clone(&upstream_mutex);
   let downstream_mutex_clone = Arc::clone(&downstream_mutex);
-  let downstream_to_upstream_thread = thread::spawn(move || {
+  let downstream_to_upstream_thread = spawn(move || {
     let mut buffer = [0u8; 4096];
     loop {
       let number_of_read_bytes = match downstream_mutex_clone
@@ -320,8 +343,8 @@ fn bidirectional_copy(stream1: TcpStream, stream2: TcpStream) -> Result<(), Gene
 fn intercept_http_request(
   daemon: DaemonMutex,
   mut upstream: TcpStream,
-  request_buffer: Vec<u8>,
-  request_buffer_body_start_index: usize,
+  request_buffer: &[u8],
+  request_body_buffer: &[u8],
   request_head: HttpRequestHead,
 ) -> 
   Result<(), GenericError> 
@@ -331,14 +354,14 @@ fn intercept_http_request(
   )?;
 
   if daemon.lock()?.is_hostname_in_block_list(&host) {
-    _ = upstream.write(BLOCKED_RESPONSE);
+    _ = upstream.write(FORBIDDEN_RESPONSE);
     _ = upstream.shutdown(Shutdown::Both);
     return Ok(());
   }
 
   let destination = format!("{host}:{port}");
 
-  let downstream = match TcpStream::connect(&destination) {
+  let mut downstream = match TcpStream::connect(&destination) {
     Ok(value) => {
       value
     }
@@ -359,30 +382,43 @@ fn intercept_http_request(
   };
 
   if request_head.method == "CONNECT" {
-    if let Err(io_error) = upstream.write(b"HTTP/1.1 200 Connection Established\r\n\r\n") {
-      let mut generic_error = GenericError::new("intercepting incoming http request");
-
-      generic_error = generic_error
-        .add_error("failed to write '200 Connection Established' to upstream")
-        .add_attachment("write '200 Connection Established' to upstream io error", io_error.to_string());
-
-      if let Err(io_error) = downstream.shutdown(Shutdown::Both) {
-        generic_error = generic_error
-          .add_error("failed to shutdown downstream after failing to send '200 Connection Established' to upstream")
-          .add_attachment("shutdown downstream after failing to send '200 Connection Established' to upstream io error", io_error.to_string());
-      }
-
-      return Err(generic_error);
+    if let Err(_) = upstream.write(CONNECTION_ESTABLISHED_RESPONSE) {
+      return Ok(());
     }
+    if let Err(_) = downstream.write(request_body_buffer) {
+      return Ok(());
+    }
+    return bidirectional_copy(upstream, downstream);
 
+    // if let Err(io_error) = upstream.write(b"HTTP/1.1 200 Connection Established\r\n\r\n") {
+    //   let mut generic_error = GenericError::new("intercepting incoming http request");
+
+    //   generic_error = generic_error
+    //     .add_error("failed to write '200 Connection Established' to upstream")
+    //     .add_attachment("write '200 Connection Established' to upstream io error", io_error.to_string());
+
+    //   if let Err(io_error) = downstream.shutdown(Shutdown::Both) {
+    //     generic_error = generic_error
+    //       .add_error("failed to shutdown downstream after failing to send '200 Connection Established' to upstream")
+    //       .add_attachment("shutdown downstream after failing to send '200 Connection Established' to upstream io error", io_error.to_string());
+    //   }
+
+    //   return Err(generic_error);
+    // }
+
+  } else {
+    if let Err(_) = downstream.write(&request_buffer) {
+      return Ok(());
+    }
+    return bidirectional_copy(upstream, downstream);
   }
-
-  bidirectional_copy(upstream, downstream)
 }
 
-static BLOCKED_RESPONSE: &[u8] = b"HTTP/1.1 403 Forbidden\r\n\
+static FORBIDDEN_RESPONSE: &[u8] = b"HTTP/1.1 403 Forbidden\r\n\
 Content-Type: text/plain; charset=utf-8\r\n\
 Content-Length: 57\r\n\
 Connection: close\r\n\
 \r\n\
 Access to the requested host has been blocked by the proxy.";
+
+static CONNECTION_ESTABLISHED_RESPONSE: &[u8] = b"HTTP/1.1 200 Connection Established\r\n\r\n";
