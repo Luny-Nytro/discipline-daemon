@@ -1,4 +1,7 @@
-use crate::GenericError;
+use crate::{GenericError, Tried};
+
+mod scalar_field;
+pub use scalar_field::*;
 
 mod public;
 

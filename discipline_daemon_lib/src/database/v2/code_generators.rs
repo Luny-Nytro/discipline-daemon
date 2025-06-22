@@ -11,7 +11,7 @@ impl MlutiColumnPrimaryKeyConstraint {
     }
   }
 
-  fn write(&mut self, column_specification: &ColumnSpecification) {
+  fn write(&mut self, column_specification: &Column) {
     if self.code.is_empty() {
       self.code.push_str("PRIMARY KEY(");
     } else {

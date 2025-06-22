@@ -55,3 +55,7 @@ pub use daemon::*;
 // }
 
 // fn main() {}
+
+
+
+pub type Tried<A, B> = Result<A, B>;

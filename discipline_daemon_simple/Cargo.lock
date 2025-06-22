@@ -32,6 +32,7 @@ version = "0.1.0"
 dependencies = [
  "http",
  "httparse",
+ "llhttp_rs",
  "rusqlite",
  "tiny_http",
 ]
@@ -108,6 +109,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 
 [[package]]
+name = "libc"
+version = "0.2.174"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
+
+[[package]]
 name = "libsqlite3-sys"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -115,6 +122,22 @@ checksum = "ad8935b44e7c13394a179a438e0cebba0fe08fe01b54f152e29a93b5cf993fd4"
 dependencies = [
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "llhttp_rs"
+version = "0.1.2"
+dependencies = [
+ "http",
+ "libc",
+ "llhttp_sys",
+]
+
+[[package]]
+name = "llhttp_sys"
+version = "0.1.0"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

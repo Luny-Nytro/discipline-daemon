@@ -1,6 +1,6 @@
 use crate::GenericError;
 use super::{
-  Field, IntoScalarValue, 
+  ScalarField, IntoScalarValue, 
   escape_string_for_sqilte_into, serialize_scalar_value_into,
 };
 
@@ -40,7 +40,7 @@ impl CompoundTypeSerializerContext {
 
   fn write_column(
     &mut self, 
-    scalar_field_specification: &Field, 
+    scalar_field_specification: &ScalarField, 
     scalar_field_value: &str,
   ) {
     self.write_separating_comma();
@@ -48,12 +48,12 @@ impl CompoundTypeSerializerContext {
     self.column_values.push_str(scalar_field_value);
   }
 
-  pub fn write_null(&mut self, scalar_field_specification: &Field) -> Result<(), GenericError> {
+  pub fn write_null(&mut self, scalar_field_specification: &ScalarField) -> Result<(), GenericError> {
     self.write_column(scalar_field_specification, "NULL");
     Ok(())
   }
   
-  pub fn write_boolean(&mut self, scalar_field_specification: &Field, boolean: bool) -> Result<(), GenericError> {
+  pub fn write_boolean(&mut self, scalar_field_specification: &ScalarField, boolean: bool) -> Result<(), GenericError> {
     self.write_column(scalar_field_specification, if boolean { "TRUE" } else { "FALSE" });
     Ok(())
   }
@@ -106,7 +106,7 @@ impl CompoundTypeSerializerContext {
   //   self.write_column(column_info, &number.to_string())
   // }
   
-  pub fn write_string(&mut self, scalar_field_specification: &Field, string: &String) -> Result<(), GenericError> {
+  pub fn write_string(&mut self, scalar_field_specification: &ScalarField, string: &String) -> Result<(), GenericError> {
     self.write_separating_comma();
     self.column_names.push_str(scalar_field_specification.path.as_str());
     // TODO
@@ -116,7 +116,7 @@ impl CompoundTypeSerializerContext {
 
   pub fn serializable_scalar<Value: IntoScalarValue>(
     &mut self, 
-    scalar_field_specification: &Field, 
+    scalar_field_specification: &ScalarField, 
     scalar_field_value: &Value,
   ) -> 
     Result<(), GenericError> 

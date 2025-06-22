@@ -1,59 +1,5 @@
 use super::*;
 
-#[derive(Debug)]
-pub struct Field {
-  identifier: String,
-  optional: bool,
-  writable: bool,
-  primary: bool,
-}
-
-impl Field {
-  pub fn primary(identifier: &str) -> Self {
-    Self {
-      identifier: identifier.into(),
-      optional: false,
-      primary: true,
-      writable: false,
-    }
-  }
-  
-  pub fn readonly_required(identifier: &str) -> Self {
-    Self {
-      identifier: identifier.into(),
-      optional: false,
-      primary: false,
-      writable: false,
-    }
-  }
-
-  pub fn writable_required(identifier: &str) -> Self {
-    Self {
-      identifier: identifier.into(),
-      optional: false,
-      primary: false,
-      writable: true,
-    }
-  }
-
-  pub fn readonly_optional(identifier: &str) -> Self {
-    Self {
-      identifier: identifier.into(),
-      optional: true,
-      primary: false,
-      writable: false,
-    }
-  }
-
-  pub fn writable_optional(identifier: &str) -> Self {
-    Self {
-      identifier: identifier.into(),
-      optional: true,
-      primary: false,
-      writable: true,
-    }
-  }
-}
 
 pub struct Collection {
   identifier: String,
@@ -67,21 +13,21 @@ impl Collection {
   }
 }
 
-pub struct Definitions {
-  colletionless_item_fields: Vec<()>,
-  collections
+
+pub struct CompoundTypeDefiner<'a> {
+  collection_item_definer: &'a mut CollectionItemDefiner
 }
 
-
-pub struct Definer {
-  path: String,
-}
-
-impl Definer {
-  fn define_field(&mut self, definitions: &mut Definitions, field: &mut Field) -> Result<Definer, GenericError> {
-
+impl<'a> CompoundTypeDefiner<'a> {
+  pub fn define_scalar_field(&mut self, field: &mut ScalarField) -> Tried<(), GenericError> {
+    todo!()
   }
 
-  fn define_collection(&mut self, collection: &mut Collection) -> Result<Definer, GenericError>;
-  fn define_namespace(&mut self, namespace_identifier: &str) -> Result<Definer, GenericError>;
+  pub fn define_compound_field(&mut self, compound_type: &mut impl IsCompoundType) -> Tried<(), GenericError> {
+    todo!()
+  }
+}
+
+pub trait IsCompoundType {
+  fn define(&mut self, definer: &mut CompoundTypeDefiner) -> Tried<(), GenericError>;
 }

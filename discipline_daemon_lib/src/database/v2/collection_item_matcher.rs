@@ -33,7 +33,7 @@ impl CollectionItemAndMatchWriter {
 
   pub fn and_scalar_field_is(
     mut self, 
-    scalar_field_specification: &Field,
+    scalar_field_specification: &ScalarField,
     scalar_field_value: &impl IntoScalarValue,
   ) -> 
     Result<Self, GenericError>
@@ -92,7 +92,7 @@ impl CollectionItemMatcher {
   }
 
   pub fn match_by_scalar_field(
-    scalar_field_specification: &Field,
+    scalar_field_specification: &ScalarField,
     scalar_field_value: &impl IntoScalarValue,
   ) -> 
     Result<CollectionItemMatcher, GenericError>

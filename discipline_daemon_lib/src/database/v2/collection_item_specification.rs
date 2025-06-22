@@ -1,20 +1,24 @@
 use super::*;
 
 pub trait IsCollectionItem {
-  fn define(&mut self, define: &mut impl CollectionItemDefiner);
+  fn define(&mut self, definer: &mut CollectionItemDefiner) -> Tried<(), GenericError>;
 }
 
-pub trait CollectionItemDefiner {
-  fn define_field(&mut self, field: &mut Field);
+pub struct CollectionItemDefiner {
+  columns: Vec<Column>,
+  primary_columns_number: usize,
 }
 
-// pub struct CollectionItemDefiner {
-//   path: DatabaseEntityPath
-// }
+impl CollectionItemDefiner {
+  pub fn define_scalar_field(&mut self, field: &mut ScalarField) -> Tried<(), GenericError> {
+    todo!()
+  }
 
-// impl CollectionItemDefiner {
-//   pub fn new() -> Self {
-//     Self {
+  pub fn define_compound_field(&mut self, compound_type: &mut impl IsCompoundType) -> Tried<(), GenericError> {
+    todo!()
+  }
+}
+
 //       path: DatabaseEntityPath::new_empty()
 //     }
 //   }

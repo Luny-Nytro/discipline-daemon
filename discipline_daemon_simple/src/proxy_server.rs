@@ -2,9 +2,73 @@ use std::{io::{Read, Write}, net::{Shutdown, TcpListener, TcpStream}, sync::{Arc
 use std::io;
 use std::thread;
 use httparse::{Request, Status};
-use http::Uri;
+use http::{Method, Uri};
 use http::uri::Authority;
 use crate::{GenericError, DaemonMutex};
+use llhttp_rs;
+
+pub struct State {
+  uri_buffer: Vec<u8>,
+  did_complete_parsing_uri: bool,
+  header_buffer: Vec<u8>,
+  is_parsing_host_header: bool,
+  have_not_completed_parsing_host_header_yet: bool,
+  method: Option<Method>
+}
+
+impl llhttp_rs::Callbacks for State {
+  fn on_url(&mut self, _parser: &mut llhttp_rs::Parser, data: &[u8]) -> llhttp_rs::ParserResult<()> {
+    self.uri_buffer.extend_from_slice(data);
+    Ok(())
+  }
+
+  fn on_url_complete(&mut self, _parser: &mut llhttp_rs::Parser) -> llhttp_rs::ParserResult<()> {
+    self.did_complete_parsing_uri = true;
+    Ok(())
+  }
+
+  fn on_header_field(&mut self, _parser: &mut llhttp_rs::Parser, data: &[u8]) -> llhttp_rs::ParserResult<()> {
+    if self.have_not_completed_parsing_host_header_yet {
+      self.header_buffer.extend_from_slice(data);
+    }
+    
+    Ok(())
+  }
+
+  fn on_header_field_complete(&mut self, _parser: &mut llhttp_rs::Parser) -> llhttp_rs::ParserResult<()> {
+    if 
+      self.have_not_completed_parsing_host_header_yet 
+      &&
+      self.header_buffer == b"host"
+    {
+      self.is_parsing_host_header = true;
+      self.header_buffer.clear();
+    }
+    
+    Ok(())
+  }
+
+  fn on_header_value(&mut self, _parser: &mut llhttp_rs::Parser, data: &[u8]) -> llhttp_rs::ParserResult<()> {
+    if self.is_parsing_host_header {
+      self.header_buffer.extend_from_slice(data);
+    }
+
+    Ok(())
+  }
+
+  fn on_header_value_complete(&mut self, _parser: &mut llhttp_rs::Parser) -> llhttp_rs::ParserResult<()> {
+    if self.is_parsing_host_header {
+      self.have_not_completed_parsing_host_header_yet = false;
+    }
+
+    Ok(())
+  }
+
+  fn on_method_complete(&mut self, parser: &mut llhttp_rs::Parser) -> llhttp_rs::ParserResult<()> {
+    self.method = parser.get_method();
+    Ok(())
+  }
+}
 
 struct HttpRequestHead {
   method: String,
