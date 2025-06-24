@@ -172,7 +172,7 @@ impl Database {
     &self,
     collection_specification: &Collection,
     collection_item_matcher: &CollectionItemMatcher,
-    collection_item_modifications: &CollectionItemModificationsDraft,
+    collection_item_modifications: &CompoundTypeModificationsDraft,
   ) -> 
     Result<(), GenericError> 
   {

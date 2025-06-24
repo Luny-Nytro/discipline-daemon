@@ -33,12 +33,16 @@ impl CollectionItemAndMatchWriter {
 
   pub fn and_scalar_field_is(
     mut self, 
-    scalar_field_specification: &ScalarField,
+    scalar_field: &ScalarField,
     scalar_field_value: &impl IntoScalarValue,
   ) -> 
     Result<Self, GenericError>
   {
     // TODO: Err if the scalar field is already added
+
+    let scalar_field = scalar_field.as_defined().map_err(|error|
+      error.change_context("adding a new scalar field condition to a CollectionItemAndMatchWriter")
+    )?;
 
     let mut serialized_scalar_field_value = String::new();
     // if let Err(error) = 
@@ -59,7 +63,7 @@ impl CollectionItemAndMatchWriter {
       self.code.push_str("WHERE ");
     }
 
-    self.code.push_str(scalar_field_specification.path.as_str());
+    self.code.push_str(scalar_field.path().as_str());
     self.code.push_str(" = ");
     self.code.push_str(&serialized_scalar_field_value);
 
@@ -97,9 +101,13 @@ impl CollectionItemMatcher {
   ) -> 
     Result<CollectionItemMatcher, GenericError>
   {
+    let scalar_field_specification = scalar_field_specification.as_defined().map_err(|error|
+      error.change_context("creating a CollectionItemMatcher that matches baised on the value of a single scalar field")
+    )?;
+
     let mut code = String::new();
     code.push_str("WHERE ");
-    code.push_str(scalar_field_specification.path.as_str());
+    code.push_str(scalar_field_specification.path().as_str());
     code.push_str(" = ");
     serialize_scalar_value_into(scalar_field_value, &mut code);
       // .map_err(|error|

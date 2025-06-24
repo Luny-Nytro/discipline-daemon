@@ -1,5 +1,52 @@
 use crate::GenericError;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Identifier(String);
+
+impl Identifier {
+  pub(super) fn new(identifier: &str) -> Result<Self, GenericError> {
+    // TODO: Escape the identifier
+    // Self(identifier.into())
+    todo!()
+  }
+
+  pub(super) fn as_displayable_string(&self) -> String {
+    todo!()
+  }
+
+  pub(super) fn as_path(&self) -> Path {
+    todo!()
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct Path(String);
+
+impl Path {
+  pub fn new() -> Self {
+    Self(String::new())
+  }
+
+  pub fn append_identifier(&self, identifier: &Identifier) -> Self {
+    // TODO: Escape identifiers
+    Self(format!("{}.{}", self.0, identifier.0))
+  }
+
+  pub fn append_identifier_string(&self, identifier: &str) -> Self {
+    todo!()
+    // // TODO: Escape identifiers
+    // Self(format!("{}.{}", self.0, identifier.0))
+  }
+
+  pub fn to_displayable_string(&self) -> String {
+    todo!()
+  }
+
+  pub(super) fn as_str(&self) -> &String {
+    &self.0
+  }
+}
+
 enum IdentifierInner {
   Global(String),
   Scoped(String),

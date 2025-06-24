@@ -1,10 +1,10 @@
 use super::*;
 
-pub struct CollectionItemModificationsDraft {
+pub struct CompoundTypeModificationsDraft {
   code: String,
 }
 
-impl CollectionItemModificationsDraft {
+impl CompoundTypeModificationsDraft {
   pub fn new() -> Self {
     Self {
       code: String::new(),
@@ -17,12 +17,17 @@ impl CollectionItemModificationsDraft {
 
   pub fn set_scalar_field(
     &mut self, 
-    scalar_field_specification: &ScalarField, 
+    scalar_field: &ScalarField, 
     new_scalar_field_value: &impl IntoScalarValue,
   ) ->
     Result<(), GenericError>
   {
     // TODO: Return an error if the scalar field is readonly 
+
+    let scalar_field = scalar_field.as_defined().map_err(|error|
+      error.change_context("attempting to set a new value for a scalar field of a compound type")
+    )?;
+
     let mut serialized_scalar_field_value = String::new();
 
     // if let Err(error) = 
@@ -45,7 +50,7 @@ impl CollectionItemModificationsDraft {
       self.code.push_str("SET ");
     }
 
-    self.code.push_str(scalar_field_specification.path.as_str());
+    self.code.push_str(scalar_field.path().as_str());
     self.code.push_str(" = ");
     self.code.push_str(&serialized_scalar_field_value);
 
