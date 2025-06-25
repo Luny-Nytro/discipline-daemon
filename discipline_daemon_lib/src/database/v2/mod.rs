@@ -1,9 +1,16 @@
 use crate::{GenericError, Tried};
 
-mod scalar_field;
-pub use scalar_field::*;
+mod field;
+pub use field::*;
 
-mod public;
+mod column;
+pub use column::*;
+
+mod compound_type;
+pub use compound_type::*;
+
+mod collection_item;
+pub use collection_item::*;
 
 mod serializing_utiliites;
 use serializing_utiliites::*;
@@ -43,9 +50,3 @@ pub use collection::*;
 
 mod identifier;
 pub use identifier::*;
-
-mod compound_type_specification;
-pub use compound_type_specification::*;
-
-mod collection_item_specification;
-pub use collection_item_specification::*;

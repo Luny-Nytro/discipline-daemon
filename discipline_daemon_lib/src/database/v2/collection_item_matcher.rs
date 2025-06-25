@@ -33,20 +33,15 @@ impl CollectionItemAndMatchWriter {
 
   pub fn and_scalar_field_is(
     mut self, 
-    scalar_field: &ScalarField,
-    scalar_field_value: &impl IntoScalarValue,
+    field: &Field,
+    value: &impl IntoScalarValue,
   ) -> 
     Result<Self, GenericError>
   {
     // TODO: Err if the scalar field is already added
-
-    let scalar_field = scalar_field.as_defined().map_err(|error|
-      error.change_context("adding a new scalar field condition to a CollectionItemAndMatchWriter")
-    )?;
-
-    let mut serialized_scalar_field_value = String::new();
+    let mut serialized_value = String::new();
     // if let Err(error) = 
-      serialize_scalar_value_into(scalar_field_value, &mut serialized_scalar_field_value);
+      serialize_scalar_value_into(value, &mut serialized_value);
     // {
     //   return Err(
     //     // TODO: Use proper error messages
@@ -63,9 +58,9 @@ impl CollectionItemAndMatchWriter {
       self.code.push_str("WHERE ");
     }
 
-    self.code.push_str(scalar_field.path().as_str());
+    self.code.push_str(field.path().as_string());
     self.code.push_str(" = ");
-    self.code.push_str(&serialized_scalar_field_value);
+    self.code.push_str(&serialized_value);
 
     Ok(self)
   }
@@ -96,20 +91,16 @@ impl CollectionItemMatcher {
   }
 
   pub fn match_by_scalar_field(
-    scalar_field_specification: &ScalarField,
-    scalar_field_value: &impl IntoScalarValue,
+    field: &Field,
+    value: &impl IntoScalarValue,
   ) -> 
     Result<CollectionItemMatcher, GenericError>
   {
-    let scalar_field_specification = scalar_field_specification.as_defined().map_err(|error|
-      error.change_context("creating a CollectionItemMatcher that matches baised on the value of a single scalar field")
-    )?;
-
     let mut code = String::new();
     code.push_str("WHERE ");
-    code.push_str(scalar_field_specification.path().as_str());
+    code.push_str(field.path().as_str());
     code.push_str(" = ");
-    serialize_scalar_value_into(scalar_field_value, &mut code);
+    serialize_scalar_value_into(value, &mut code);
       // .map_err(|error|
       //   error
       //     .change_context("creating a collection item matcher that matches based a single scalar field value")

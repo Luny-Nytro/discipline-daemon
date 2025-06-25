@@ -1,8 +1,4 @@
-use crate::GenericError;
-use super::{
-  ScalarField, IntoScalarValue, 
-  escape_string_for_sqilte_into, serialize_scalar_value_into,
-};
+use super::*;
 
 pub trait CompoundTypeSerializer {
   type CompoundType;
@@ -40,21 +36,21 @@ impl CompoundTypeSerializerContext {
 
   fn write_column(
     &mut self, 
-    scalar_field_specification: &ScalarField, 
-    scalar_field_value: &str,
+    field: &Field, 
+    value: &str,
   ) {
     self.write_separating_comma();
-    self.column_names.push_str(scalar_field_specification.path.as_str());
-    self.column_values.push_str(scalar_field_value);
+    self.column_names.push_str(field.path().as_string());
+    self.column_values.push_str(value);
   }
 
-  pub fn write_null(&mut self, scalar_field_specification: &ScalarField) -> Result<(), GenericError> {
-    self.write_column(scalar_field_specification, "NULL");
+  pub fn write_null(&mut self, field: &Field) -> Result<(), GenericError> {
+    self.write_column(field, "NULL");
     Ok(())
   }
   
-  pub fn write_boolean(&mut self, scalar_field_specification: &ScalarField, boolean: bool) -> Result<(), GenericError> {
-    self.write_column(scalar_field_specification, if boolean { "TRUE" } else { "FALSE" });
+  pub fn write_boolean(&mut self, field: &Field, boolean: bool) -> Result<(), GenericError> {
+    self.write_column(field, if boolean { "TRUE" } else { "FALSE" });
     Ok(())
   }
 
@@ -106,9 +102,9 @@ impl CompoundTypeSerializerContext {
   //   self.write_column(column_info, &number.to_string())
   // }
   
-  pub fn write_string(&mut self, scalar_field_specification: &ScalarField, string: &String) -> Result<(), GenericError> {
+  pub fn write_string(&mut self, field: &Field, string: &String) -> Result<(), GenericError> {
     self.write_separating_comma();
-    self.column_names.push_str(scalar_field_specification.path.as_str());
+    self.column_names.push_str(field.path().as_string());
     // TODO
     escape_string_for_sqilte_into(string, &mut self.column_values);
     Ok(())
@@ -116,14 +112,14 @@ impl CompoundTypeSerializerContext {
 
   pub fn serializable_scalar<Value: IntoScalarValue>(
     &mut self, 
-    scalar_field_specification: &ScalarField, 
-    scalar_field_value: &Value,
+    field: &Field, 
+    value: &Value,
   ) -> 
     Result<(), GenericError> 
   {
     let mut temp = String::new();
     
-    serialize_scalar_value_into(scalar_field_value, &mut temp);
+    serialize_scalar_value_into(value, &mut temp);
       // .map_err(|error| 
       //   error
       //     .change_context("writing a IntoScalarValue into a CompoundValueSerializerContext")
@@ -131,7 +127,7 @@ impl CompoundTypeSerializerContext {
       // )?;
       
     self.write_separating_comma();
-    self.column_names.push_str(scalar_field_specification.path.as_str());
+    self.column_names.push_str(field.path().as_string());
     self.column_values.push_str(&temp);
     Ok(())
   }

@@ -1,326 +1,378 @@
-use super::*;
-
-enum FieldSemantics {
-  Primary,
-  ReadonlyRequired,
-  ReadonlyOptional,
-  WritableRequired,
-  WrirableOptional,
-}
-
-pub struct Field {
-  path: Path,
-  semantics: FieldSemantics,
-  identifier: Identifier,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub(super) enum ColumnType {
-  Primary, 
-  UniqueRequired,
-  UniqueOptional,
-  Optional,
-  Required,
-}
-
-pub(super) struct Column {
-  pub(super) path: Path,
-  pub(super) column_type: ColumnType,
-}
-
-impl Column {
-  pub(super) fn primary(path: Path) -> Self {
-    Self {
-      path,
-      column_type: ColumnType::Primary,
-    }
-  }
-
-  pub(super) fn unique_required(path: Path) -> Self {
-    Self {
-      path,
-      column_type: ColumnType::UniqueRequired,
-    }
-  }
-
-  pub(super) fn unique_optional(path: Path) -> Self {
-    Self {
-      path,
-      column_type: ColumnType::UniqueOptional,
-    }
-  }
-
-  pub(super) fn required(path: Path) -> Self {
-    Self {
-      path,
-      column_type: ColumnType::Required,
-    }
-  }
-
-  pub(super) fn optional(path: Path) -> Self {
-    Self {
-      path,
-      column_type: ColumnType::Optional,
-    }
-  }
-}
-
-pub trait IsCompoundType: Sized {
-  fn define(definer: &mut CompoundTypeBuilder) -> Tried<Self, GenericError>;
-}
-
-pub struct CompoundTypeBuilder {
-  path: Path,
-  columns: Vec<Column>,
-  column_identifiers: HashSet<Identifier>,
-}
-
-impl CompoundTypeBuilder {
-  pub fn add_readonly_required_field(
-    &mut self, 
-    identifier: &str,
-  ) -> 
-    Tried<Field, GenericError> 
-  {
-    let identifier = Identifier::new(identifier)?;
-
-    if self.column_identifiers.contains(&identifier) {
-      return Err(GenericError::new(""));
-    }
-
-    let field = Field {
-      path: self.path.append_identifier(&identifier),
-      semantics: FieldSemantics::ReadonlyRequired,
-      identifier: identifier,
-    };
-
-    self.columns.push(Column::required(field.path.clone()));
-
-    Ok(field)
-  }
-
-  pub fn add_readonly_optional_field(
-    &mut self, 
-    identifier: &str,
-  ) -> 
-    Tried<Field, GenericError> 
-  {
-    let identifier = Identifier::new(identifier)?;
-
-    if self.column_identifiers.contains(&identifier) {
-      return Err(GenericError::new(""));
-    }
-
-    let field = Field {
-      path: self.path.append_identifier(&identifier),
-      semantics: FieldSemantics::ReadonlyOptional,
-      identifier,
-    };
-
-    self.columns.push(Column::optional(field.path.clone()));
-
-    Ok(field)
-  }
-
-  pub fn add_writable_required_field(
-    &mut self, 
-    identifier: &str,
-  ) -> 
-    Tried<Field, GenericError> 
-  {
-    let identifier = Identifier::new(identifier)?;
-
-    if self.column_identifiers.contains(&identifier) {
-      return Err(GenericError::new(""));
-    }
-
-    let field = Field {
-      path: self.path.append_identifier(&identifier),
-      semantics: FieldSemantics::WritableRequired,
-      identifier,
-    };
-
-    self.columns.push(Column::required(field.path.clone()));
-
-    Ok(field)
-  }
-
-  pub fn add_writable_optional_field(
-    &mut self, 
-    identifier: &str,
-  ) -> 
-    Tried<Field, GenericError> 
-  {
-    let identifier = Identifier::new(identifier)?;
-
-    if self.column_identifiers.contains(&identifier) {
-      return Err(GenericError::new(""));
-    }
-
-    let field = Field {
-      path: self.path.append_identifier(&identifier),
-      semantics: FieldSemantics::WrirableOptional,
-      identifier,
-    };
-
-    self.columns.push(Column::optional(field.path.clone()));
-
-    Ok(field)
-  }
-
-  pub fn add_compound_field<T>(&mut self, identifier: &str) -> Tried<T, GenericError> 
-    where 
-      T: IsCompoundType
-  {
-    let identifier = Identifier::new(identifier)?;
-
-    let mut builder = CompoundTypeBuilder {
-      path: self.path.append_identifier(&identifier),
-      columns: Vec::new(),
-      column_identifiers: HashSet::new(),
-    };
-
-    let compound_field = T::define(&mut builder)?;
-    self.columns.extend(builder.columns.into_iter());
-    self.column_identifiers.insert(identifier.clone());
-    Ok(compound_field)
-  }
-}
-
-pub struct Collection {
-  identifier: Identifier,
-  path: Path,
-}
-
-pub trait IsCollectionDefiner {
-  fn add_collection<T>(&mut self, identifier: &str) -> Collection
-    where 
-      T: IsCollectionItem;
-}
-
-pub trait IsCompoundTypeDefiner {
-  fn add_readonly_required(&mut self, identifier: &str) -> Result<Field, GenericError>;
-  fn add_readonly_optional(&mut self, identifier: &str) -> Result<Field, GenericError>;
-  fn add_writable_required(&mut self, identifier: &str) -> Result<Field, GenericError>;
-  fn add_writable_optional(&mut self, identifier: &str) -> Result<Field, GenericError>;
-  fn add_compound_field<T>(&self, identifier: &str) -> Result<T, GenericError>
-    where 
-      T: IsCompoundType;
-}
-
-pub trait IsCollectionItemDefiner {
-  fn add_primary();
-}
-
-pub struct CollectionItemDefiner {
-  columns: Vec<Column>
-}
-
-// pub trait IsCompoundType {
-//   fn new() -> Self;
-//   fn serializer() -> Self;
-//   fn deserializer() -> Self;
-// }
-
-pub trait IsCollectionItem: Sized {
-  fn new() -> Self;
-}
-
-pub(super) enum CollectionInner {
-  
-}
-
-impl Collection {
-  pub(super) fn new(
-    // path: DatabaseEntityPath,
-    // collection_item_namespace: CompoundTypeNamespace,
-  ) -> 
-    Result<Self, GenericError>
-  {
-    if collection_item_namespace.columns.is_empty() {
-      return Err(
-        GenericError::new("creating a collection")
-          .add_error("you didn't define any fields for the collection item! define one or more by calling the 'add_*_field' methods of the CollectionItemDefiner")
-          .add_attachment("collection path", path.as_str())
-      );
-    }
-    if collection_item_namespace.primary_columns_number == 0 {
-      return Err(
-        GenericError::new("creating a collection")
-          .add_error("you didn't define any primary fields for the collection item! define one or more by calling the 'add_primary_scalar_field' method of the CollectionItemDefiner")
-          .add_attachment("collection path", path.as_str())
-      );
-    }
-
-    Ok(Self {
-      path,
-      collection_item_namespace,
-    })
-  }
-}
-
 use std::collections::HashSet;
 use super::*;
 
 
-pub struct DatabaseNamespace {
-  pub(super) path: DatabaseEntityPath,
-  defined_entities: HashSet<String>,
+
+pub struct Collection {
+  path: Path,
+  pub(super) columns: Vec<Column>,
+  pub(super) identifier: Identifier,
+  pub(super) primary_columns_number: usize,
 }
 
-impl DatabaseNamespace {
-  pub(super) fn new(path: DatabaseEntityPath) -> Self {
-    Self {
-      path,
-      defined_entities: HashSet::new(),
+impl Collection {
+  pub(super) fn path(&self) -> &Path {
+    &self.path
+  }
+}
+
+pub trait IsCollection {
+  
+}
+
+pub trait IsNamespace: Sized {
+  fn new(definer: &mut DatabaseDefiner) -> Result<Self, GenericError>;
+}
+
+pub struct DatabaseDefiner {
+  path: Path,
+  collections: Vec<Collection>,
+  defined_identifiers: HashSet<Identifier>,
+}
+
+impl DatabaseDefiner {
+  pub fn namespace<T>(
+    &mut self, 
+    identifier: &str,
+  ) -> 
+    Result<T, GenericError>
+  where 
+    T: IsNamespace
+  {
+    let identifier = Identifier::new(identifier)?;
+
+    if self.defined_identifiers.contains(&identifier) {
+      return Err(GenericError::new(""));
     }
+
+    let mut definer = DatabaseDefiner { 
+      path: self.path.append_identifier(&identifier),
+      collections: Vec::new(),
+      defined_identifiers: HashSet::new(),
+    };
+
+    let namespace = T::new(&mut definer)?;
+
+    self.collections.extend(definer.collections.into_iter());
+    self.defined_identifiers.insert(identifier);
+
+    Ok(namespace)
   }
 
-  pub fn add_namespace(
-    &mut self, 
-    database: &mut Database,
-    new_namespace_identifier: &str,
-  ) -> 
-    Result<DatabaseNamespace, GenericError> 
+  pub fn collection<T>(&mut self, identifier: &str) -> Result<(Collection, T), GenericError>
+  where 
+    T: IsCollectionItem
   {
-    // TODO: check whether there is a namespace with the given identifier
+    let identifier = Identifier::new(identifier)?;
 
-    self.path.then(new_namespace_identifier)
-      .map(|path| 
-        DatabaseNamespace { 
-          path,
-          defined_entities: HashSet::new(),
-        }
-      )
-      .map_err(|error|
-        error
-          .change_context("creating a new namespace within a non-global namespace")
-          .add_error("invalid namespace identifier")
-          .add_attachment("super namespace fully qualified identifier", self.path.as_str())
-      )
+    if self.defined_identifiers.contains(&identifier) {
+      return Err(GenericError::new(""));
+    }
+
+    let mut collection_item_definer = CollectionItemDefiner {
+      path: Path::new(),
+      columns: Vec::new(),
+      defined_identifiers: HashSet::new(),
+      primary_columns_number: 0,
+    };
+
+    let collection_item = T::new(&mut collection_item_definer)?;
+    self.defined_identifiers.insert(identifier.clone());
+
+    Ok((
+      Collection {
+        path: self.path.append_identifier(&identifier),
+        identifier,
+        columns: collection_item_definer.columns,
+        primary_columns_number: collection_item_definer.primary_columns_number,
+      }, 
+      
+      collection_item,
+    ))
   }
-
-  pub fn add_collection(
-    &mut self, 
-    database: &mut Database,
-    collection_identifier: &str,
-    collection_item_namespace: CompoundTypeNamespace,
-  ) -> 
-    Result<Collection, GenericError> 
-  {
-    // TODO: check if there is a collection or a namespace with the given identifier
-    self.path.then(collection_identifier)
-      .map_err(|error|
-        error
-          .change_context("definning a new collection")
-          .add_error("invalid collection identifier")
-          .add_attachment("namespace path", self.path.as_str())
-      )
-      .and_then(|collection_path|
-        Collection::new(
-          collection_path,
-          collection_item_namespace,
-        )
-      )
-  } 
 }
+
+// Examoles
+pub struct CompoundTypeExample {
+  a: Field,
+  b: Field,
+  c: Field,
+  d: Field,
+}
+
+impl IsCompoundType for CompoundTypeExample {
+  fn new(definer: &mut CompoundTypeDefiner) -> Tried<Self, GenericError> {
+    Ok(Self {
+      a: definer.readonly_required_field("a")?,
+      b: definer.readonly_required_field("b")?,
+      c: definer.readonly_required_field("c")?,
+      d: definer.readonly_required_field("d")?,
+    })
+  }
+}
+
+pub struct CollectionItemExample {
+  id: Field,
+  name: Field,
+  compound_field: CompoundTypeExample,
+}
+
+impl IsCollectionItem for CollectionItemExample {
+  fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError> {
+    Ok(Self {
+      id: definer.primary_scalar_field("id")?,
+      name: definer.writable_required_field("name")?,
+      compound_field: definer.compound_field("lunar")?,
+    })
+  }
+}
+
+pub struct NamespaceExample {
+  rule_collection: Collection,
+  rule_collection_item: CollectionItemExample,
+}
+
+impl IsNamespace for NamespaceExample {
+  fn new(definer: &mut DatabaseDefiner) -> Result<Self, GenericError> {
+    let (rule_collection, rule_collection_item) = definer.collection("rules")?;
+
+    Ok(Self {
+      rule_collection,
+      rule_collection_item,
+    })
+  }
+}
+
+
+
+// pub fn find_all_collection_items<Deserializer>(
+//   &self,
+//   collection_specification: &Collection,
+//   collection_item_deserializer: &Deserializer,
+// ) ->
+//   Result<Vec<Deserializer::Output>, GenericError>
+// where 
+//   Deserializer: CompoundValueDeserializer
+// {
+//   let mut code = String::new();
+//   generate_code_find_all_collection_items(
+//     &mut code, 
+//     collection_specification,
+//   ).map_err(|error|
+//     error
+//       .change_context("retrieving all the items of a collection")
+//   )?;
+
+//   let mut statement = self.connection.prepare(&code).map_err(|error|
+//     GenericError::new("creating sqlite query statement")
+//       .add_attachment("error", error.to_string())
+//       .add_attachment("code", code.clone())
+//       .change_context("retrieving all the items of a collection")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )?;
+  
+//   let mut iterator = statement.query(()).map_err(|error|
+//     GenericError::new("creating sqlite iterator")
+//       .add_attachment("error", error.to_string())
+//       .add_attachment("code", code.clone())
+//       .change_context("retrieving all the items of a collection")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )?;
+
+//   let mut collection_items = Vec::new();
+//   loop {
+//     let raw_collection_item = iterator.next().map_err(|error|
+//       GenericError::new("getting the next item of a sqlite row iterator")
+//       .add_attachment("error", error.to_string())
+//       .add_attachment("code", code.clone())
+//       .change_context("retrieving all the items of a collection")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//     )?;
+
+//     let Some(raw_collection_item) = raw_collection_item else {
+//       break;
+//     };
+
+//     let collection_item = deserialize_compound_value(
+//       raw_collection_item, 
+//       collection_item_deserializer,
+//     ).map_err(|error|
+//       error
+//         .change_context("deserializing a collection item")
+//         .change_context("retrieving all the items of a collection")
+//         .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//     )?;
+
+//     collection_items.push(collection_item);
+//   }
+
+//   Ok(collection_items)
+// }
+
+// pub fn find_one_collection_item<Deserializer>(
+//   &self,
+//   collection_specification: &Collection,
+//   collection_item_matcher: &CollectionItemMatcher,
+//   collection_item_deserializer: &Deserializer,
+// ) ->
+//   Result<Option<Deserializer::Output>, GenericError>
+// where 
+//   Deserializer: CompoundValueDeserializer
+// {
+//   let mut code = String::new();
+//   generate_code_find_one_collection_item(
+//     &mut code,
+//     collection_specification,
+//     collection_item_matcher,
+//   ).map_err(|error|
+//     error.change_context("retrieving one collection item")
+//   )?;
+
+//   let mut statement = self.connection.prepare(&code).map_err(|error|
+//     GenericError::new("creating sqlite query statement")
+//       .add_attachment("error", error.to_string())
+//       .add_attachment("code", code.clone())
+//       .change_context("retreive one collection item")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )?;
+  
+//   let mut iterator = statement.query(()).map_err(|error|
+//     GenericError::new("create sqlite query iterator")
+//       .add_attachment("error", error.to_string())
+//       .add_attachment("code", code.clone())
+//       .change_context("retreive one collection item")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )?;
+
+//   loop {
+//     let raw_collection_item = iterator.next().map_err(|error|
+//       GenericError::new("getting the next item of a sqlite query iterator")
+//         .add_attachment("error", error.to_string())
+//         .add_attachment("code", code.clone())
+//         .change_context("retreive one collection item")
+//         .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//     )?;
+
+//     let Some(raw_collection_item) = raw_collection_item else {
+//       return Ok(None)
+//     };
+
+//     return deserialize_compound_value(
+//       raw_collection_item, 
+//       collection_item_deserializer,
+//     )
+//     .map(Some)
+//     .map_err(|error|
+//       error
+//         .change_context("retrieving one collection item")
+//         .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//     );
+//   }
+// }
+
+// pub fn update_collection_items(
+//   &self,
+//   collection_specification: &Collection,
+//   collection_item_matcher: &CollectionItemMatcher,
+//   collection_item_modifications: &CollectionItemModificationsDraft,
+// ) -> 
+//   Result<(), GenericError> 
+// {
+//   let mut code = String::new();
+//   generate_code_update_collection_item(
+//     &mut code, 
+//     collection_specification, 
+//     collection_item_matcher, 
+//     collection_item_modifications,
+//   ).map_err(|error|
+//     error.change_context("updating collection items")
+//   )?;
+
+//   self.execute(&code).map_err(|error| 
+//     error
+//       .change_context("updating collection items")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )
+// }
+
+// pub fn delete_collection_items(
+//   &self,
+//   collection_specification: &Collection,
+//   collection_item_matcher: &CollectionItemMatcher,
+// ) -> 
+//   Result<(), GenericError> 
+// {
+//   let mut code = String::new();
+//   generate_code_delete_collection_item(
+//     &mut code, 
+//     collection_specification, 
+//     collection_item_matcher, 
+//   ).map_err(|error|
+//     error.change_context("deleting collection items")
+//   )?;
+
+//   self.execute(&code).map_err(|error| 
+//     error
+//       .change_context("deleting collection items")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )
+// }
+
+// pub fn add_collection_item<Serializer: CompoundTypeSerializer>(
+//   &self,
+//   collection_specification: &Collection,
+//   collection_item_serializer: &Serializer,
+//   new_collection_item: &Serializer::CompoundType,
+// ) -> 
+//   Result<(), GenericError> 
+// {
+//   let mut code = String::new();
+//   generate_code_add_collection_item(
+//     &mut code, 
+//     collection_specification, 
+//     collection_item_serializer,
+//     new_collection_item, 
+//   ).map_err(|error|
+//     error.change_context("adding a new collection item")
+//   )?;
+
+//   self.execute(&code).map_err(|error| 
+//     error
+//       .change_context("adding collection a new item")
+//       .add_attachment("collection fully qualified identifier", collection_specification.path.as_string())
+//   )
+// }
+
+// // pub fn initialize_database_schema(
+// //   &self,
+// //   database_specifications_provider: &impl DatabaseSpecificationsProvider,
+// // ) -> 
+// //   Result<(), GenericError>
+// // {
+// //   let mut code = String::new();
+// //   generate_code_define_database_schema(
+// //     &mut code, 
+// //     database_specifications_provider,
+// //   )
+// //   .and_then(|_|
+// //     self.execute(&code)
+// //   )
+// //   .map_err(|error|
+// //     error.change_context("initializing database schema")
+// //   )
+// // }
+
+// pub fn define_namespace(
+//   &mut self, 
+//   identifier: &str,
+// ) -> 
+//   Result<DatabaseNamespace, GenericError> 
+// {
+//   DatabaseEntityPath::new(identifier)
+//     .map(|path| DatabaseNamespace::new(path))
+//     .map_err(|error|
+//       error
+//         .change_context("definning a new namespace")
+//         .add_error("invalid namespace identifier")
+//     )
+// }

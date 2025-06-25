@@ -18,7 +18,7 @@ impl MlutiColumnPrimaryKeyConstraint {
       self.code.push_str(", ");
     }
 
-    self.code.push_str(column_specification.path.as_str());
+    self.code.push_str(column_specification.path.as_string());
   }
 
   fn finish(mut self) -> String {
@@ -29,42 +29,42 @@ impl MlutiColumnPrimaryKeyConstraint {
 
 pub fn generate_code_define_collection(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
 ) ->
   Result<(), GenericError>
 {
   code.push_str("CREATE TABLE IF NOT EXISTS ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_str());
   code.push_str(" (");
 
   let mut multi_column_primary_key_constraint = MlutiColumnPrimaryKeyConstraint::new();
   let mut did_write_a_column_definition = false;
 
-  for column_specification in &collection_specification.collection_item_namespace.columns {
+  for column in &collection.columns {
     if did_write_a_column_definition {
       code.push_str(", ");
     }
 
-    code.push_str(column_specification.path.as_str());
+    code.push_str(column.path.as_str());
     
-    match column_specification.column_type {
-      ColumnType::Primary => {
-        if collection_specification.collection_item_namespace.primary_columns_number > 1 {
-          multi_column_primary_key_constraint.write(&column_specification);
+    match column.semantics {
+      ColumnSemantics::Primary => {
+        if collection.primary_columns_number > 1 {
+          multi_column_primary_key_constraint.write(&column);
         } else {
           code.push_str(" PRIMARY KEY");
         }
       }
-      ColumnType::Optional => {
+      ColumnSemantics::Optional => {
         // noop
       }
-      ColumnType::Required => {
+      ColumnSemantics::Required => {
         code.push_str(" NOT NULL");
       }
-      ColumnType::UniqueOptional => {
+      ColumnSemantics::UniqueOptional => {
         code.push_str(" UNIQUE");
       }
-      ColumnType::UniqueRequired => {
+      ColumnSemantics::UniqueRequired => {
         code.push_str(" UNIQUE NOT NULL");
       }
     }
@@ -72,7 +72,7 @@ pub fn generate_code_define_collection(
     did_write_a_column_definition = true;
   }
 
-  if collection_specification.collection_item_namespace.primary_columns_number > 0 {
+  if collection.primary_columns_number > 0 {
     code.push_str(", ");
     code.push_str(&multi_column_primary_key_constraint.finish());
   }
@@ -84,7 +84,7 @@ pub fn generate_code_define_collection(
 
 pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
   collection_item_serializer: &Serializer,
   new_collection_item: &Serializer::CompoundType,
 ) ->
@@ -100,7 +100,7 @@ where
   )?; // TODO: do proper error handling
 
   code.push_str("INSERT INTO ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_str());
   code.push_str(" ");
   code.push_str(&values_clause);
   code.push_str(";");
@@ -110,13 +110,13 @@ where
 
 pub(super) fn generate_code_delete_collection_item(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
 ) ->
   Result<(), GenericError>
 {
   code.push_str("DELETE FROM ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_string());
   match &collection_item_matcher.inner {
     CollectionItemMatcherInner::NoWhereClause => {
       code.push_str(";");
@@ -133,18 +133,19 @@ pub(super) fn generate_code_delete_collection_item(
 
 pub(super) fn generate_code_update_collection_item(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
-  collection_item_modifications: &CompoundTypeModificationsDraft,
+  collection_item_modifications: &CollectionItemModificationsDraft,
 ) -> 
   Result<(), GenericError>
 {
   let Some(set_clause) = collection_item_modifications.finish() else {
+    // TODO: Maybe return an error here
     return Ok(());
   };
 
   code.push_str("UPDATE ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_string());
   code.push_str(" ");
   code.push_str(&set_clause);
  
@@ -164,25 +165,25 @@ pub(super) fn generate_code_update_collection_item(
 
 pub(super) fn generate_code_find_all_collection_items(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
 ) -> 
   Result<(), GenericError>
 {
   code.push_str("SELECT * FROM ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_str());
   code.push_str(";");
   Ok(())
 }
 
 pub(super) fn generate_code_find_one_collection_item(
   code: &mut String,
-  collection_specification: &Collection,
+  collection: &Collection,
   collection_item_matcher: &CollectionItemMatcher,
 ) -> 
   Result<(), GenericError>
 {
   code.push_str("SELECT * FROM ");
-  code.push_str(collection_specification.path.as_str());
+  code.push_str(collection.path().as_str());
 
   match &collection_item_matcher.inner {
     CollectionItemMatcherInner::NoWhereClause => {

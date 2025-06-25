@@ -42,7 +42,11 @@ impl Path {
     todo!()
   }
 
-  pub(super) fn as_str(&self) -> &String {
+  pub(super) fn as_string(&self) -> &String {
+    &self.0
+  }
+
+  pub(super) fn as_str(&self) -> &str {
     &self.0
   }
 }
