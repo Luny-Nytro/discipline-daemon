@@ -1,8 +1,8 @@
 use crate::database::{
   Field, CompoundValueDeserializer, CompoundTypeSerializer, 
   Database, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
-  CollectionSpecification, CollectionItemDefiner, DatabaseNamespace,
-  CollectionItemMatcher, CompoundTypeNamespace,
+  CollectionItemDefiner, IsCompoundType, Collection,
+  CollectionItemMatcher, IsCollectionItem,
 };
 
 use crate::{
@@ -10,14 +10,31 @@ use crate::{
   user_screen_access_regulation, State
 };
 
-pub struct Specification {
-  collection: CollectionSpecification,
-  id: Field,
-  pub user: user::database::UserCollection,
-  pub user_screen_access_regulation: user_screen_access_regulation::database::Module,
+pub struct StateSingleton {
+  pub id: Field,
+  pub user_screen_access_regulation: user_screen_access_regulation::database::CommonInfoSpecification,
 }
 
-impl Specification {
+impl IsCollectionItem for StateSingleton {
+  fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError> {
+    Ok(Self {
+      id: definer.primary_scalar_field("Id")?,
+      user_screen_access_regulation: definer.compound_field("UserScreenAccessRegulation")?,
+    })
+  }
+
+  fn display_name(&self) -> &str {
+    "DisciplineCommonInfo"
+  }
+}
+
+pub struct StateSpecification {
+  collection: Collection,
+  pub user: user::database::UserCollection,
+}
+
+impl Is
+impl StateSpecification {
   pub fn new(
     database: &mut Database,
     database_namespace: &mut DatabaseNamespace,
@@ -58,7 +75,7 @@ impl Specification {
       .collection("app", soleton_namespace)
       .map_err(|error| error.change_context("creating Specification"))?;
 
-    Ok(Specification {
+    Ok(StateSpecification {
       collection: collection_specification, 
       id, 
       user,
@@ -67,7 +84,7 @@ impl Specification {
   }
 }
 
-impl CompoundTypeSerializer for Specification {
+impl CompoundTypeSerializer for StateSpecification {
   type CompoundType = State;
 
   fn serialize_into(
@@ -98,7 +115,7 @@ impl Default for NormalizedState {
   }
 }
 
-impl CompoundValueDeserializer for Specification {
+impl CompoundValueDeserializer for StateSpecification {
   type Output = NormalizedState;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
@@ -109,7 +126,7 @@ impl CompoundValueDeserializer for Specification {
   }
 }
 
-impl Specification {
+impl StateSpecification {
   // pub fn generate_sql_initialize(
   //   &self, 
   //   into: &mut String,

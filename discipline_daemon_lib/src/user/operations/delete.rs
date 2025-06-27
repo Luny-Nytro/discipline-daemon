@@ -24,7 +24,7 @@ impl IsOperation for Operation {
     }
 
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user
       .delete_user(&daemon.database_connection, &self.user_id)
     {

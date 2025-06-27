@@ -35,7 +35,7 @@ impl IsOperation for CreatePolicy {
     let policy = self.policy_creator.create(now);
 
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user_screen_access_regulation
       .add_policy(
         &daemon.database_connection, 

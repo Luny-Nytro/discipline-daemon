@@ -24,7 +24,7 @@ impl IsCompoundType for CommonInfoSpecification {
 }
 
 impl CommonInfoSpecification {
-  pub fn set_applying_interval(
+  pub fn write_applying_interval(
     &self, 
     draft: &mut CollectionItemModificationsDraft,
     new_value: Duration,

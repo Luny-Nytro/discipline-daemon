@@ -49,7 +49,7 @@ impl IsOperation for Operation {
 
     let rule = self.rule_creator.create();
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user_screen_access_regulation
       .add_rule(
         &daemon.database_connection, 

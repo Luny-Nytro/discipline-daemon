@@ -154,6 +154,67 @@ impl CompoundTypeDefiner {
     Ok(compound_field)
   }
 
+  pub fn module<T>(
+    &mut self, 
+    identifier: &str,
+  ) -> 
+    Result<T, GenericError>
+  where 
+    T: IsModule
+  {
+    todo!()
+    // let identifier = Identifier::new(identifier)?;
+
+    // if self.defined_identifiers.contains(&identifier) {
+    //   return Err(GenericError::new(""));
+    // }
+
+    // let mut definer = ModuleDefiner { 
+    //   path: self.path.append_identifier(&identifier),
+    //   collections: Vec::new(),
+    //   defined_identifiers: HashSet::new(),
+    // };
+
+    // let namespace = T::new(&mut definer)?;
+
+    // self.collections.extend(definer.collections.into_iter());
+    // self.defined_identifiers.insert(identifier);
+
+    // Ok(namespace)
+  }
+
+  pub fn collection<CollectionItem>(
+    &mut self, 
+    identifier: &str,
+  ) -> 
+    Result<(Collection, CollectionItem), GenericError>
+  where 
+    CollectionItem: IsCollectionItem
+  {
+    todo!()
+    // let identifier = Identifier::new(identifier)?;
+
+    // if self.defined_identifiers.contains(&identifier) {
+    //   return Err(GenericError::new(""));
+    // }
+
+    // let mut collection_item_definer = CollectionItemDefiner::new();
+
+    // let collection_item = CollectionItem::new(
+    //   &mut collection_item_definer,
+    // )?;
+
+    // let collection = Collection::new(
+    //   self.path.append_identifier(&identifier),
+    //   identifier.clone(),
+    //   collection_item_definer,
+    // );
+
+    // self.defined_identifiers.insert(identifier.clone());
+
+    // Ok((collection, collection_item))
+  }
+
   pub(super) fn take_columns(self) -> Vec<Column> {
     self.columns
   }

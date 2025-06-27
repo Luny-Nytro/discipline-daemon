@@ -32,7 +32,7 @@ impl IsOperation for ChangePolicyName {
     };
 
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user_screen_access_regulation
       .change_policy_name(
         &daemon.database_connection, 

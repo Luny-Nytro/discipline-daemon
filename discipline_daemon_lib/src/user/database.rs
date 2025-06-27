@@ -5,9 +5,8 @@ use super::{
 use crate::{
   GenericError, Uuid, OperatingSystemPassword, 
   OperatingSystemUserId, OperatingSystemUsername,
+  user_screen_access_regulation,
 };
-
-use crate::user_screen_access_regulation::database::CompoundType as UserScreenAccessRegulation;
 
 use crate::database::{
   CollectionItemModificationsDraft, CollectionItemDefiner, 
@@ -36,10 +35,10 @@ impl FromScalarValue for UserName {
 pub struct UserSpecification {
   id: Field,
   name: Field,
+  screen_access_regulator: user_screen_access_regulation::database::RegulatorSpecification,
   operating_system_user_id: Field,
   operating_system_username: Field,
   operating_system_password: Field,
-  screen_access_regulation: UserScreenAccessRegulation,
 }
 
 impl IsCollectionItem for UserSpecification {
@@ -47,7 +46,7 @@ impl IsCollectionItem for UserSpecification {
     Ok(Self {
       id: definer.primary_scalar_field("Id")?,
       name: definer.writable_required_field("Name")?,
-      screen_access_regulation: definer.compound_field("ScreenAccessRegulation")?,
+      screen_access_regulator: definer.compound_field("ScreenAccessRegulation")?,
       operating_system_user_id: definer.primary_scalar_field("OperatingSystemUserId")?,
       operating_system_username: definer.primary_scalar_field("OperatingSystemUsername")?,
       operating_system_password: definer.readonly_required_field("OperatingSystemPassword")?,
@@ -98,7 +97,7 @@ impl<'a> CompoundTypeSerializer for UserSerializer<'a> {
     context.serializable_scalar(&self.user_specification.operating_system_user_id, &value.operating_system_user_id)?;  
     context.serializable_scalar(&self.user_specification.operating_system_username, &value.operating_system_username)?;  
     context.serializable_scalar(&self.user_specification.operating_system_password, &value.operating_system_password)?;  
-    context.serializable_compound(&self.user_specification.screen_access_regulation, &value.screen_access_regulator)
+    context.serializable_compound(&self.user_specification.screen_access_regulator, &value.screen_access_regulator)
   }
 }
 
@@ -109,9 +108,7 @@ pub struct NormalizedUser {
   operating_system_user_id: OperatingSystemUserId,
   operating_system_username: OperatingSystemUsername,
   operating_system_password: OperatingSystemPassword,
-  screen_access_regulator: user_screen_access_regulation
-    ::database
-    ::NormalizedRegulator
+  screen_access_regulator: user_screen_access_regulation::database::NormalizedRegulator
 }
 
 impl NormalizedUser {
@@ -135,52 +132,29 @@ impl NormalizedUser {
   }
 }
 
-impl CompoundValueDeserializer for UserCollection {
+pub struct UserDeserializer<'a> {
+  user_specification: &'a UserSpecification
+}
+
+impl<'a> UserDeserializer<'a> {
+  pub fn new(user_specification: &'a UserSpecification) -> Self {
+    Self {
+      user_specification
+    }
+  }
+}
+
+impl<'a> CompoundValueDeserializer for UserDeserializer<'a> {
   type Output = NormalizedUser;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedUser {
-      id: context
-        .deserializable_scalar(&self.id)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'Id' field")
-        )?,
-
-      name: context
-        .deserializable_scalar(&self.name)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'Name' field")
-        )?,
-
-      operating_system_user_id: context
-        .deserializable_scalar(&self.operating_system_user_id)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'OperatingSystemUserId' field")
-        )?,
-
-      operating_system_username: context
-        .deserializable_scalar(&self.operating_system_username)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'OperatingSystemUsername' field")
-        )?,
-
-      operating_system_password: context
-        .deserializable_scalar(&self.operating_system_password)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'OperatingSystemPassword' field")
-        )?,
-
-      screen_access_regulator: context
-        .deserialize_compound(&self.screen_access_regulator)
-        .map_err(|error| error
-          .change_context("deserializing NormalizedUser")
-          .add_error("failed to deserialize the 'ScreenAccessRegulator' field")
-        )?,
+      id: context.deserializable_scalar(&self.user_specification.id)?,
+      name: context.deserializable_scalar(&self.user_specification.name)?,
+      screen_access_regulator: context.deserialize_compound(&self.user_specification.screen_access_regulator)?,
+      operating_system_user_id: context.deserializable_scalar(&self.user_specification.operating_system_user_id)?,
+      operating_system_username: context.deserializable_scalar(&self.user_specification.operating_system_username)?,
+      operating_system_password: context.deserializable_scalar(&self.user_specification.operating_system_password)?,
     })
   }
 }
@@ -222,7 +196,51 @@ impl UserCollection {
 
 
 impl UserCollection {
-  // pub fn generate_sql_initialize(
+  pub fn change_user_name(
+    &self,
+    database: &Database,
+    user_id: &Uuid,
+    new_value: &UserName,
+  ) ->
+    Result<(), GenericError>
+  {
+    let mut draft = self.user_collection.create_modifications_draft();
+    
+    self.user.write_name(
+      &mut draft, 
+      new_value,
+    )?;
+
+    self.user_collection.commit_modifications_draft(
+      database, 
+      &draft, 
+      &CollectionItemMatcher::match_by_scalar_field(&self.user.id, user_id)?,
+    )
+  }
+
+  pub fn change_user_screen_access_is_applying_enabled(
+    &self,
+    database: &Database,
+    user_id: &Uuid,
+    new_value: bool,
+  ) ->
+    Result<(), GenericError>
+  {
+    let mut draft = self.user_collection.create_modifications_draft();
+    
+    self.user.screen_access_regulator.write_is_applying_enabled(
+      &mut draft, 
+      new_value,
+    )?;
+
+    self.user_collection.commit_modifications_draft(
+      database, 
+      &draft, 
+      &CollectionItemMatcher::match_by_scalar_field(&self.user.id, user_id)?,
+    )
+  }
+
+    // pub fn generate_sql_initialize(
   //   &self,
   //   into: &mut String,
   // ) -> 

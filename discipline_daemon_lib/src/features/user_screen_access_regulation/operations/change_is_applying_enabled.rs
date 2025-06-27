@@ -39,27 +39,13 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::MayNotSetToFalseWhenSomePoliciesAreEnabled);
     }
 
-    let mut modifications_draft = daemon
-      .state_database_specification
-      .user
-      .create_modifications_draft();
-    
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user
-      .screen_access_regulator_field_specification()
-      .set_is_applying_enabled(&mut modifications_draft, self.new_value)
-    {
-      return InternalOperationOutcome::internal_error(error);
-    }
-      
-    if let Err(error) = daemon
-      .state_database_specification
-      .user
-      .apply_modifications_draft(
-        &daemon.database_connection, 
-        &modifications_draft, 
+      .change_user_screen_access_is_applying_enabled(
+        &daemon.database_connection,
         &self.user_id,
+        self.new_value,
       )
     {
       return InternalOperationOutcome::internal_error(error);

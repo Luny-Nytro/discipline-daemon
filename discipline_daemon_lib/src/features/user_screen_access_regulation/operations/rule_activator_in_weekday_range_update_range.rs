@@ -60,7 +60,7 @@ impl IsOperation for Operation {
     }
 
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user_screen_access_regulation
       .change_rule_activator_weekday_range(
         &daemon.database_connection, 

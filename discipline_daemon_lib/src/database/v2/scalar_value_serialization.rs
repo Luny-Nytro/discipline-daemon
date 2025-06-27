@@ -347,6 +347,8 @@ where
   
 }
 
+// TODO: Replace IntoScalarValue and FromScalarValue with a single
+// trait with serialize, deserialize and display_name methods.
 pub trait IntoScalarValue {
   fn into_scalar_value(&self) -> impl IsScalarValue;
 }

@@ -4,14 +4,14 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
 use crate::{
   GenericError, IsOperation, State, 
-  Specification, DateTime, Duration,
+  StateSpecification, DateTime, Duration,
   InternalOperationOutcome,
 };
 use crate::database::Database;
 
 pub struct Daemon {
   pub state: State,
-  pub state_database_specification: Specification,
+  pub database_specification: StateSpecification,
   pub database_connection: Database,
   pub http_server_address: String,
   pub is_running: bool,
@@ -30,7 +30,7 @@ impl Daemon {
         .change_context("creating daemon")
     )?;
 
-    let state_database_specification = Specification::new(database.define_namespace()).map_err(|error|
+    let state_database_specification = StateSpecification::new(database.define_namespace()).map_err(|error|
       error
         .change_context("creating state database specification")
         .change_context("creating daemon")
@@ -44,7 +44,7 @@ impl Daemon {
 
     Ok(DaemonMutex::new(Daemon {
       state,
-      state_database_specification,
+      database_specification: state_database_specification,
       is_running: false,
       database_connection: database,
       http_server_address: format!("127.0.0.1:{http_server_port}"),

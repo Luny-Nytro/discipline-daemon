@@ -23,22 +23,16 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
-    let mut modifications_draft = daemon
-      .state_database_specification
-      .user
-      .create_modifications_draft();
-
     if let Err(error) = daemon
-      .state_database_specification
+      .database_specification
       .user
-      .set_name(&mut modifications_draft, &self.new_user_name)
+      .change_user_name(
+        &daemon.database_connection, 
+        &self.user_id, 
+        &self.new_user_name
+      )
     {
-      return InternalOperationOutcome::internal_error(
-        error
-          .change_context("changing a user name")
-          .add_attachment("user id", self.user_id.to_string())
-          .add_attachment("user current name", user.name.as_ref())
-      );
+      return InternalOperationOutcome::internal_error(error);
     }
 
     user.name = self.new_user_name;
