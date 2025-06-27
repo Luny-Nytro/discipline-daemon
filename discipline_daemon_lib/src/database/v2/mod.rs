@@ -12,6 +12,12 @@ pub use compound_type::*;
 mod collection_item;
 pub use collection_item::*;
 
+mod module;
+pub use module::*;
+
+mod singleton;
+pub use singleton::*;
+
 mod serializing_utiliites;
 use serializing_utiliites::*;
 
@@ -38,12 +44,6 @@ pub use collection_item_modifications_draft::*;
 
 mod collection_item_matcher;
 pub use collection_item_matcher::*;
-
-mod code_generators;
-pub use code_generators::*;
-
-mod namespace;
-pub use namespace::*;
 
 mod collection;
 pub use collection::*;

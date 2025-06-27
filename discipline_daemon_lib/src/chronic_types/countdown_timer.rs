@@ -67,38 +67,34 @@ pub mod database {
   use super::CountdownTimer;
 
   pub struct Specification {
-    duration: ScalarFieldSpecification,
-    remaining_duration: ScalarFieldSpecification,
-    previous_synchronization_time: ScalarFieldSpecification,
+    duration: Field,
+    remaining_duration: Field,
+    previous_synchronization_time: Field,
+  }
+
+  impl IsCompoundType for Specification {
+    fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+      Ok(Self {
+        duration: definer.writable_required_field("Duraion")?,
+        remaining_duration: definer.writable_required_field("RemainingDuration")?,
+        previous_synchronization_time: definer.writable_required_field("PreviousSynchronizationTime")?,
+      })
+    }
+
+    fn display_name(&self) -> &str {
+      "CountdownTimer"
+    }
   }
 
   impl Specification {
-    pub fn new(
-      namespace: &mut CompoundTypeNamespace,
-      definer: &mut CompoundTypeDefiner,
-    ) -> 
-      Result<Self, GenericError> 
-    {
-      Ok(Self {
-        duration: definer
-          .define_required_writable_scalar_field(namespace, "Duraion")?,
-
-        remaining_duration: definer
-          .define_required_writable_scalar_field(namespace, "RemainingDuration")?,
-
-        previous_synchronization_time: definer
-          .define_required_writable_scalar_field(namespace, "PreviousSynchronizationTime")?,
-      })
-    }
-    
-    pub fn set_remaining_duration(
+    pub fn write_remaining_duration(
       &self,
-      draft: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_remaining_duration: &Duration,
     ) -> 
       Result<(), GenericError>
     {
-      draft.set_scalar_field(&self.remaining_duration, new_remaining_duration)
+      changes.write_scalar_field(&self.remaining_duration, new_remaining_duration)
     }
 
     pub fn set_after_synchronization(
@@ -108,12 +104,12 @@ pub mod database {
     ) -> 
       Result<(), GenericError>
     {
-      draft.set_scalar_field(
+      draft.write_scalar_field(
         &self.remaining_duration, 
         &countdown_timer.remaining_duration,
       )?;
 
-      draft.set_scalar_field(
+      draft.write_scalar_field(
         &self.previous_synchronization_time, 
         &countdown_timer.previous_synchronization_time,
       )
@@ -141,21 +137,9 @@ pub mod database {
 
     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
       Ok(CountdownTimer {
-        duration: context.deserializable_scalar(&self.duration).map_err(|error|
-          error
-            .change_context("deserializing the 'Duration' column")
-            .change_context("deserializing a CountdownTimer")
-        )?,
-        remaining_duration: context.deserializable_scalar(&self.remaining_duration).map_err(|error|
-          error
-            .change_context("deserializing the 'RemainingDuration' column")
-            .change_context("deserializing a CountdownTimer")
-        )?,
-        previous_synchronization_time: context.deserializable_scalar(&self.previous_synchronization_time).map_err(|error|
-          error
-            .change_context("deserializing the 'PreviousSynchronizationTime' column")
-            .change_context("deserializing a CountdownTimer")
-        )?,
+        duration: context.deserializable_scalar(&self.duration)?,
+        remaining_duration: context.deserializable_scalar(&self.remaining_duration)?,
+        previous_synchronization_time: context.deserializable_scalar(&self.previous_synchronization_time)?,
       })
     }
   }

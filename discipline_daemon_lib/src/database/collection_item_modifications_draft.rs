@@ -1,10 +1,10 @@
 use super::*;
 
-pub struct CollectionItemModificationsDraft {
+pub struct CollectionItemChanges {
   code: String,
 }
 
-impl CollectionItemModificationsDraft {
+impl CollectionItemChanges {
   pub fn new() -> Self {
     Self {
       code: String::new(),
@@ -17,7 +17,7 @@ impl CollectionItemModificationsDraft {
 
   pub fn set_scalar_field(
     &mut self, 
-    scalar_field_specification: &ScalarFieldSpecification, 
+    scalar_field_specification: &Field, 
     new_scalar_field_value: &impl IntoScalarValue,
   ) ->
     Result<(), GenericError>

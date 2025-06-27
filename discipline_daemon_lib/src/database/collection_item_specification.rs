@@ -16,7 +16,7 @@ impl CollectionItemDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_primary_scalar_field(
       &self.path, 
@@ -29,7 +29,7 @@ impl CollectionItemDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_required_readonly_scalar_field(
       &self.path,
@@ -42,7 +42,7 @@ impl CollectionItemDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_required_writable_scalar_field(
       &self.path,
@@ -55,7 +55,7 @@ impl CollectionItemDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_optional_readonly_scalar_field(
       &self.path,
@@ -68,7 +68,7 @@ impl CollectionItemDefiner {
     namespace: &mut CompoundTypeNamespace,
     scalar_field_identifier: &str,
   ) -> 
-    Result<ScalarFieldSpecification, GenericError> 
+    Result<Field, GenericError> 
   {
     namespace.define_optional_writable_scalar_field(
       &self.path,

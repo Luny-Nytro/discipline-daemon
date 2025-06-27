@@ -59,33 +59,15 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::MayNotMakeRuleLessRestrictive);
     }
 
-    let mut modifications_draft = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .rule
-      .create_modifications_draft();
-
     if let Err(error) = daemon
       .state_database_specification
       .user_screen_access_regulation
-      .rule
-      .activator()
-      .in_weekday_range()
-      .update_range(&mut modifications_draft, &self.new_weekday_range)
-    {
-      return InternalOperationOutcome::internal_error(error);
-    }
-
-    if let Err(error) = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .rule
-      .apply_modifications_draft(
+      .change_rule_activator_weekday_range(
         &daemon.database_connection, 
-        &modifications_draft, 
         &self.user_id, 
         &self.policy_id, 
         &self.rule_id,
+        &self.new_weekday_range,
       )
     {
       return InternalOperationOutcome::internal_error(error);

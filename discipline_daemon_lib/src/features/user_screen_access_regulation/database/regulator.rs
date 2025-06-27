@@ -1,32 +1,30 @@
 use super::{
-  ScalarFieldSpecification, CompoundTypeDefiner, GenericError, 
+  Field, CompoundTypeDefiner, GenericError, 
   Regulator, CollectionItemModificationsDraft, CompoundTypeSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   NormalizedPolicy, NormalizedRule, CompoundTypeSerializer,
-  OperatingSystemCalls, Uuid, CompoundTypeNamespace,
+  OperatingSystemCalls, Uuid, IsCompoundType
 };
 
 pub struct RegulatorSpecification {
-  pub is_applying_enabled: ScalarFieldSpecification,
-  pub is_user_screen_access_blocked: ScalarFieldSpecification,
+  pub is_applying_enabled: Field,
+  pub is_user_screen_access_blocked: Field,
 }
 
-impl RegulatorSpecification {
-  pub fn new(
-    namespace: &mut CompoundTypeNamespace,
-    definer: &mut CompoundTypeDefiner,
-  ) -> 
-    Result<Self, GenericError> 
-  {
+impl IsCompoundType for RegulatorSpecification {
+  fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      is_applying_enabled: definer
-        .define_required_writable_scalar_field(namespace, "IsApplyingEnabled")?,
-
-      is_user_screen_access_blocked: definer
-        .define_required_writable_scalar_field(namespace, "IsUserScreenAccessBlocked")?,
+      is_applying_enabled: definer.writable_required_field("IsApplyingEnabled")?,
+      is_user_screen_access_blocked: definer.writable_required_field("IsUserScreenAccessBlocked")?,
     })
   }
 
+  fn display_name(&self) -> &str {
+    "Regulator"
+  }
+}
+
+impl RegulatorSpecification {
   pub fn set_is_applying_enabled(
     &self, 
     draft: &mut CollectionItemModificationsDraft,
@@ -34,7 +32,7 @@ impl RegulatorSpecification {
   ) ->
     Result<(), GenericError>
   {
-    draft.set_scalar_field(&self.is_applying_enabled, &new_value)
+    draft.write_scalar_field(&self.is_applying_enabled, &new_value)
   }
 
   pub fn set_is_user_screen_access_blocked(
@@ -44,7 +42,7 @@ impl RegulatorSpecification {
   ) ->
     Result<(), GenericError>
   {
-    draft.set_scalar_field(&self.is_user_screen_access_blocked, &new_value)
+    draft.write_scalar_field(&self.is_user_screen_access_blocked, &new_value)
   }
 }
 
@@ -74,16 +72,8 @@ impl CompoundValueDeserializer for RegulatorSpecification {
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedRegulator {
-      is_applying_enabled: context.deserializable_scalar(&self.is_applying_enabled).map_err(|error|
-        error
-          .change_context("deserializing NormalizedRegulator")
-          .add_error("failed deserialize the 'IsApplyingEnabled' field")
-      )?,
-      is_user_screen_access_blocked: context.deserializable_scalar(&self.is_user_screen_access_blocked).map_err(|error|
-        error
-          .change_context("deserializing NormalizedRegulator")
-          .add_error("failed deserialize the 'IsUserScreenAccessBlocked' field")
-      )?,
+      is_applying_enabled: context.deserializable_scalar(&self.is_applying_enabled)?,
+      is_user_screen_access_blocked: context.deserializable_scalar(&self.is_user_screen_access_blocked)?,
     })
   }
 }

@@ -3,6 +3,8 @@ use super::*;
 
 pub trait IsCompoundType: Sized {
   fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError>;
+
+  fn display_name(&self) -> &str;
 }
 
 pub struct CompoundTypeDefiner {
@@ -117,6 +119,24 @@ impl CompoundTypeDefiner {
   }
 
   pub fn compound_field<T>(&mut self, identifier: &str) -> Result<T, GenericError> 
+    where 
+      T: IsCompoundType
+  {
+    let identifier = Identifier::new(identifier)?;
+
+    let mut builder = CompoundTypeDefiner {
+      path: self.path.append_identifier(&identifier),
+      columns: Vec::new(),
+      defined_identifiers: HashSet::new(),
+    };
+
+    let compound_field = T::new(&mut builder)?;
+    self.columns.extend(builder.columns.into_iter());
+    self.defined_identifiers.insert(identifier);
+    Ok(compound_field)
+  }
+
+  pub fn optional_compound_field<T>(&mut self, identifier: &str) -> Result<T, GenericError> 
     where 
       T: IsCompoundType
   {

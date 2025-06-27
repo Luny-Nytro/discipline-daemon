@@ -50,32 +50,14 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::WouldBeEffectiveForTooLong);
     }
 
-    let mut modifications_draft = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .policy
-      .create_modifications_draft();
-
     if let Err(error) = daemon
       .state_database_specification
       .user_screen_access_regulation
-      .policy
-      .enabler_field_specification
-      .timer()
-      .set_remaining_duration(&mut modifications_draft, &new_remaining_duration)
-    {
-      return InternalOperationOutcome::internal_error(error);
-    }
-
-    if let Err(error) = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .policy
-      .apply_modifications_draft(
+      .change_policy_enabled_duration(
         &daemon.database_connection, 
-        &modifications_draft, 
         &self.user_id,
         &self.policy_id, 
+        &self.increment,
       )
     {
       return InternalOperationOutcome::internal_error(error);

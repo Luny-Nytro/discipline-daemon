@@ -31,7 +31,7 @@ impl CollectionItemAndMatchWriter {
     self.code.len() > 0
   }
 
-  pub fn and_scalar_field_is(
+  pub fn scalar_field_equals(
     mut self, 
     field: &Field,
     value: &impl IntoScalarValue,
@@ -58,7 +58,7 @@ impl CollectionItemAndMatchWriter {
       self.code.push_str("WHERE ");
     }
 
-    self.code.push_str(field.path().as_string());
+    self.code.push_str(field.path().to_sql_identifier_string());
     self.code.push_str(" = ");
     self.code.push_str(&serialized_value);
 
@@ -98,7 +98,7 @@ impl CollectionItemMatcher {
   {
     let mut code = String::new();
     code.push_str("WHERE ");
-    code.push_str(field.path().as_str());
+    code.push_str(field.path().to_sql_identifier_str());
     code.push_str(" = ");
     serialize_scalar_value_into(value, &mut code);
       // .map_err(|error|

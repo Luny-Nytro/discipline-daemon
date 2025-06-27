@@ -194,52 +194,53 @@ pub mod database {
   use crate::GenericError;
 
   pub struct Specification {
-    from: ScalarFieldSpecification,
-    till: ScalarFieldSpecification,
+    from: Field,
+    till: Field,
   }
 
-  impl Specification {
-    pub fn new(
-      namespace: &mut CompoundTypeNamespace,
-      definer: &mut CompoundTypeDefiner,
-    ) -> 
-      Result<Self, GenericError> 
-    {
+  impl IsCompoundType for Specification {
+    fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
       Ok(Self {
-        from: definer.define_required_writable_scalar_field(namespace, "from")?,
-        till: definer.define_required_writable_scalar_field(namespace, "till")?,
+        from: definer.writable_required_field("From")?,
+        till: definer.writable_required_field("Till")?,
       })
     }
 
+    fn display_name(&self) -> &str {
+      "WeekdayRange"
+    }
+  }
+
+  impl Specification {
     pub fn set_from(
       &self,
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &Weekday
     ) ->
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.from, new_value)
+      changes.write_scalar_field(&self.from, new_value)
     }
 
     pub fn set_till(
       &self,
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &Weekday
     ) ->
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.till, new_value)
+      changes.write_scalar_field(&self.till, new_value)
     }
 
-    pub fn update_range(
+    pub fn change_range(
       &self,
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &WeekdayRange
     ) ->
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.from, &new_value.from)?;
-      modifications.set_scalar_field(&self.till, &new_value.till)
+      changes.write_scalar_field(&self.from, &new_value.from)?;
+      changes.write_scalar_field(&self.till, &new_value.till)
     }
   }
 

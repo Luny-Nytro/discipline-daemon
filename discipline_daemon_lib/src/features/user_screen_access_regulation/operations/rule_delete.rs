@@ -51,11 +51,10 @@ impl IsOperation for Operation {
     if let Err(error) = daemon
       .state_database_specification
       .user_screen_access_regulation
-      .rule
       .delete_rule(
         &daemon.database_connection, 
-        &self.policy_id, 
         &self.user_id,
+        &self.policy_id, 
         &self.rule_id,
       )
     {

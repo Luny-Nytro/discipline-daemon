@@ -31,30 +31,14 @@ impl IsOperation for ChangePolicyName {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);
     };
 
-    let mut modifications_draft = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .policy
-      .create_modifications_draft();
-    
     if let Err(error) = daemon
       .state_database_specification
       .user_screen_access_regulation
-      .policy
-      .update_name(&mut modifications_draft, &self.new_name)
-    {
-      return InternalOperationOutcome::internal_error(error);
-    }
-
-    if let Err(error) = daemon
-      .state_database_specification
-      .user_screen_access_regulation
-      .policy
-      .apply_modifications_draft(
+      .change_policy_name(
         &daemon.database_connection, 
-        &modifications_draft, 
         &self.user_id,
         &self.policy_id, 
+        &self.new_name,
       ) 
     {
       return InternalOperationOutcome::internal_error(error);

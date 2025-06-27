@@ -11,8 +11,8 @@ pub(super) enum ColumnSemantics {
 
 #[derive(Debug, Clone,)]
 pub(super) struct Column {
-  pub(super) path: Path,
-  pub(super) semantics: ColumnSemantics,
+  path: Path,
+  semantics: ColumnSemantics,
 }
 
 impl Column {

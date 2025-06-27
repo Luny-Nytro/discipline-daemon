@@ -15,7 +15,7 @@ impl CollectionItemModificationsDraft {
     self.code.len() > 0
   }
 
-  pub fn set_scalar_field(
+  pub fn write_scalar_field(
     &mut self, 
     field: &Field, 
     value: &impl IntoScalarValue,
@@ -49,7 +49,7 @@ impl CollectionItemModificationsDraft {
       self.code.push_str("SET ");
     }
 
-    self.code.push_str(field.path().as_str());
+    self.code.push_str(field.path().to_sql_identifier_str());
     self.code.push_str(" = ");
     self.code.push_str(&serialized_scalar_field_value);
 

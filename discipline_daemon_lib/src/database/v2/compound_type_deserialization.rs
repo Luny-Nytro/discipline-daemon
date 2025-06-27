@@ -14,10 +14,11 @@ pub struct CompoundValueDeserializerContext<'a>(&'a Row<'a>);
 
 impl<'a> CompoundValueDeserializerContext<'a> {
   fn get_column_value(&self, column: &Field) -> Result<ScalarValue, GenericError> {
-    self.0.get_ref(column.path().as_str())
+    self.0.get_ref(column.path().to_sql_identifier_str())
       .map_err(|error| {
-        GenericError::new("Get column value failed: SQlite wrapper returned error")
-          .add_attachment("column name", column.path().to_displayable_string())
+        GenericError::new("retrieving the value of a sqlite column")
+          .add_error("sqlite wrapper returned error")
+          .add_attachment("column identifier", column.path().to_displayable_string())
           .add_attachment("sqlite error", error.to_string())
       })
       .map(

@@ -1,54 +1,39 @@
 use super::{
-  RuleActivatorVariant, GenericError, ScalarFieldSpecification, CompoundTypeDefiner,
+  RuleActivatorVariant, GenericError, Field, CompoundTypeDefiner,
   CompoundValueDeserializer, CompoundTypeSerializer, CompoundValueDeserializerContext, 
-  RuleActivator, time_range, weekday_range, CompoundTypeSerializerContext,
-  CompoundTypeNamespace,
+  RuleActivator, CompoundTypeSerializerContext,
+  IsCompoundType, TimeRangeSpecification, WeekdayRangeSpecification,
 };
 
+
 pub struct RuleActivatorSpecification {
-  variant: ScalarFieldSpecification,
-  weekday: ScalarFieldSpecification,
-  in_time_range: time_range::database::Specification,
-  in_weekday_range: weekday_range::database::Specification,
+  variant: Field,
+  weekday: Field,
+  in_time_range: TimeRangeSpecification,
+  in_weekday_range: WeekdayRangeSpecification,
 }
 
-impl RuleActivatorSpecification {
-  pub fn new(
-    namespace: &mut CompoundTypeNamespace,
-    definer: &mut CompoundTypeDefiner,
-  ) -> 
-    Result<Self, GenericError> 
-  {
-    let mut in_time_range_definer = definer
-      .define_optional_writable_compound_field(namespace, "InTimeRange")?;
-
-    let mut in_weekday_range_definer = definer
-      .define_optional_writable_compound_field(namespace, "InWeekdayRange")?;
-
+impl IsCompoundType for RuleActivatorSpecification {
+  fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      variant: definer
-        .define_required_writable_scalar_field(namespace, "Variant")?,
-        
-      weekday: definer
-        .define_optional_writable_scalar_field(namespace, "Weekday")?,
-        
-      in_time_range: time_range::database::Specification::new(
-        namespace,
-        &mut in_time_range_definer,
-      )?,
-     
-      in_weekday_range: weekday_range::database::Specification::new(
-        namespace,
-        &mut in_weekday_range_definer,
-      )?,
+      variant: definer.writable_required_field("Variant")?,
+      weekday: definer.writable_optional_field("Weekday")?,
+      in_time_range: definer.optional_compound_field("InTimeRange")?,
+      in_weekday_range: definer.optional_compound_field("InWeekdayRange")?,
     })
   }
   
-  pub fn in_time_range(&self) -> &time_range::database::Specification {
+  fn display_name(&self) -> &str {
+    "RuleActivator"
+  }
+}
+
+impl RuleActivatorSpecification {
+  pub fn in_time_range(&self) -> &TimeRangeSpecification {
     &self.in_time_range
   }
 
-  pub fn in_weekday_range(&self) -> &weekday_range::database::Specification {
+  pub fn in_weekday_range(&self) -> &WeekdayRangeSpecification {
     &self.in_weekday_range
   }
 }

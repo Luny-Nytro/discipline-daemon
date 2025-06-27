@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use super::*;
 
 pub struct Database {
-  connection: rusqlite::Connection,
+  pub(super) connection: rusqlite::Connection,
 }
 
 impl Database {
@@ -41,5 +41,9 @@ impl Database {
         .add_attachment("error", error.to_string())
         .add_attachment("code", code)
     )
+  }
+
+  pub fn create_modifications_draft(&self) -> DatabaseModificationsDraft {
+    todo!()
   }
 }

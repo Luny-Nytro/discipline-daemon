@@ -1,21 +1,63 @@
-use crate::GenericError;
+use super::GenericError;
+
+
+fn verify_identifier(string: &str) -> Result<(), GenericError> {
+  // Check if it contains any underscores — disallowed in your case
+  if string.contains('_') {
+    return Err(
+      GenericError::new("checking whether string is a valid database entity identifier")
+        .add_error("string contains an underscore: underscores are reserved by this program for namespacing")
+        .add_attachment("string", string)
+    );
+  }
+
+  // Check if the first character is a valid starting character
+  let mut characters = string.chars();
+  let beginning = match characters.next() {
+    Some(character) => {
+      character
+    }
+    None => {
+      return Err(
+        GenericError::new("checking whether string is a valid database entity identifier")
+          .add_error("string is the empty string")
+      );
+    }
+  };
+
+  if !beginning.is_ascii_alphabetic() {
+    return Err(
+      GenericError::new("checking whether string is a valid database entity identifier")
+        .add_error("string begins with a character that is not a ascii alphabetic character, which is U+0041 'A' ..= U+005A 'Z' or U+0061 'a' ..= U+007A 'z'")
+        .add_attachment("string", string)
+    );
+  }
+
+  // Check the rest of the characters are alphanumeric only
+  if !characters.all(|character| character.is_ascii_alphanumeric()) {
+    return Err(
+      GenericError::new("checking whether string is a valid database entity identifier")
+        .add_error("string contains non-alphanumeric characters")
+        .add_attachment("string", string)
+    );
+  }
+
+  Ok(())
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Identifier(String);
 
 impl Identifier {
   pub(super) fn new(identifier: &str) -> Result<Self, GenericError> {
-    // TODO: Escape the identifier
-    // Self(identifier.into())
-    todo!()
-  }
-
-  pub(super) fn as_displayable_string(&self) -> String {
-    todo!()
-  }
-
-  pub(super) fn as_path(&self) -> Path {
-    todo!()
+    match verify_identifier(identifier) {
+      Ok(_) => {
+        Ok(Self(identifier.into()))
+      }
+      Err(error) => {
+        Err(error.change_context("creating a database entity identifier from string"))
+      }
+    }
   }
 }
 
@@ -23,114 +65,27 @@ impl Identifier {
 pub struct Path(String);
 
 impl Path {
-  pub fn new() -> Self {
+  pub(super) fn new() -> Self {
     Self(String::new())
   }
 
-  pub fn append_identifier(&self, identifier: &Identifier) -> Self {
-    // TODO: Escape identifiers
-    Self(format!("{}.{}", self.0, identifier.0))
-  }
-
-  pub fn append_identifier_string(&self, identifier: &str) -> Self {
-    todo!()
-    // // TODO: Escape identifiers
-    // Self(format!("{}.{}", self.0, identifier.0))
-  }
-
-  pub fn to_displayable_string(&self) -> String {
-    todo!()
-  }
-
-  pub(super) fn as_string(&self) -> &String {
-    &self.0
-  }
-
-  pub(super) fn as_str(&self) -> &str {
-    &self.0
-  }
-}
-
-enum IdentifierInner {
-  Global(String),
-  Scoped(String),
-}
-
-#[derive(Debug, Clone)]
-pub struct DatabaseEntityPath(String);
-
-impl DatabaseEntityPath {
-  pub(super) fn new(identifier: &str) -> Result<Self, GenericError> {
-    verify_identifier(identifier)
-      .map(|_| 
-        DatabaseEntityPath(identifier.into())
-      )
-      .map_err(|error| 
-        error.change_context("creating a path")
-      )
-  }
-
-  pub(super) fn new_empty() -> Self {
-    Self(String::new())
-  }
-  
-  pub(super) fn then(&self, identifier: &str) -> Result<Self, GenericError> {
-    verify_identifier(identifier)
-      .map(|_| 
-        DatabaseEntityPath(format!("{}_{}", self.0, identifier))
-      )
-      .map_err(|error| 
-        error
-          .change_context("creating a new scoped identifier")
-          .add_attachment("super identifier", &self.0)
-      )
-  }
-
-  pub(super) fn as_str(&self) -> &str {
-    &self.0
-  }
-}
-
-fn verify_identifier(identifier: &str) -> Result<(), GenericError> {
-  // // Check if it contains any underscores — disallowed in your case
-  // if identifier.contains('_') {
-  //   return Err(
-  //     GenericError::new("verify identifier")
-  //       .add_error("identifier contains an underscore: underscores are reserved by this program for namespacing")
-  //       .add_attachment("identifier", identifier)
-  //   );
-  // }
-
-  // Check if the first character is a valid starting character
-  let mut characters = identifier.chars();
-  let beginning = match characters.next() {
-    Some(character) => {
-      character
+  pub(super) fn append_identifier(&self, identifier: &Identifier) -> Self {
+    if self.0.len() > 0 {
+      Self(format!("{}_{}", self.0, identifier.0))
+    } else {
+      Self(identifier.0.clone())
     }
-    None => {
-      return Err(
-        GenericError::new("verify identifier")
-          .add_error("identifier is the empty string")
-      );
-    }
-  };
-
-  if !beginning.is_ascii_alphabetic() {
-    return Err(
-      GenericError::new("verify identifier")
-        .add_error("identifier begins with a character that is not a ascii alphabetic character, which is U+0041 'A' ..= U+005A 'Z' or U+0061 'a' ..= U+007A 'z'")
-        .add_attachment("identifier", identifier)
-    );
   }
 
-  // Check the rest of the characters are alphanumeric only
-  if !characters.all(|character| character.is_ascii_alphanumeric()) {
-    return Err(
-      GenericError::new("verify identifier")
-        .add_error("identifier contains non-alphanumeric characters")
-        .add_attachment("identifier", identifier)
-    );
+  pub(super) fn to_displayable_string(&self) -> &String {
+    &self.0
   }
 
-  Ok(())
+  pub(super) fn to_sql_identifier_string(&self) -> &String {
+    &self.0
+  }
+
+  pub(super) fn to_sql_identifier_str(&self) -> &str {
+    &self.0
+  }
 }

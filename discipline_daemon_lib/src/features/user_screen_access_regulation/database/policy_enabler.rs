@@ -2,23 +2,26 @@ use super::{
   CompoundTypeDefiner, CompoundTypeSerializer, 
   CompoundValueDeserializer, CompoundValueDeserializerContext, 
   CompoundTypeSerializerContext, CountdownTimerSpecification,
-  PolicyEnabler, GenericError, CompoundTypeNamespace,
+  PolicyEnabler, GenericError, IsCompoundType,
 };
 
 pub struct PolicyEnablerSpecification {
   timer: CountdownTimerSpecification,
 }
 
-impl PolicyEnablerSpecification {
-  pub fn new(
-    namespace: &mut CompoundTypeNamespace,
-    definer: &mut CompoundTypeDefiner,
-  ) -> Result<Self, GenericError> {
+impl IsCompoundType for PolicyEnablerSpecification {
+  fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      timer: CountdownTimerSpecification::new(namespace, definer)?,
+      timer: definer.compound_field("Timer")?,
     })
   }
 
+  fn display_name(&self) -> &str {
+    "PolicyEnabler"
+  }
+}
+
+impl PolicyEnablerSpecification {
   pub fn timer(&self) -> &CountdownTimerSpecification {
     &self.timer
   }
@@ -43,11 +46,7 @@ impl CompoundValueDeserializer for PolicyEnablerSpecification {
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(PolicyEnabler {
-      timer: self.timer.deserialize(context).map_err(|error|
-        error
-          .change_context("deserializing PolicyEnabler")
-          .add_error("failed to deserialize the 'Timer' field")
-      )?,
+      timer: self.timer.deserialize(context)?,
     })
   }
 }

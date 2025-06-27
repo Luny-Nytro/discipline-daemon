@@ -135,7 +135,7 @@ pub(super) fn generate_code_update_collection_item(
   code: &mut String,
   collection_specification: &CollectionSpecification,
   collection_item_matcher: &CollectionItemMatcher,
-  collection_item_modifications: &CollectionItemModificationsDraft,
+  collection_item_modifications: &CollectionItemChanges,
 ) -> 
   Result<(), GenericError>
 {

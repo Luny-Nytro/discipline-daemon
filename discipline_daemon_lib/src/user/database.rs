@@ -3,18 +3,19 @@ use super::{
 };
 
 use crate::{
-  user_screen_access_regulation, GenericError, Uuid,
-  OperatingSystemPassword, OperatingSystemUserId, OperatingSystemUsername,
+  GenericError, Uuid, OperatingSystemPassword, 
+  OperatingSystemUserId, OperatingSystemUsername,
 };
 
+use crate::user_screen_access_regulation::database::CompoundType as UserScreenAccessRegulation;
+
 use crate::database::{
-  ScalarFieldSpecification, CollectionItemDefiner, Database,
-  CompoundTypeSerializer, CompoundTypeSerializerContext,
-  CompoundValueDeserializer, CompoundValueDeserializerContext,
-  FromScalarValue, IntoScalarValue, IsScalarValue,
-  ScalarValue, CollectionSpecification, DatabaseNamespace, 
-  CollectionItemModificationsDraft,
-  CollectionItemMatcher, CompoundTypeNamespace,
+  CollectionItemModificationsDraft, CollectionItemDefiner, 
+  CollectionItemMatcher, CompoundTypeSerializer, 
+  CompoundTypeSerializerContext, CompoundValueDeserializer, 
+  CompoundValueDeserializerContext, Database, 
+  Field, FromScalarValue, IntoScalarValue, IsCollectionItem, 
+  IsScalarValue, ScalarValue, Collection,
 };
 
 impl IntoScalarValue for UserName {
@@ -32,137 +33,57 @@ impl FromScalarValue for UserName {
   }
 }
 
-pub struct Specification {
-  pub collection: CollectionSpecification,
-  id: ScalarFieldSpecification,
-  name: ScalarFieldSpecification,
-  operating_system_user_id: ScalarFieldSpecification,
-  operating_system_username: ScalarFieldSpecification,
-  operating_system_password: ScalarFieldSpecification,
-  screen_access_regulator: user_screen_access_regulation::database::RegulatorSpecification,
+pub struct UserSpecification {
+  id: Field,
+  name: Field,
+  operating_system_user_id: Field,
+  operating_system_username: Field,
+  operating_system_password: Field,
+  screen_access_regulation: UserScreenAccessRegulation,
 }
 
-impl Specification {
-  pub fn new(
-    database: &mut Database,
-    database_namespace: &mut DatabaseNamespace,
-  ) -> 
-    Result<Self, GenericError> 
-  {
-    let mut user_namespace = CompoundTypeNamespace::new();
-    let mut user_definer = CollectionItemDefiner::new();
-
-    let id = user_definer
-      .define_primary_scalar_field(&mut user_namespace, "Id")?;
-
-    let name = user_definer
-      .define_required_writable_scalar_field(&mut user_namespace, "Name")?;
-
-    let operating_system_user_id = user_definer
-      .define_required_readonly_scalar_field(&mut user_namespace, "OperatingSystemUserId")?;
-
-    let operating_system_username = user_definer
-      .define_required_readonly_scalar_field(&mut user_namespace, "OperatingSystemUsername")?;
-
-    let operating_system_password = user_definer
-      .define_required_writable_scalar_field(&mut user_namespace, "OperatingSystemPassword")?;
-
-    let mut screen_access_regulator_definer = user_definer
-      .define_required_readonly_compound_field(
-        &mut user_namespace, 
-        "ScreenAccessRegulator",
-      )?;
-
-    let screen_access_regulator = user_screen_access_regulation
-      ::database
-      ::RegulatorSpecification::new(
-        &mut user_namespace,
-        &mut screen_access_regulator_definer,
-      )?;
-      
-    let collection = database_namespace
-      .define_collection(
-        database, 
-        "Users", 
-        user_namespace,
-      )?;
-
+impl IsCollectionItem for UserSpecification {
+  fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      id,
-      name,
-      operating_system_password,
-      operating_system_user_id,
-      operating_system_username,
-      screen_access_regulator,
-      collection,
+      id: definer.primary_scalar_field("Id")?,
+      name: definer.writable_required_field("Name")?,
+      screen_access_regulation: definer.compound_field("ScreenAccessRegulation")?,
+      operating_system_user_id: definer.primary_scalar_field("OperatingSystemUserId")?,
+      operating_system_username: definer.primary_scalar_field("OperatingSystemUsername")?,
+      operating_system_password: definer.readonly_required_field("OperatingSystemPassword")?,
     })
   }
 
-  pub fn screen_access_regulator_field_specification(&self) -> &user_screen_access_regulation::database::RegulatorSpecification {
-    &self.screen_access_regulator
+  fn display_name(&self) -> &str {
+    "User"
   }
+}
 
-  pub fn set_name(
+impl UserSpecification {
+  pub fn write_name(
     &self, 
     draft: &mut CollectionItemModificationsDraft, 
     new_value: &UserName,
   ) ->
     Result<(), GenericError>
   {
-    draft.set_scalar_field(&self.name, new_value)
-  }
-
-  pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
-    CollectionItemModificationsDraft::new()
-  }
-
-  pub fn apply_modifications_draft(
-    &self,
-    database: &Database,
-    draft: &CollectionItemModificationsDraft,
-    user_id: &Uuid
-  ) -> 
-    Result<(), GenericError>
-  {
-    database.update_collection_items(
-      &self.collection, 
-      &CollectionItemMatcher::match_by_scalar_field(&self.id, user_id)?, 
-      draft,
-    )
-  }
-
-  pub fn add_user(
-    &self,
-    database: &Database,
-    user: &User,
-  ) ->
-    Result<(), GenericError>
-  {
-    database.add_collection_item(
-      &self.collection, 
-      self, 
-      user,
-    )
-  }
-
-  pub fn delete_user(
-    &self,
-    database: &Database,
-    user_id: &Uuid,
-  ) -> 
-    Result<(), GenericError>
-  {
-    database.delete_collection_items(
-      &self.collection, 
-      &CollectionItemMatcher::match_by_scalar_field(
-        &self.id, 
-        user_id,
-      )?,
-    )
+    draft.write_scalar_field(&self.name, new_value)
   }
 }
 
-impl CompoundTypeSerializer for Specification {
+pub struct UserSerializer<'a> {
+  user_specification: &'a UserSpecification
+}
+
+impl<'a> UserSerializer<'a> {
+  pub fn new(user_specification: &'a UserSpecification) -> Self {
+    Self {
+      user_specification
+    }
+  }
+}
+
+impl<'a> CompoundTypeSerializer for UserSerializer<'a> {
   type CompoundType = User;
 
   fn serialize_into(
@@ -172,14 +93,15 @@ impl CompoundTypeSerializer for Specification {
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.id, &value.id)?;  
-    context.serializable_scalar(&self.name, &value.name)?;  
-    context.serializable_scalar(&self.operating_system_user_id, &value.operating_system_user_id)?;  
-    context.serializable_scalar(&self.operating_system_username, &value.operating_system_username)?;  
-    context.serializable_scalar(&self.operating_system_password, &value.operating_system_password)?;  
-    context.serializable_compound(&self.screen_access_regulator, &value.screen_access_regulator)
+    context.serializable_scalar(&self.user_specification.id, &value.id)?;  
+    context.serializable_scalar(&self.user_specification.name, &value.name)?;  
+    context.serializable_scalar(&self.user_specification.operating_system_user_id, &value.operating_system_user_id)?;  
+    context.serializable_scalar(&self.user_specification.operating_system_username, &value.operating_system_username)?;  
+    context.serializable_scalar(&self.user_specification.operating_system_password, &value.operating_system_password)?;  
+    context.serializable_compound(&self.user_specification.screen_access_regulation, &value.screen_access_regulator)
   }
 }
+
 
 pub struct NormalizedUser {
   id: Uuid,
@@ -213,7 +135,7 @@ impl NormalizedUser {
   }
 }
 
-impl CompoundValueDeserializer for Specification {
+impl CompoundValueDeserializer for UserCollection {
   type Output = NormalizedUser;
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
@@ -263,7 +185,43 @@ impl CompoundValueDeserializer for Specification {
   }
 }
 
-impl Specification {
+pub struct UserCollection {
+  user_collection: Collection,
+  user: UserSpecification
+}
+
+impl UserCollection {
+  pub fn add_user(
+    &self,
+    database: &Database,
+    user: &User,
+  ) ->
+    Result<(), GenericError>
+  {
+    self.user_collection.add_item(
+      database, 
+      &UserSerializer::new(&self.user), 
+      user
+    )
+  }
+
+  pub fn delete_user(
+    &self,
+    database: &Database,
+    user_id: &Uuid,
+  ) -> 
+    Result<(), GenericError>
+  {
+    self.user_collection.delete_items(
+      database, 
+      &CollectionItemMatcher::match_by_scalar_field(&self.user.id, user_id)?,
+    )
+  }
+}
+
+
+
+impl UserCollection {
   // pub fn generate_sql_initialize(
   //   &self,
   //   into: &mut String,

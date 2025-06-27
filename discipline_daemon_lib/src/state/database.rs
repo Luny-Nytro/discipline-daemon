@@ -1,5 +1,5 @@
 use crate::database::{
-  ScalarFieldSpecification, CompoundValueDeserializer, CompoundTypeSerializer, 
+  Field, CompoundValueDeserializer, CompoundTypeSerializer, 
   Database, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
   CollectionSpecification, CollectionItemDefiner, DatabaseNamespace,
   CollectionItemMatcher, CompoundTypeNamespace,
@@ -12,9 +12,9 @@ use crate::{
 
 pub struct Specification {
   collection: CollectionSpecification,
-  id: ScalarFieldSpecification,
-  pub user: user::database::Specification,
-  pub user_screen_access_regulation: user_screen_access_regulation::database::Specification,
+  id: Field,
+  pub user: user::database::UserCollection,
+  pub user_screen_access_regulation: user_screen_access_regulation::database::Module,
 }
 
 impl Specification {
@@ -35,7 +35,7 @@ impl Specification {
       "User",
     )?;
 
-    let user = user::database::Specification::new(
+    let user = user::database::UserCollection::new(
       database, 
       &mut user_namespace,
     );
@@ -47,7 +47,7 @@ impl Specification {
       )?;
 
     let user_screen_access_regulation = user_screen_access_regulation
-      ::database::Specification::new(
+      ::database::Module::new(
         database, 
         database_namespace, 
         &mut soleton_namespace, 

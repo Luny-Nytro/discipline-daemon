@@ -40,7 +40,7 @@ impl CompoundTypeSerializerContext {
     value: &str,
   ) {
     self.write_separating_comma();
-    self.column_names.push_str(field.path().as_string());
+    self.column_names.push_str(field.path().to_sql_identifier_string());
     self.column_values.push_str(value);
   }
 
@@ -104,7 +104,7 @@ impl CompoundTypeSerializerContext {
   
   pub fn write_string(&mut self, field: &Field, string: &String) -> Result<(), GenericError> {
     self.write_separating_comma();
-    self.column_names.push_str(field.path().as_string());
+    self.column_names.push_str(field.path().to_sql_identifier_string());
     // TODO
     escape_string_for_sqilte_into(string, &mut self.column_values);
     Ok(())
@@ -127,7 +127,7 @@ impl CompoundTypeSerializerContext {
       // )?;
       
     self.write_separating_comma();
-    self.column_names.push_str(field.path().as_string());
+    self.column_names.push_str(field.path().to_sql_identifier_string());
     self.column_values.push_str(&temp);
     Ok(())
   }

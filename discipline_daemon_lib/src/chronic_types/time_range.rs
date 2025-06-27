@@ -213,54 +213,53 @@ pub mod database {
   use super::TimeRange;
 
   pub struct Specification {
-    from: ScalarFieldSpecification,
-    till: ScalarFieldSpecification,
+    from: Field,
+    till: Field,
   }
 
-  impl Specification {
-    pub fn new(
-      namespace: &mut CompoundTypeNamespace,
-      definer: &mut CompoundTypeDefiner,
-    ) -> 
-      Result<Self, GenericError> 
-    {
+  impl IsCompoundType for Specification {
+    fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
       Ok(Self {
-        from: definer.define_required_writable_scalar_field(namespace, "from")?,
-        till: definer.define_required_writable_scalar_field(namespace, "till")?,
+        from: definer.writable_required_field("From")?,
+        till: definer.writable_required_field("Till")?,
       })
+    }
+
+    fn display_name(&self) -> &str {
+      "TimeRange"
     }
   }
 
   impl Specification {
-    pub fn set_from(
+    pub fn write_from(
       &self, 
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &Time,
     ) -> 
       Result<(), GenericError> 
     {
-      modifications.set_scalar_field(&self.from, new_value)
+      changes.write_scalar_field(&self.from, new_value)
     }
 
-    pub fn set_till(
+    pub fn write_till(
       &self, 
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &Time,
     ) -> 
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.from, new_value)
+      changes.write_scalar_field(&self.from, new_value)
     }
 
-    pub fn update_range(
+    pub fn write_range(
       &self, 
-      modifications: &mut CollectionItemModificationsDraft,
+      changes: &mut CollectionItemModificationsDraft,
       new_value: &TimeRange,
     ) -> 
       Result<(), GenericError>
     {
-      modifications.set_scalar_field(&self.from, &new_value.from)?;
-      modifications.set_scalar_field(&self.till, &new_value.till)
+      changes.write_scalar_field(&self.from, &new_value.from)?;
+      changes.write_scalar_field(&self.till, &new_value.till)
     }
   }
 

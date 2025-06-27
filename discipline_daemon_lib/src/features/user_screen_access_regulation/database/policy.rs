@@ -1,77 +1,43 @@
 use super::{
-  GenericError, ScalarFieldSpecification, PolicyEnablerSpecification, CollectionSpecification,
-  DatabaseNamespace, PolicyName, CompoundTypeSerializer, CompoundValueDeserializer,
+  GenericError, Field, PolicyEnablerSpecification,
+  PolicyName, CompoundTypeSerializer, CompoundValueDeserializer,
   Policy, Uuid, PolicyEnabler, CompoundValueDeserializerContext,
-  CollectionItemDefiner, CollectionItemModificationsDraft, Database,
-  CompoundTypeSerializerContext, NormalizedRule, CollectionItemMatcher,
-  CompoundTypeNamespace,
+  CollectionItemDefiner, CollectionItemModificationsDraft,
+  CompoundTypeSerializerContext, NormalizedRule,
+  IsCollectionItem
 };
 
 pub struct PolicySpecification {
-  pub collection_specification: CollectionSpecification,
-  pub id_field_specification: ScalarFieldSpecification,
-  pub name_field_specification: ScalarFieldSpecification,
-  pub enabler_field_specification: PolicyEnablerSpecification,
-  pub user_id_field_specification: ScalarFieldSpecification,
-  // pub position_field_specification: ScalarFieldSpecification,
+  pub id: Field,
+  pub name: Field,
+  pub enabler: PolicyEnablerSpecification,
+  pub user_id: Field,
 }
 
-impl PolicySpecification {
-  pub fn new(
-    database: &mut Database,
-    namespace: &mut DatabaseNamespace,
-  ) -> 
-    Result<Self, GenericError>
-  {
-    let mut policy_namespace = CompoundTypeNamespace::new();
-    let mut policy_definer = CollectionItemDefiner::new();
-
-    let id_field_specification = policy_definer
-      .define_primary_scalar_field(&mut policy_namespace, "Id")?;
-    
-    let name_field_specification = policy_definer
-      .define_required_writable_scalar_field(&mut policy_namespace, "Name")?;
-      
-    let mut enabler_definer = policy_definer.define_required_writable_compound_field(&mut policy_namespace, "Enabler")?;
-
-    let enabler_field_specification = PolicyEnablerSpecification::new(
-      &mut policy_namespace,
-      &mut enabler_definer,
-    )?;
-      
-    let user_id_field_specification = policy_definer
-      .define_primary_scalar_field(&mut policy_namespace, "UserId")?;
-      
-    // let position_field_specification = fields_namespace
-    //   .scalar_field_specification("Position")
-    //   .build()
-    //   .map_err(|error| error.change_context("creating PolicySpecification"))?;
-
-    let collection_specification = namespace
-      .define_collection(
-        database,
-        "Policies", 
-        policy_namespace,
-      )?;
-
+impl IsCollectionItem for PolicySpecification {
+  fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      // position_field_specification,
-      enabler_field_specification,
-      id_field_specification,
-      name_field_specification,
-      user_id_field_specification,
-      collection_specification,
+      id: definer.primary_scalar_field("Id")?,
+      name: definer.writable_required_field("Name")?,
+      enabler: definer.compound_field("Enabler")?,
+      user_id: definer.primary_scalar_field("UserId")?,
     })
   }
 
-  pub fn update_name(
+  fn display_name(&self) -> &str {
+    "Policy"
+  }
+}
+
+impl PolicySpecification {
+  pub fn set_name(
     &self,
-    modifications: &mut CollectionItemModificationsDraft,
+    changes: &mut CollectionItemModificationsDraft,
     new_value: &PolicyName,
   ) -> 
     Result<(), GenericError>
   {
-    modifications.set_scalar_field(&self.name_field_specification, new_value)
+    changes.write_scalar_field(&self.name, new_value)
   }
 }
 
@@ -84,12 +50,10 @@ pub struct PolicySerializer<'a> {
 impl<'a> PolicySerializer<'a> {
   pub fn new(
     user_id: &'a Uuid,
-    // policy_position: usize, 
     policy_specification: &'a PolicySpecification,
   ) -> Self {
     Self {
       user_id,
-      // policy_position,
       policy_specification,
     }
   }
@@ -105,11 +69,10 @@ impl<'a> CompoundTypeSerializer for PolicySerializer<'a> {
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.policy_specification.id_field_specification, &value.id)?;
-    context.serializable_scalar(&self.policy_specification.name_field_specification, &value.name)?;
-    context.serializable_scalar(&self.policy_specification.user_id_field_specification, self.user_id)?;
-    // context.serializable_scalar(&self.policy_specification.position_field_specification, &self.policy_position)?;
-    context.serializable_compound(&self.policy_specification.enabler_field_specification, &value.enabler)
+    context.serializable_scalar(&self.policy_specification.id, &value.id)?;
+    context.serializable_scalar(&self.policy_specification.name, &value.name)?;
+    context.serializable_scalar(&self.policy_specification.user_id, self.user_id)?;
+    context.serializable_compound(&self.policy_specification.enabler, &value.enabler)
   }
 }
 
@@ -118,31 +81,10 @@ impl CompoundValueDeserializer for PolicySpecification {
 
   fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
     Ok(NormalizedPolicy {
-      id: context.deserializable_scalar(&self.id_field_specification).map_err(|error|
-        error
-          .change_context("deserializing NormalizedPolicy")
-          .add_error("failed to deserialize the 'Id' field")
-      )?,
-      name: context.deserializable_scalar(&self.name_field_specification).map_err(|error|
-        error
-          .change_context("deserializing NormalizedPolicy")
-          .add_error("failed to deserialize the 'Name' field")
-      )?,
-      user_id: context.deserializable_scalar(&self.user_id_field_specification).map_err(|error|
-        error
-          .change_context("deserializing NormalizedPolicy")
-          .add_error("failed to deserialize the 'UserId' field")
-      )?,
-      enabler: context.deserialize_compound(&self.enabler_field_specification).map_err(|error|
-        error
-          .change_context("deserializing NormalizedPolicy")
-          .add_error("failed to deserialize the 'Enabler' field")
-      )?,
-      // position: context.deserializable_scalar(&self.position_field_specification).map_err(|error|
-      //   error
-      //     .change_context("deserializing NormalizedPolicy")
-      //     .add_error("failed to deserialize the 'Position' field")
-      // )?,
+      id: context.deserializable_scalar(&self.id)?,
+      name: context.deserializable_scalar(&self.name)?,
+      user_id: context.deserializable_scalar(&self.user_id)?,
+      enabler: context.deserialize_compound(&self.enabler)?,
     })
   }
 }
@@ -152,7 +94,6 @@ pub struct NormalizedPolicy {
   pub(super) id: Uuid,
   pub(super) name: PolicyName,
   pub(super) user_id: Uuid,
-  // pub(super) position: usize,
   pub(super) enabler: PolicyEnabler,
 }
 
@@ -173,134 +114,4 @@ impl NormalizedPolicy {
       enabler: self.enabler,
     }
   }
-}
-
-impl PolicySpecification {
-  pub fn create_modifications_draft(&self) -> CollectionItemModificationsDraft {
-    CollectionItemModificationsDraft::new()
-  }
-
-  pub fn apply_modifications_draft(
-    &self,
-    database: &Database,
-    modifications_draft: &CollectionItemModificationsDraft,
-    user_id: &Uuid,
-    policy_id: &Uuid,
-  ) -> 
-    Result<(), GenericError>
-  {
-    database.update_collection_items(
-      &self.collection_specification, 
-      &CollectionItemMatcher::match_by_multiple_scalar_fields()
-        .and_scalar_field_is(&self.id_field_specification, policy_id)?
-        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
-        .finalize()?, 
-      modifications_draft,
-    )
-  }
-  // pub fn generate_sql_initialize(
-  //   &self,
-  //   into: &mut String,
-  // ) -> Result<(), GenericError> {
-  //   generate_sql_initialize_table_given_columns_writer(
-  //     into,
-  //     &self.collection_specification,
-  //     self,
-  //   )
-  //   .map_err(|error| 
-  //     error.change_context("generate sql code that initializes everything related to the policies table")
-  //   )
-  // }
-
-  // pub fn generate_sql_insert_policy(
-  //   &self,
-  //   into: &mut String,
-  //   policy: &Policy,
-  //   user_id: &Uuid,
-  // ) -> 
-  //   Result<(), GenericError>
-  // {
-  //   let serializer = PolicySerializer::new(user_id, self);
-  //   generate_sql_add_row(into, &self.collection_specification, &serializer, policy)
-  //     .map_err(|error| 
-  //       error.change_context("generate sql code that inserts a policy")
-  //     )
-  // }
-
-  pub fn add_policy(
-    &self,
-    database: &Database,
-    user_id: &Uuid,
-    // policy_position: usize,
-    policy: &Policy,
-  ) -> 
-    Result<(), GenericError>
-  {
-    database.add_collection_item(
-      &self.collection_specification, 
-      &PolicySerializer::new(user_id, self), 
-      policy,
-    )
-  }
-
-  // pub fn generate_sql_delete_policy(
-  //   &self,
-  //   into: &mut String,
-  //   policy_id: &Uuid,
-  //   user_id: &Uuid,
-  // ) {
-  //   generate_sql_delete_where_2_columns(
-  //     into,
-  //     &self.collection_specification,
-  //     &self.id_field_specification,
-  //     policy_id,
-  //     &self.user_id_field_specification,
-  //     user_id,
-  //   )
-  // }
-
-  pub fn delete_policy(
-    &self,
-    database: &Database,
-    policy_id: &Uuid,
-    user_id: &Uuid,
-  ) -> 
-    Result<(), GenericError> 
-  {
-    database.delete_collection_items(
-      &self.collection_specification, 
-      &CollectionItemMatcher::match_by_multiple_scalar_fields()
-        .and_scalar_field_is(&self.id_field_specification, policy_id)?
-        .and_scalar_field_is(&self.user_id_field_specification, user_id)?
-        .finalize()?
-    )
-  }
-
-  // pub fn load_all_normalized_policies(
-  //   &self,
-  //   connection: &Connection,
-  // ) -> 
-  //   Result<Vec<NormalizedPolicy>, GenericError>
-  // {
-  //   connection
-  //     .find_all_rows(&self.collection_specification, self)
-  //     .map_err(|error| 
-  //       error.change_context("retrieve all policies from the database in normalized form")
-  //     )
-  // }
-
-  // pub fn create_updater(
-  //   &self,
-  //   policy_id: &Uuid,
-  //   user_id: &Uuid,
-  // ) -> 
-  //   UpdateStatement
-  // {
-  //   UpdateStatement::new_given_two_where_columns(
-  //     &self.id_field_specification,
-  //     policy_id, 
-  //     &self.user_id_field_specification, 
-  //     user_id,
-  //   )
-  // }
 }
