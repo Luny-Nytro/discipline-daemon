@@ -17,6 +17,18 @@ impl CountdownTimer {
     }
   }
 
+  pub fn new_with_state(
+    duration: Duration,
+    remaining_duration: Duration,
+    previous_synchronization_time: DateTime,
+  ) -> Self {
+    Self { 
+      duration,
+      remaining_duration,
+      previous_synchronization_time,
+    }
+  }
+
   pub fn is_running(&self) -> bool {
     self.remaining_duration > Duration::ZERO
   }
@@ -35,6 +47,10 @@ impl CountdownTimer {
 
   pub fn remaining_duration(&self) -> Duration {
     self.remaining_duration
+  }
+
+  pub fn previous_synchronization_time(&self) -> &DateTime {
+    &self.previous_synchronization_time
   }
 
   pub fn change_remaining_duration(&mut self, new_value: Duration) {
@@ -61,7 +77,7 @@ impl CountdownTimer {
 //   }
 // }
 
-pub mod database {
+mod database {
   use crate::database::*;
   use crate::{Duration, GenericError};
   use super::CountdownTimer;
@@ -116,13 +132,13 @@ pub mod database {
     }
   }
 
-  impl CompoundTypeSerializer for Specification {
-    type CompoundType = CountdownTimer;
+  impl CompoundValueSerializer for Specification {
+    type CompoundValue = CountdownTimer;
 
     fn serialize_into(
       &self, 
-      value: &Self::CompoundType,
-      context: &mut CompoundTypeSerializerContext, 
+      value: &Self::CompoundValue,
+      context: &mut CompoundValueSerializerContext, 
     ) ->
       Result<(), GenericError>
     {
@@ -133,9 +149,9 @@ pub mod database {
   }
 
   impl CompoundValueDeserializer for Specification {
-    type Output = CountdownTimer;
+    type CompoundValue = CountdownTimer;
 
-    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
       Ok(CountdownTimer {
         duration: context.deserializable_scalar(&self.duration)?,
         remaining_duration: context.deserializable_scalar(&self.remaining_duration)?,

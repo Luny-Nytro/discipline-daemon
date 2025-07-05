@@ -15,8 +15,8 @@ pub use collection_item::*;
 mod module;
 pub use module::*;
 
-mod singleton;
-pub use singleton::*;
+// mod singleton;
+// pub use singleton::*;
 
 mod serializing_utiliites;
 use serializing_utiliites::*;
@@ -50,3 +50,6 @@ pub use collection::*;
 
 mod identifier;
 pub use identifier::*;
+
+mod x;
+pub use x::*;

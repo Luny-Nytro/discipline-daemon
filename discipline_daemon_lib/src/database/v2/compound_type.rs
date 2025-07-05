@@ -3,7 +3,6 @@ use super::*;
 
 pub trait IsCompoundType: Sized {
   fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError>;
-
   fn display_name(&self) -> &str;
 }
 
@@ -215,7 +214,7 @@ impl CompoundTypeDefiner {
     // Ok((collection, collection_item))
   }
 
-  pub(super) fn take_columns(self) -> Vec<Column> {
+  pub(super) fn into_columns(self) -> Vec<Column> {
     self.columns
   }
 }

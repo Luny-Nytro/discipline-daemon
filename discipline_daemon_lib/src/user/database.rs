@@ -10,11 +10,11 @@ use crate::{
 
 use crate::database::{
   CollectionItemModificationsDraft, CollectionItemDefiner, 
-  CollectionItemMatcher, CompoundTypeSerializer, 
-  CompoundTypeSerializerContext, CompoundValueDeserializer, 
+  CollectionItemMatcher, CompoundValueSerializer, 
+  CompoundValueSerializerContext, CompoundValueDeserializer, 
   CompoundValueDeserializerContext, Database, 
   Field, FromScalarValue, IntoScalarValue, IsCollectionItem, 
-  IsScalarValue, ScalarValue, Collection,
+  IsScalarValue, ScalarValue, Collection, IsModule, ModuleDefiner
 };
 
 impl IntoScalarValue for UserName {
@@ -35,7 +35,7 @@ impl FromScalarValue for UserName {
 pub struct UserSpecification {
   id: Field,
   name: Field,
-  screen_access_regulator: user_screen_access_regulation::database::RegulatorSpecification,
+  pub screen_access_regulator: user_screen_access_regulation::database::RegulatorSpecification,
   operating_system_user_id: Field,
   operating_system_username: Field,
   operating_system_password: Field,
@@ -82,13 +82,13 @@ impl<'a> UserSerializer<'a> {
   }
 }
 
-impl<'a> CompoundTypeSerializer for UserSerializer<'a> {
-  type CompoundType = User;
+impl<'a> CompoundValueSerializer for UserSerializer<'a> {
+  type CompoundValue = User;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) ->
     Result<(), GenericError>
   {
@@ -100,7 +100,6 @@ impl<'a> CompoundTypeSerializer for UserSerializer<'a> {
     context.serializable_compound(&self.user_specification.screen_access_regulator, &value.screen_access_regulator)
   }
 }
-
 
 pub struct NormalizedUser {
   id: Uuid,
@@ -145,9 +144,9 @@ impl<'a> UserDeserializer<'a> {
 }
 
 impl<'a> CompoundValueDeserializer for UserDeserializer<'a> {
-  type Output = NormalizedUser;
+  type CompoundValue = NormalizedUser;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(NormalizedUser {
       id: context.deserializable_scalar(&self.user_specification.id)?,
       name: context.deserializable_scalar(&self.user_specification.name)?,
@@ -159,12 +158,26 @@ impl<'a> CompoundValueDeserializer for UserDeserializer<'a> {
   }
 }
 
-pub struct UserCollection {
+pub struct UserModule {
   user_collection: Collection,
   user: UserSpecification
 }
 
-impl UserCollection {
+impl IsModule for UserModule {
+  fn new(definer: &mut ModuleDefiner) -> Result<Self, GenericError> {
+    let (user_collection, user) = definer.collection("Users")?;
+    Ok(Self {
+      user,
+      user_collection,
+    })
+  }
+}
+
+impl UserModule {
+  pub fn user_screen_access_regulator(&self) -> &user_screen_access_regulation::database::RegulatorSpecification {
+    &self.user.screen_access_regulator
+  }
+
   pub fn add_user(
     &self,
     database: &Database,
@@ -195,7 +208,7 @@ impl UserCollection {
 
 
 
-impl UserCollection {
+impl UserModule {
   pub fn change_user_name(
     &self,
     database: &Database,

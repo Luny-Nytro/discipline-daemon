@@ -3,7 +3,6 @@ use super::*;
 
 pub trait IsCollectionItem: Sized {
   fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError>;
-
   fn display_name(&self) -> &str;
 }
 
@@ -155,7 +154,7 @@ impl CollectionItemDefiner {
     );
 
     let compound_field = T::new(&mut builder)?;
-    self.columns.extend(builder.take_columns().into_iter());
+    self.columns.extend(builder.into_columns().into_iter());
     self.defined_identifiers.insert(identifier.clone());
     Ok(compound_field)
   }

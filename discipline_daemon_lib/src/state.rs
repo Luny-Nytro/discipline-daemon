@@ -11,6 +11,15 @@ pub struct State {
   // pub networking_access: networking_access::Feature,
 }
 
+impl Default for State {
+  fn default() -> Self {
+    Self {
+      users: Vec::new(),
+      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default(),
+    }
+  }
+}
+
 impl State {
   pub fn find_user_by_id(&self, user_id: &Uuid) -> Option<&User> {
     self.users.iter().find(|user| user.id == *user_id)

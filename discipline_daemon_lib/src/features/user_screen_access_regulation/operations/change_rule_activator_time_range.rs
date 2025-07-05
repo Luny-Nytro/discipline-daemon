@@ -1,5 +1,5 @@
 use super::{
-  Serialize, Deserialize, Daemon, IsOperation, Uuid, WeekdayRange, 
+  Serialize, Deserialize, Daemon, IsOperation, TimeRange, Uuid, 
   RuleActivator, InternalOperationOutcome,
 };
 
@@ -8,8 +8,8 @@ pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
   NoSuchRule,
-  WrongActivatorType,
   MayNotMakeRuleLessRestrictive,
+  WrongActivatorType,
   Success,
 }
 
@@ -18,7 +18,7 @@ pub struct Operation {
   rule_id: Uuid,
   policy_id: Uuid,
   user_id: Uuid,
-  new_weekday_range: WeekdayRange,
+  new_time_range: TimeRange,
 }
 
 impl IsOperation for Operation {
@@ -51,29 +51,29 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchRule);
     };
 
-    let RuleActivator::InWeekdayRange(weekday_range) = &mut rule.activator else {
+    let RuleActivator::InTimeRange(time_range) = &mut rule.activator else {
       return InternalOperationOutcome::public_outcome(Outcome::WrongActivatorType);
     };
     
-    if self.new_weekday_range.is_narrower_than(weekday_range) {
+    if self.new_time_range.is_narrower_than(time_range) {
       return InternalOperationOutcome::public_outcome(Outcome::MayNotMakeRuleLessRestrictive);
     }
 
     if let Err(error) = daemon
       .database_specification
-      .user_screen_access_regulation
-      .change_rule_activator_weekday_range(
+      .user_screen_access_regulator()
+      .change_rule_activator_time_range(
         &daemon.database_connection, 
         &self.user_id, 
         &self.policy_id, 
         &self.rule_id,
-        &self.new_weekday_range,
+        &self.new_time_range
       )
     {
       return InternalOperationOutcome::internal_error(error);
     }
 
-    *weekday_range = self.new_weekday_range;
+    *time_range = self.new_time_range;
     InternalOperationOutcome::public_outcome(Outcome::Success)
   }
 }

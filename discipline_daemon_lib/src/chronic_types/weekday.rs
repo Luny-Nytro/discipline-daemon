@@ -194,7 +194,7 @@ impl<'de> Deserialize<'de> for Weekday {
   }
 }
 
-pub mod database_serde {
+mod database {
   use crate::database::*;
   use crate::GenericError;
   use super::*;
@@ -202,13 +202,13 @@ pub mod database_serde {
   impl IntoScalarValue for Weekday {
     fn into_scalar_value(&self) -> impl IsScalarValue {
       match self {
-        Sunday => 0,
-        Monday => 1,
-        Tuesday => 2,
+        Sunday    => 0,
+        Monday    => 1,
+        Tuesday   => 2,
         Wednesday => 3,
-        Thursday => 4,
-        Friday => 5,
-        Saturday => 6,
+        Thursday  => 4,
+        Friday    => 5,
+        Saturday  => 6,
       }
     }
   }

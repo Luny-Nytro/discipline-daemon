@@ -1,6 +1,6 @@
 use super::{
-  Rule, RuleActivator, GenericError, Uuid, CompoundTypeSerializerContext,
-  Field, CompoundTypeSerializer, IsCollectionItem,
+  Rule, RuleActivator, GenericError, Uuid, CompoundValueSerializerContext,
+  Field, CompoundValueSerializer, IsCollectionItem,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
   CollectionItemDefiner, RuleActivatorSpecification
 };
@@ -53,13 +53,13 @@ impl<'a> RuleSerializer<'a> {
   }
 }
 
-impl<'a> CompoundTypeSerializer for RuleSerializer<'a> {
-  type CompoundType = Rule;
+impl<'a> CompoundValueSerializer for RuleSerializer<'a> {
+  type CompoundValue = Rule;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {
@@ -88,9 +88,9 @@ impl NormalizedRule {
 }
 
 impl CompoundValueDeserializer for RuleSpecification {
-  type Output = NormalizedRule;
+  type CompoundValue = NormalizedRule;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(NormalizedRule {
       id: context.deserializable_scalar(&self.id)?,
       user_id: context.deserializable_scalar(&self.id)?,

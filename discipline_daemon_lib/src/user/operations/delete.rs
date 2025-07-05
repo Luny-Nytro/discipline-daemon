@@ -25,7 +25,7 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .database_specification
-      .user
+      .user_module()
       .delete_user(&daemon.database_connection, &self.user_id)
     {
       return InternalOperationOutcome::internal_error(error);

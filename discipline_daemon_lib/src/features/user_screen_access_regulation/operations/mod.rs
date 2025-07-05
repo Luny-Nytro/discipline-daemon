@@ -13,11 +13,11 @@ use crate::user_screen_access_regulation::{
 };
 
 pub mod change_is_applying_enabled;
-pub mod rule_activator_in_time_range_update_range;
-pub mod rule_activator_in_weekday_range_update_range;
-pub mod rule_create;
-pub mod rule_delete;
-pub mod policy_create;
-pub mod policy_delete;
-pub mod policy_enabler_increment;
+pub mod change_rule_activator_time_range;
+pub mod change_rule_activator_weekday_range;
+pub mod create_rule;
+pub mod delete_rule;
+pub mod create_policy;
+pub mod delete_policy;
+pub mod increase_policy_enabled_duration;
 pub mod change_policy_name;

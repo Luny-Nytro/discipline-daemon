@@ -9,6 +9,7 @@ pub(super) enum FieldSemantics {
   WrirableOptional,
 }
 
+// TODO: Later, rename this to Fieldspecification
 #[derive(Debug, Clone)]
 pub struct Field {
   path: Path,

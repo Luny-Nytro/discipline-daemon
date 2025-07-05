@@ -38,7 +38,7 @@ impl IsOperation for DeletePolicy {
 
     if let Err(error) = daemon
       .database_specification
-      .user_screen_access_regulation
+      .user_screen_access_regulator()
       .delete_policy(
         &daemon.database_connection, 
         &self.user_id,

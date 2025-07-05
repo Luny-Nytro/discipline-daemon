@@ -55,11 +55,11 @@ impl MlutiColumnPrimaryKeyConstraint {
   }
 }
 
-fn generate_code_define_collection(
+pub fn generate_code_define_collection(
   code: &mut String,
   collection: &Collection,
-) ->
-  Result<(), GenericError>
+) 
+  // Result<(), GenericError>
 {
   code.push_str("CREATE TABLE IF NOT EXISTS ");
   code.push_str(collection.path().to_sql_identifier_str());
@@ -107,18 +107,18 @@ fn generate_code_define_collection(
   
   code.push_str(");");
 
-  Ok(())
+  // Ok(())
 }
 
-fn generate_code_add_collection_item<Serializer>(
+pub(super) fn generate_code_add_collection_item<Serializer>(
   code: &mut String,
   collection: &Collection,
   item_serializer: &Serializer,
-  item: &Serializer::CompoundType,
+  item: &Serializer::CompoundValue,
 ) ->
   Result<(), GenericError>
 where 
-  Serializer: CompoundTypeSerializer
+  Serializer: CompoundValueSerializer
 {
   let mut values_clause = String::new();
 
@@ -236,7 +236,7 @@ impl Collection {
     item_matcher: &CollectionItemMatcher,
     item_deserializer: &Deserializer,
   ) ->
-    Result<Option<Deserializer::Output>, GenericError>
+    Result<Option<Deserializer::CompoundValue>, GenericError>
   where 
     Deserializer: CompoundValueDeserializer
   {
@@ -296,7 +296,7 @@ impl Collection {
     database: &Database,
     item_deserializer: &Deserializer,
   ) ->
-    Result<Vec<Deserializer::Output>, GenericError>
+    Result<Vec<Deserializer::CompoundValue>, GenericError>
   where 
     Deserializer: CompoundValueDeserializer
   {
@@ -403,11 +403,11 @@ impl Collection {
     )
   }
 
-  pub fn add_item<Serializer: CompoundTypeSerializer>(
+  pub fn add_item<Serializer: CompoundValueSerializer>(
     &self,
     database: &Database,
     item_serializer: &Serializer,
-    item: &Serializer::CompoundType,
+    item: &Serializer::CompoundValue,
   ) -> 
     Result<(), GenericError> 
   {

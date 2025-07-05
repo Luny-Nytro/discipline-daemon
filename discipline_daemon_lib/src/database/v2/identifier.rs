@@ -59,6 +59,10 @@ impl Identifier {
       }
     }
   }
+
+  pub(super) fn to_path(&self) -> Path {
+    todo!()
+  }
 }
 
 #[derive(Debug, Clone)]

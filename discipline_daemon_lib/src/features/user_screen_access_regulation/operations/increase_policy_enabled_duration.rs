@@ -52,7 +52,7 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .database_specification
-      .user_screen_access_regulation
+      .user_screen_access_regulator()
       .change_policy_enabled_duration(
         &daemon.database_connection, 
         &self.user_id,

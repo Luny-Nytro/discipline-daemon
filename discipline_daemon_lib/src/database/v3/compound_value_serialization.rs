@@ -3,19 +3,19 @@ use super::*;
 pub trait CompoundValueSerializer {
   type CompoundValue;
 
-  fn serialize_into(
+  fn serialize(
     &self, 
     value: &Self::CompoundValue,
-    context: &mut CompoundValueSerializerContext, 
-  ) -> Result<(), GenericError>;
+    context: &mut SerializeCompoundValueContext, 
+  );
 }
 
-pub struct CompoundValueSerializerContext {
+pub struct SerializeCompoundValueContext {
   column_names: String,
   column_values: String,
 }
 
-impl CompoundValueSerializerContext {
+impl SerializeCompoundValueContext {
   fn new() -> Self {
     Self {
       column_names: String::new(),
@@ -27,31 +27,27 @@ impl CompoundValueSerializerContext {
     self.column_names.len() > 0
   }
 
-  fn write_separating_comma(&mut self) {
+  fn write_separating_commas(&mut self) {
     if self.did_write_some_columns() {
       self.column_names.push_str(", ");
       self.column_values.push_str(", ");
     }
   }
 
-  fn write_column(
-    &mut self, 
-    field: &Field, 
-    value: &str,
-  ) {
-    self.write_separating_comma();
-    self.column_names.push_str(field.path().to_sql_identifier_string());
-    self.column_values.push_str(value);
-  }
-
-  pub fn write_null(&mut self, field: &Field) -> Result<(), GenericError> {
-    self.write_column(field, "NULL");
-    Ok(())
+  pub fn write_null(&mut self, field: &String) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str("NULL");
   }
   
-  pub fn write_boolean(&mut self, field: &Field, boolean: bool) -> Result<(), GenericError> {
-    self.write_column(field, if boolean { "TRUE" } else { "FALSE" });
-    Ok(())
+  pub fn write_boolean(&mut self, field: &String, boolean: bool) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(if boolean { 
+      "TRUE" 
+    } else { 
+      "FALSE" 
+    });
   }
 
   // fn push_i8(&mut self, column_info: &Column, number: i8) {
@@ -102,44 +98,30 @@ impl CompoundValueSerializerContext {
   //   self.write_column(column_info, &number.to_string())
   // }
   
-  pub fn write_string(&mut self, field: &Field, string: &String) -> Result<(), GenericError> {
-    self.write_separating_comma();
-    self.column_names.push_str(field.path().to_sql_identifier_string());
-    // TODO
-    escape_string_for_sqilte_into(string, &mut self.column_values);
-    Ok(())
+  pub fn write_string(&mut self, field: &String, string: &String) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    escape_string_into(string, &mut self.column_values);
   }
 
-  pub fn serializable_scalar<Value: IntoScalarValue>(
+  pub fn write_serializable_scalar_value<Value: SerializableScalarValue>(
     &mut self, 
-    field: &Field, 
+    field: &String, 
     value: &Value,
-  ) -> 
-    Result<(), GenericError> 
-  {
-    let mut temp = String::new();
-    
-    serialize_scalar_value_into(value, &mut temp);
-      // .map_err(|error| 
-      //   error
-      //     .change_context("writing a IntoScalarValue into a CompoundValueSerializerContext")
-      //     .add_error("failed to serialize the scalar value")
-      // )?;
-      
-    self.write_separating_comma();
-    self.column_names.push_str(field.path().to_sql_identifier_string());
-    self.column_values.push_str(&temp);
-    Ok(())
+  ) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    serialize_scalar_value_into(value, &mut self.column_values);
   }
 
-  pub fn serializable_compound<Value>(
+  pub fn write_serializable_compound_value<Value>(
     &mut self, 
     serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
     value: &Value,
-  ) -> Result<(), GenericError> {
+  ) {
     serializer
       // TODO: Maybe map the error and change the context and add a proper error message
-      .serialize_into(value, self)
+      .serialize(value, self);
   }
 }
 
@@ -147,27 +129,25 @@ pub(super) fn serialize_compound_value_into<Value>(
   serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
   value: &Value,
   into: &mut String,
-) -> Result<(), GenericError> {
-  let mut context = CompoundValueSerializerContext::new();
-  serializer
-    .serialize_into(value, &mut context)
-    .map_err(|error| 
-      error
-        .change_context("serializing a compound value into its sqlite representation")
-        .add_error("the 'write_into' method of the value's CompoundValueSerializer implementation failed")
-    )?;
+) {
+  let mut context = SerializeCompoundValueContext::new();
+  serializer.serialize(value, &mut context);
+    // .map_err(|error| 
+    //   error
+    //     .change_context("serializing a compound value into its sqlite representation")
+    //     .add_error("the 'write_into' method of the value's CompoundValueSerializer implementation failed")
+    // )?;
 
-  if !context.did_write_some_columns() {
-    return Err(
-      GenericError::new("serializing a compound value into its sqlite representation")
-        .add_error("the 'write_into' of the value's CompoundValueSerializer implementation did not write itself into the provided CompoundValueSerializerContext")
-    );
-  }
+  // if !context.did_write_some_columns() {
+  //   return Err(
+  //     GenericError::new("serializing a compound value into its sqlite representation")
+  //       .add_error("the 'write_into' of the value's CompoundValueSerializer implementation did not write itself into the provided CompoundValueSerializerContext")
+  //   );
+  // }
 
   into.push_str("(");
   into.push_str(&context.column_names);
   into.push_str(") VALUES (");
   into.push_str(&context.column_values);
   into.push_str(")");
-  Ok(())
 }

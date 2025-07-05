@@ -1,5 +1,6 @@
 use rusqlite::Row;
 use super::*;
+use crate::GenericError;
 
 pub trait CompoundValueDeserializer {
   type CompoundValue;
@@ -13,12 +14,12 @@ pub trait CompoundValueDeserializer {
 pub struct CompoundValueDeserializerContext<'a>(&'a Row<'a>);
 
 impl<'a> CompoundValueDeserializerContext<'a> {
-  fn get_column_value(&self, column: &Field) -> Result<ScalarValue, GenericError> {
-    self.0.get_ref(column.path().to_sql_identifier_str())
+  fn retrieve_column_value(&self, field_identifier: &String) -> Result<ScalarValue, GenericError> {
+    self.0.get_ref(field_identifier.as_str())
       .map_err(|error| {
         GenericError::new("retrieving the value of a sqlite column")
           .add_error("sqlite wrapper returned error")
-          .add_attachment("column identifier", column.path().to_displayable_string())
+          .add_attachment("column identifier", field_identifier)
           .add_attachment("sqlite error", error.to_string())
       })
       .map(
@@ -29,14 +30,14 @@ impl<'a> CompoundValueDeserializerContext<'a> {
   // TODO: rename to deserializable_scalar_field
   pub fn deserializable_scalar<Value>(
     &self, 
-    column: &Field,
+    field_identifier: &String,
   ) 
     -> Result<Value, GenericError>
   where 
-    Value: FromScalarValue
+    Value: DeserializableScalarValue
   {
     self
-      .get_column_value(column)
+      .retrieve_column_value(field_identifier)
       .and_then(Value::deserialize)
   }
 

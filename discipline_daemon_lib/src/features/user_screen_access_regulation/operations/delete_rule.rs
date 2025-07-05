@@ -30,8 +30,7 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
-    let regulator = &mut user
-      .screen_access_regulator;
+    let regulator = &mut user.screen_access_regulator;
 
     let Some(policy) = regulator
       .find_policy_by_id_mut(&self.policy_id) else 
@@ -50,7 +49,7 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .database_specification
-      .user_screen_access_regulation
+      .user_screen_access_regulator()
       .delete_rule(
         &daemon.database_connection, 
         &self.user_id,

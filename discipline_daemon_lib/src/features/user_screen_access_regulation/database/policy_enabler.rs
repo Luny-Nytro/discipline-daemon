@@ -1,7 +1,7 @@
 use super::{
-  CompoundTypeDefiner, CompoundTypeSerializer, 
+  CompoundTypeDefiner, CompoundValueSerializer, 
   CompoundValueDeserializer, CompoundValueDeserializerContext, 
-  CompoundTypeSerializerContext, CountdownTimerSpecification,
+  CompoundValueSerializerContext, CountdownTimerSpecification,
   PolicyEnabler, GenericError, IsCompoundType,
 };
 
@@ -27,13 +27,13 @@ impl PolicyEnablerSpecification {
   }
 }
 
-impl CompoundTypeSerializer for PolicyEnablerSpecification {
-  type CompoundType = PolicyEnabler;
+impl CompoundValueSerializer for PolicyEnablerSpecification {
+  type CompoundValue = PolicyEnabler;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) ->
     Result<(), GenericError>
   {
@@ -42,9 +42,9 @@ impl CompoundTypeSerializer for PolicyEnablerSpecification {
 }
 
 impl CompoundValueDeserializer for PolicyEnablerSpecification {
-  type Output = PolicyEnabler;
+  type CompoundValue = PolicyEnabler;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(PolicyEnabler {
       timer: self.timer.deserialize(context)?,
     })

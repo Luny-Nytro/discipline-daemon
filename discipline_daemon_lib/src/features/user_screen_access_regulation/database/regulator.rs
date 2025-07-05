@@ -1,8 +1,8 @@
 use super::{
   Field, CompoundTypeDefiner, GenericError, Duration,
-  Regulator, CollectionItemModificationsDraft, CompoundTypeSerializerContext,
+  Regulator, CollectionItemModificationsDraft, CompoundValueSerializerContext,
   CompoundValueDeserializer, CompoundValueDeserializerContext,
-  NormalizedPolicy, NormalizedRule, CompoundTypeSerializer,
+  NormalizedPolicy, NormalizedRule, CompoundValueSerializer,
   OperatingSystemCalls, Uuid, IsCompoundType, PolicySpecification, 
   Collection, RuleSpecification, Database, PolicySerializer, RuleSerializer,
   Policy, Rule, CollectionItemMatcher, PolicyName, WeekdayRange, TimeRange,
@@ -59,13 +59,13 @@ impl RegulatorSpecification {
   }
 }
 
-impl CompoundTypeSerializer for RegulatorSpecification {
-  type CompoundType = Regulator;
+impl CompoundValueSerializer for RegulatorSpecification {
+  type CompoundValue = Regulator;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {
@@ -81,9 +81,9 @@ pub struct NormalizedRegulator {
 }
 
 impl CompoundValueDeserializer for RegulatorSpecification {
-  type Output = NormalizedRegulator;
+  type CompoundValue = NormalizedRegulator;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(NormalizedRegulator {
       is_applying_enabled: context.deserializable_scalar(&self.is_applying_enabled)?,
       is_user_screen_access_blocked: context.deserializable_scalar(&self.is_user_screen_access_blocked)?,

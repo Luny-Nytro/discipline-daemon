@@ -1,8 +1,8 @@
 use super::{
   Field, CompoundTypeDefiner, IsCompoundType,
-  CompoundTypeSerializer, CommonInfo,
+  CompoundValueSerializer, CommonInfo,
   Duration, CompoundValueDeserializerContext, CollectionItemModificationsDraft,
-  CompoundValueDeserializer, GenericError, CompoundTypeSerializerContext,
+  CompoundValueDeserializer, GenericError, CompoundValueSerializerContext,
 };
 
 pub struct CommonInfoSpecification {
@@ -35,13 +35,13 @@ impl CommonInfoSpecification {
   }
 }
 
-impl CompoundTypeSerializer for CommonInfoSpecification {
-  type CompoundType = CommonInfo;
+impl CompoundValueSerializer for CommonInfoSpecification {
+  type CompoundValue = CommonInfo;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) ->
     Result<(), GenericError>
   {
@@ -51,9 +51,9 @@ impl CompoundTypeSerializer for CommonInfoSpecification {
 }
 
 impl CompoundValueDeserializer for CommonInfoSpecification {
-  type Output = CommonInfo;
+  type CompoundValue = CommonInfo;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(CommonInfo {
       private_password: context.deserializable_scalar(&self.private_password)?,
       applying_interval: context.deserializable_scalar(&self.applying_interval)?,

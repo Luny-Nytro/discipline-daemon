@@ -1,9 +1,9 @@
 use super::{
   GenericError, Field, PolicyEnablerSpecification,
-  PolicyName, CompoundTypeSerializer, CompoundValueDeserializer,
+  PolicyName, CompoundValueSerializer, CompoundValueDeserializer,
   Policy, Uuid, PolicyEnabler, CompoundValueDeserializerContext,
   CollectionItemDefiner, CollectionItemModificationsDraft,
-  CompoundTypeSerializerContext, NormalizedRule,
+  CompoundValueSerializerContext, NormalizedRule,
   IsCollectionItem
 };
 
@@ -59,13 +59,13 @@ impl<'a> PolicySerializer<'a> {
   }
 }
 
-impl<'a> CompoundTypeSerializer for PolicySerializer<'a> {
-  type CompoundType = Policy;
+impl<'a> CompoundValueSerializer for PolicySerializer<'a> {
+  type CompoundValue = Policy;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) ->
     Result<(), GenericError>
   {
@@ -77,9 +77,9 @@ impl<'a> CompoundTypeSerializer for PolicySerializer<'a> {
 }
 
 impl CompoundValueDeserializer for PolicySpecification {
-  type Output = NormalizedPolicy;
+  type CompoundValue = NormalizedPolicy;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(NormalizedPolicy {
       id: context.deserializable_scalar(&self.id)?,
       name: context.deserializable_scalar(&self.name)?,

@@ -1,8 +1,7 @@
 use crate::database::{
-  Field, CompoundValueDeserializer, CompoundTypeSerializer, 
-  Database, CompoundValueDeserializerContext, CompoundTypeSerializerContext, 
-  CollectionItemDefiner, IsCompoundType, Collection,
-  CollectionItemMatcher, IsCollectionItem,
+  CompoundValueDeserializer, CompoundValueSerializer, 
+  Database, CompoundValueDeserializerContext, CompoundValueSerializerContext, 
+  CollectionItemMatcher, IsTopLevelCompoundValueSchema, TopLevelCompoundValueSchemaDefiner,
 };
 
 use crate::{
@@ -10,118 +9,77 @@ use crate::{
   user_screen_access_regulation, State
 };
 
-pub struct StateSingleton {
-  pub id: Field,
-  pub user_screen_access_regulation: user_screen_access_regulation::database::CommonInfoSpecification,
+pub struct StateSpecification {
+  user_screen_access_regulation_common_info: user_screen_access_regulation::database::CommonInfoSpecification,
+  user_module: user::database::UserModule,
 }
 
-impl IsCollectionItem for StateSingleton {
-  fn new(definer: &mut CollectionItemDefiner) -> Result<Self, GenericError> {
+impl IsTopLevelCompoundValueSchema for StateSpecification {
+  type CompoundValue = NormalizedState;
+
+  fn new(definer: &mut TopLevelCompoundValueSchemaDefiner) -> Result<Self, GenericError> {
     Ok(Self {
-      id: definer.primary_scalar_field("Id")?,
-      user_screen_access_regulation: definer.compound_field("UserScreenAccessRegulation")?,
+      user_screen_access_regulation_common_info: definer.compound_field("UserScreenAccessRegulation")?,
+      user_module: definer.module("Users")?,
     })
   }
 
   fn display_name(&self) -> &str {
-    "DisciplineCommonInfo"
+    "DisciplineState"
+  }
+
+  fn create_initial_instance(&self) -> Self::CompoundValue {
+    NormalizedState::default()    
   }
 }
 
-pub struct StateSpecification {
-  collection: Collection,
-  pub user: user::database::UserCollection,
-}
-
-impl Is
 impl StateSpecification {
-  pub fn new(
-    database: &mut Database,
-    database_namespace: &mut DatabaseNamespace,
-  ) -> 
-    Result<Self, GenericError> 
-  {
-    let mut soleton_namespace = CompoundTypeNamespace::new();
-    let mut soleton_definer = CollectionItemDefiner::new();
+  pub fn user_module(&self) -> &user::database::UserModule {
+    &self.user_module
+  }
 
-    let id = soleton_definer
-      .define_primary_scalar_field(&mut soleton_namespace, "Id")?;
+  pub fn user_screen_access_regulator(&self) -> &user_screen_access_regulation::database::RegulatorSpecification {
+    self.user_module.user_screen_access_regulator()
+  }
 
-    let mut user_namespace = database_namespace.define_namespace(
-      database, 
-      "User",
-    )?;
-
-    let user = user::database::UserCollection::new(
-      database, 
-      &mut user_namespace,
-    );
-
-    let user_screen_access_regulation_definer = soleton_definer
-      .define_required_writable_compound_field(
-        &mut soleton_namespace, 
-        "UserScreenAccessRegulation"
-      )?;
-
-    let user_screen_access_regulation = user_screen_access_regulation
-      ::database::Module::new(
-        database, 
-        database_namespace, 
-        &mut soleton_namespace, 
-        &mut user_screen_access_regulation_definer,
-      )?;
-
-    let collection_specification = database_namespace
-      .collection("app", soleton_namespace)
-      .map_err(|error| error.change_context("creating Specification"))?;
-
-    Ok(StateSpecification {
-      collection: collection_specification, 
-      id, 
-      user,
-      user_screen_access_regulation,
-    })
+  pub fn user_screen_access_regulation_common_info(&self) -> &user_screen_access_regulation::database::CommonInfoSpecification {
+    &self.user_screen_access_regulation_common_info
   }
 }
 
-impl CompoundTypeSerializer for StateSpecification {
-  type CompoundType = State;
+impl CompoundValueSerializer for StateSpecification {
+  type CompoundValue = State;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) ->
     Result<(), GenericError>
   {
-    context.serializable_scalar(&self.id, &ITEM_ID)?;
-    context.serializable_compound(self.user_screen_access_regulation.singleton(), &value.user_screen_access_regulation_common_info)
+    context.serializable_compound(&self.user_screen_access_regulation_common_info, &value.user_screen_access_regulation_common_info)
   }
 }
 
 pub struct NormalizedState {
-  id: u8,
-  user_access: user_screen_access_regulation::CommonInfo,
+  user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo,
 }
-
-const ITEM_ID: u8 = 0;
 
 impl Default for NormalizedState {
   fn default() -> Self {
     Self {
-      id: ITEM_ID,
-      user_access: user_screen_access_regulation::CommonInfo::default(),
+      // id: ITEM_ID,
+      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default(),
     }
   }
 }
 
 impl CompoundValueDeserializer for StateSpecification {
-  type Output = NormalizedState;
+  type CompoundValue = NormalizedState;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     Ok(NormalizedState {
-      id: context.deserializable_scalar(&self.id)?,
-      user_access: context.deserialize_compound(self.user_screen_access_regulation.singleton())?,
+      user_screen_access_regulation_common_info: context.deserialize_compound(&self.user_screen_access_regulation_common_info)?,
     })
   }
 }
@@ -178,34 +136,18 @@ impl StateSpecification {
   //   )
   // }
 
-  fn initialize(&self, database: &Database) -> Result<State, GenericError> {
-    let default_state = State {
-      users: Vec::new(),
-      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default(),
-    };
-
-    database.add_collection_item(
-      &self.collection, 
-      self,
-      &default_state, 
-
-    ).map_err(|error| 
-      error
-        .change_context("adding the default daemon state item to the collection")
-    )?;
-
-    Ok(default_state)
-  }
-
   pub fn load(
     &self, 
     database: &Database,
   ) -> 
     Result<State, GenericError> 
   {
+    database.load_top_level_compound_value(
+      self, 
+      , singleton_deserializer)
     let users = database.find_all_collection_items(
-      &self.user.collection, 
-      &self.user,
+      &self.user_module.collection, 
+      &self.user_module,
     ).map_err(|error| 
       error
         .change_context("loading all users from the database")
@@ -213,8 +155,8 @@ impl StateSpecification {
     )?;
     
     let user_screen_access_regulation_policies = database.find_all_collection_items(
-      &self.user_screen_access_regulation.policy.collection_specification, 
-      &self.user_screen_access_regulation.policy,
+      &self.user_screen_access_regulation_common_info.policy.collection_specification, 
+      &self.user_screen_access_regulation_common_info.policy,
     ).map_err(|error| 
       error
         .change_context("loading all user screen access regulation policies from the database in normalized form")
@@ -223,8 +165,8 @@ impl StateSpecification {
 
         
     let user_screen_access_regulation_rules = database.find_all_collection_items(
-      &self.user_screen_access_regulation.rule.collection, 
-      &self.user_screen_access_regulation.rule,
+      &self.user_screen_access_regulation_common_info.rule.collection, 
+      &self.user_screen_access_regulation_common_info.rule,
     ).map_err(|error| 
       error
         .change_context("loading all user screen access regulation rules from the database in normalized form")
@@ -241,7 +183,7 @@ impl StateSpecification {
     )?;
     
     let state = database.find_one_collection_item(
-      &self.collection, 
+      &self.singleton_collection, 
       &matcher, 
       self,
     ).map_err(|error| 

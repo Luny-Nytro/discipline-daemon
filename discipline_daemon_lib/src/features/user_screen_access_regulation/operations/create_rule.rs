@@ -50,7 +50,7 @@ impl IsOperation for Operation {
     let rule = self.rule_creator.create();
     if let Err(error) = daemon
       .database_specification
-      .user_screen_access_regulation
+      .user_screen_access_regulator()
       .add_rule(
         &daemon.database_connection, 
         &self.user_id, 

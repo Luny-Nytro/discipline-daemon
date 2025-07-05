@@ -41,7 +41,7 @@ impl IsOperation for Operation {
 
     if let Err(error) = daemon
       .database_specification
-      .user
+      .user_module()
       .change_user_screen_access_is_applying_enabled(
         &daemon.database_connection,
         &self.user_id,

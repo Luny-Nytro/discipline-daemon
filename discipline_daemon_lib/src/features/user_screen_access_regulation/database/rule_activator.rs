@@ -1,7 +1,7 @@
 use super::{
   RuleActivatorVariant, GenericError, Field, CompoundTypeDefiner,
-  CompoundValueDeserializer, CompoundTypeSerializer, CompoundValueDeserializerContext, 
-  RuleActivator, CompoundTypeSerializerContext,
+  CompoundValueDeserializer, CompoundValueSerializer, CompoundValueDeserializerContext, 
+  RuleActivator, CompoundValueSerializerContext,
   IsCompoundType, TimeRangeSpecification, WeekdayRangeSpecification,
 };
 
@@ -38,13 +38,13 @@ impl RuleActivatorSpecification {
   }
 }
 
-impl CompoundTypeSerializer for RuleActivatorSpecification {
-  type CompoundType = RuleActivator;
+impl CompoundValueSerializer for RuleActivatorSpecification {
+  type CompoundValue = RuleActivator;
 
   fn serialize_into(
     &self, 
-    value: &Self::CompoundType,
-    context: &mut CompoundTypeSerializerContext, 
+    value: &Self::CompoundValue,
+    context: &mut CompoundValueSerializerContext, 
   ) -> 
     Result<(), GenericError>
   {
@@ -69,9 +69,9 @@ impl CompoundTypeSerializer for RuleActivatorSpecification {
 }
 
 impl CompoundValueDeserializer for RuleActivatorSpecification {
-  type Output = RuleActivator;
+  type CompoundValue = RuleActivator;
 
-  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::Output, GenericError> {
+  fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
     let variant = context.deserializable_scalar(&self.variant)?;
 
     Ok(match variant {
