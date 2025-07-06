@@ -7,13 +7,13 @@ pub trait CompoundValueDeserializer {
 
   fn deserialize(
     &self, 
-    context: &CompoundValueDeserializerContext,
+    context: &DeserializeCompoundValueContext,
   ) -> Result<Self::CompoundValue, GenericError>;
 }
 
-pub struct CompoundValueDeserializerContext<'a>(&'a Row<'a>);
+pub struct DeserializeCompoundValueContext<'a>(&'a Row<'a>);
 
-impl<'a> CompoundValueDeserializerContext<'a> {
+impl<'a> DeserializeCompoundValueContext<'a> {
   fn retrieve_column_value(&self, field_identifier: &String) -> Result<ScalarValue, GenericError> {
     self.0.get_ref(field_identifier.as_str())
       .map_err(|error| {
@@ -61,5 +61,5 @@ pub(super) fn deserialize_compound_value<Deserializer>(
 where 
   Deserializer: CompoundValueDeserializer
 {
-  CompoundValueDeserializerContext(row).deserialize_compound(deserializer)
+  DeserializeCompoundValueContext(row).deserialize_compound(deserializer)
 }

@@ -1,3 +1,8 @@
 - create the api server
 - create route handlers in the server
 - limit the server request payload size
+- add the ability to blur images matched by condition
+- add the ability to block images matched by condition
+- add the ability to match images using NSFW image classifiers
+- add the ability to match images using anime/cartoon/games image classifiers
+- add the ability to make videos less enjoyable by adding annoying noises, bluring the video, or other stuff.

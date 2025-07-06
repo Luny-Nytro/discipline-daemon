@@ -145,6 +145,46 @@ impl<'a> CompoundValueSerializer for WeekdayRangeSerializer<'a> {
   }
 }
 
+pub struct WeekdayRangeIntegration {}
+
+impl WeekdayRangeIntegration {
+  pub fn write_full_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &WeekdayRange,
+    from_field: &String,
+    till_field: &String,
+  ) {
+    let (from, till) = new_value.as_numbers();
+
+    updates.write_update(from_field, &from);
+    updates.write_update(till_field, &till);
+  }
+}
+
+pub fn serialize_weekday_range(
+  context: &mut SerializeCompoundValueContext,
+  value: &WeekdayRange,
+  from_field: &String,
+  till_field: &String,
+) {
+  let (from, till) = value.as_numbers();
+  context.write_serializable_scalar_value(from_field, &from);
+  context.write_serializable_scalar_value(till_field, &till);
+}
+
+pub fn deserialize_weekday_range(
+  context: &mut DeserializeCompoundValueContext,
+  from: &String,
+  till: &String,
+) 
+  -> Result<WeekdayRange, GenericError>
+{
+  WeekdayRange::from_numbers(
+    context.deserializable_scalar(from)?,
+    context.deserializable_scalar(till)?,
+  )
+}
+
 pub struct TimeRangeSerializer<'a> {
   from_field: &'a String,
   till_field: &'a String,
@@ -197,13 +237,53 @@ impl<'a> CompoundValueDeserializer for TimeRangeDeserializer<'a> {
 
   fn deserialize(
     &self, 
-    context: &CompoundValueDeserializerContext,
+    context: &DeserializeCompoundValueContext,
   ) -> Result<Self::CompoundValue, GenericError> {
     TimeRange::from_numbers(
       context.deserializable_scalar(self.from_field_identifier)?, 
       context.deserializable_scalar(self.till_field_identifier)?,
     )
   }
+}
+
+pub struct TimeRangeIntegration {}
+
+impl TimeRangeIntegration {
+  pub fn write_full_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &TimeRange,
+    from_field: &String,
+    till_field: &String,
+  ) {
+    let (from, till) = new_value.as_numbers();
+
+    updates.write_update(from_field, &from);
+    updates.write_update(till_field, &till);
+  }
+}
+
+pub fn serialize_time_range(
+  context: &mut SerializeCompoundValueContext,
+  value: &TimeRange,
+  from_field: &String,
+  till_field: &String,
+) {
+  let (from, till) = value.as_numbers();
+  context.write_serializable_scalar_value(from_field, &from);
+  context.write_serializable_scalar_value(till_field, &till);
+}
+
+pub fn deserialize_time_range(
+  context: &mut DeserializeCompoundValueContext,
+  from: &String,
+  till: &String,
+) 
+  -> Result<TimeRange, GenericError>
+{
+  TimeRange::from_numbers(
+    context.deserializable_scalar(from)?,
+    context.deserializable_scalar(till)?,
+  )
 }
 
 pub struct CountdownTimerSerializer<'a> {
@@ -265,7 +345,7 @@ impl<'a> CompoundValueDeserializer for CountdownTimerDeserializer<'a> {
 
   fn deserialize(
     &self, 
-    context: &CompoundValueDeserializerContext,
+    context: &DeserializeCompoundValueContext,
   ) -> Result<Self::CompoundValue, GenericError> {
     Ok(CountdownTimer::new_with_state(
       context.deserializable_scalar(self.duration_field_identifier)?, 
@@ -273,4 +353,77 @@ impl<'a> CompoundValueDeserializer for CountdownTimerDeserializer<'a> {
       context.deserializable_scalar(self.previous_synchronization_time_field_identifier)?,
     ))
   }
+}
+
+pub struct CountdownTimerIntegration;
+
+impl CountdownTimerIntegration {
+  pub fn write_full_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &CountdownTimer,
+    duration_field: &String,
+    remaining_duration_field: &String,
+    previous_synchronization_time_field: &String,
+  ) {
+    updates.write_update(duration_field, &new_value.duration());
+    updates.write_update(remaining_duration_field, &new_value.remaining_duration());
+    updates.write_update(previous_synchronization_time_field, &new_value.previous_synchronization_time());
+  }
+  
+  pub fn write_duration_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &Duration,
+    duration_field: &String,
+    remaining_duration_field: &String,
+    previous_synchronization_time_field: &String,
+  ) {
+    updates.write_update(duration_field, new_value);
+  }
+  
+  pub fn write_remaining_duration_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &Duration,
+    duration_field: &String,
+    remaining_duration_field: &String,
+    previous_synchronization_time_field: &String,
+  ) {
+    updates.write_update(remaining_duration_field, new_value);
+  }
+  
+  pub fn write_previous_synchrinization_time_update(
+    updates: &mut CollectionItemUpdateDraft,
+    new_value: &DateTime,
+    duration_field: &String,
+    remaining_duration_field: &String,
+    previous_synchronization_time_field: &String,
+  ) {
+    updates.write_update(previous_synchronization_time_field, new_value);
+  }
+}
+
+pub fn serialize_countdown_timer(
+  context: &mut SerializeCompoundValueContext,
+  value: &CountdownTimer,
+  duration_field: &String,
+  remaining_duration_field: &String,
+  previous_synchronization_time_field: &String,
+) {
+  context.write_serializable_scalar_value(duration_field, &value.duration());
+  context.write_serializable_scalar_value(remaining_duration_field, &value.remaining_duration());
+  context.write_serializable_scalar_value(previous_synchronization_time_field, &value.previous_synchronization_time());
+}
+
+pub fn deserialize_countdown_timer(
+  context: &mut DeserializeCompoundValueContext,
+  duration_field: &String,
+  remaining_duration_field: &String,
+  previous_synchronization_time_field: &String,
+)
+  -> Result<CountdownTimer, GenericError>
+{
+  Ok(CountdownTimer::new_with_state(
+    context.deserializable_scalar(duration_field)?, 
+    context.deserializable_scalar(remaining_duration_field)?, 
+    context.deserializable_scalar(previous_synchronization_time_field)?,
+  ))
 }

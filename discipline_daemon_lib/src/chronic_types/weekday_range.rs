@@ -71,6 +71,7 @@ impl WeekdayRange {
     Ok(WeekdayRange { from, till })
   }
 
+  // TODO: Rename to "unpack"
   pub fn as_numbers(&self) -> (u32, u32) {
     (self.from, self.till)
   }

@@ -84,6 +84,10 @@ pub struct PolicyEnabler {
 }
 
 impl PolicyEnabler {
+  pub fn new(duration: Duration) -> Self {
+    todo!()
+  }
+
   pub fn is_effective(&mut self, now: DateTime) -> bool {
     self.timer.synchronize(now);
     self.timer.is_finished()
@@ -91,6 +95,16 @@ impl PolicyEnabler {
 
   pub fn synchronize(&mut self, now: DateTime) {
     self.timer.synchronize(now);
+  }
+
+  pub fn pack(timer: CountdownTimer) -> Self {
+    Self {
+      timer
+    }
+  }
+
+  pub fn unpack_ref(&self) -> &CountdownTimer {
+    &self.timer
   }
 }
 
@@ -105,22 +119,38 @@ pub struct Policy {
 impl Policy {
   pub const MAX_RULES: usize = 10;
 
+  pub fn pack(
+    id: Uuid,
+    name: PolicyName,
+    rules: Vec<Rule>,
+    enabler: PolicyEnabler
+  ) 
+    -> Self 
+  {
+    Self { id, name, rules, enabler }
+  }
+  
+  pub fn id(&self) -> &Uuid {
+    &self.id
+  }
+  pub fn name(&self) -> &PolicyName {
+    &self.name
+  }
+  pub fn enabler(&self) -> &PolicyEnabler {
+    &self.enabler
+  }
   pub fn is_enabled(&mut self, now: DateTime) -> bool {
     self.enabler.is_effective(now)
   }
-
   pub fn there_is_rule_with_id(&self, rule_id: &Uuid) -> bool {
     self.rules.iter().any(|rule| rule.id == *rule_id)
   }
-
   pub fn find_rule_by_id(&self, rule_id: &Uuid) -> Option<&Rule> {
     self.rules.iter().find(|rule| rule.id == *rule_id)
   }
-
   pub fn find_rule_by_id_mut(&mut self, rule_id: &Uuid) -> Option<&mut Rule> {
     self.rules.iter_mut().find(|rule| rule.id == *rule_id)
   }
-
   pub fn remove_rule_by_id(&mut self, rule_id: &Uuid) {
     if let Some(index) = self
       .rules

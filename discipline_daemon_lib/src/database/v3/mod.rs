@@ -1,4 +1,4 @@
-mod screen_access;
+// mod screen_access;
 
 mod scalar_value_serialization;
 use scalar_value_serialization::*;
@@ -12,7 +12,12 @@ use compound_value_serialization::*;
 mod compound_value_deserialization;
 use compound_value_deserialization::*;
 
-mod chronic_types;
+mod compound_value_updates;
+use compound_value_updates::CollectionItemUpdateDraft;
+
+mod database;
+use database::Database;
+
 use crate::Weekday;
 
 mod implementation;
@@ -180,18 +185,18 @@ pub fn generate_code_delete_collection_item_matching_3_fields(
   code.push_str(";");
 }
 
-pub struct CollectionItemUpdates {
-  code: String,
-}
+// pub struct CollectionItemUpdates {
+//   code: String,
+// }
 
-impl CollectionItemUpdates {
-  pub fn update(&mut self, field: &String, value: &impl SerializableScalarValue) {
-    if self.code.len() > 0 {
-      self.code.push_str(", ");
-    }
+// impl CollectionItemUpdates {
+//   pub fn update(&mut self, field: &String, value: &impl SerializableScalarValue) {
+//     if self.code.len() > 0 {
+//       self.code.push_str(", ");
+//     }
 
-    self.code.push_str(field);
-    self.code.push_str(" = ");
-    value.serialize(&mut self.code);
-  }
-}
+//     self.code.push_str(field);
+//     self.code.push_str(" = ");
+//     value.serialize(&mut self.code);
+//   }
+// }
