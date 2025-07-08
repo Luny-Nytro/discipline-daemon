@@ -140,8 +140,8 @@ impl<'a> CompoundValueSerializer for WeekdayRangeSerializer<'a> {
     value: &Self::CompoundValue,
     context: &mut SerializeCompoundValueContext, 
   ) {
-    context.write_serializable_scalar_value(self.from_field, &value.from());
-    context.write_serializable_scalar_value(self.till_field, &value.till());
+    context.write_scalar(self.from_field, &value.from());
+    context.write_scalar(self.till_field, &value.till());
   }
 }
 
@@ -156,8 +156,8 @@ impl WeekdayRangeIntegration {
   ) {
     let (from, till) = new_value.as_numbers();
 
-    updates.write_update(from_field, &from);
-    updates.write_update(till_field, &till);
+    updates.write_scalar(from_field, &from);
+    updates.write_scalar(till_field, &till);
   }
 }
 
@@ -168,8 +168,8 @@ pub fn serialize_weekday_range(
   till_field: &String,
 ) {
   let (from, till) = value.as_numbers();
-  context.write_serializable_scalar_value(from_field, &from);
-  context.write_serializable_scalar_value(till_field, &till);
+  context.write_scalar(from_field, &from);
+  context.write_scalar(till_field, &till);
 }
 
 pub fn deserialize_weekday_range(
@@ -179,7 +179,7 @@ pub fn deserialize_weekday_range(
 ) 
   -> Result<WeekdayRange, GenericError>
 {
-  WeekdayRange::from_numbers(
+  WeekdayRange::from_timestamps(
     context.deserializable_scalar(from)?,
     context.deserializable_scalar(till)?,
   )
@@ -210,8 +210,8 @@ impl<'a> CompoundValueSerializer for TimeRangeSerializer<'a> {
     value: &Self::CompoundValue,
     context: &mut SerializeCompoundValueContext, 
   ) {
-    context.write_serializable_scalar_value(self.from_field, &value.from());
-    context.write_serializable_scalar_value(self.till_field, &value.till());
+    context.write_scalar(self.from_field, &value.from());
+    context.write_scalar(self.till_field, &value.till());
   }
 }
 
@@ -239,7 +239,7 @@ impl<'a> CompoundValueDeserializer for TimeRangeDeserializer<'a> {
     &self, 
     context: &DeserializeCompoundValueContext,
   ) -> Result<Self::CompoundValue, GenericError> {
-    TimeRange::from_numbers(
+    TimeRange::from_timestamps(
       context.deserializable_scalar(self.from_field_identifier)?, 
       context.deserializable_scalar(self.till_field_identifier)?,
     )
@@ -248,7 +248,24 @@ impl<'a> CompoundValueDeserializer for TimeRangeDeserializer<'a> {
 
 pub struct TimeRangeIntegration {}
 
+
+pub struct TimeRangeFields<'a> {
+  pub from: &'a String,
+  pub till: &'a String,
+}
+
 impl TimeRangeIntegration {
+  pub fn write_full_update_given_fields(
+    updates: &mut CollectionItemUpdateDraft,
+    fields: TimeRangeFields,
+    new_value: &TimeRange,
+  ) {
+    let (from, till) = new_value.as_numbers();
+
+    updates.write_scalar(fields.from, &from);
+    updates.write_scalar(fields.till, &till);
+  }
+
   pub fn write_full_update(
     updates: &mut CollectionItemUpdateDraft,
     new_value: &TimeRange,
@@ -257,8 +274,8 @@ impl TimeRangeIntegration {
   ) {
     let (from, till) = new_value.as_numbers();
 
-    updates.write_update(from_field, &from);
-    updates.write_update(till_field, &till);
+    updates.write_scalar(from_field, &from);
+    updates.write_scalar(till_field, &till);
   }
 }
 
@@ -269,8 +286,8 @@ pub fn serialize_time_range(
   till_field: &String,
 ) {
   let (from, till) = value.as_numbers();
-  context.write_serializable_scalar_value(from_field, &from);
-  context.write_serializable_scalar_value(till_field, &till);
+  context.write_scalar(from_field, &from);
+  context.write_scalar(till_field, &till);
 }
 
 pub fn deserialize_time_range(
@@ -280,7 +297,7 @@ pub fn deserialize_time_range(
 ) 
   -> Result<TimeRange, GenericError>
 {
-  TimeRange::from_numbers(
+  TimeRange::from_timestamps(
     context.deserializable_scalar(from)?,
     context.deserializable_scalar(till)?,
   )
@@ -314,9 +331,9 @@ impl<'a> CompoundValueSerializer for CountdownTimerSerializer<'a> {
     value: &Self::CompoundValue,
     context: &mut SerializeCompoundValueContext, 
   ) {
-    context.write_serializable_scalar_value(self.duration_field_identifier, &value.duration());
-    context.write_serializable_scalar_value(self.remaining_duration_field_identifier, &value.remaining_duration());
-    context.write_serializable_scalar_value(self.previous_synchronization_time_field_identifier, &value.previous_synchronization_time());
+    context.write_scalar(self.duration_field_identifier, &value.duration());
+    context.write_scalar(self.remaining_duration_field_identifier, &value.remaining_duration());
+    context.write_scalar(self.previous_synchronization_time_field_identifier, &value.previous_synchronization_time());
   }
 }
 
@@ -365,9 +382,9 @@ impl CountdownTimerIntegration {
     remaining_duration_field: &String,
     previous_synchronization_time_field: &String,
   ) {
-    updates.write_update(duration_field, &new_value.duration());
-    updates.write_update(remaining_duration_field, &new_value.remaining_duration());
-    updates.write_update(previous_synchronization_time_field, &new_value.previous_synchronization_time());
+    updates.write_scalar(duration_field, &new_value.duration());
+    updates.write_scalar(remaining_duration_field, &new_value.remaining_duration());
+    updates.write_scalar(previous_synchronization_time_field, &new_value.previous_synchronization_time());
   }
   
   pub fn write_duration_update(
@@ -377,7 +394,7 @@ impl CountdownTimerIntegration {
     remaining_duration_field: &String,
     previous_synchronization_time_field: &String,
   ) {
-    updates.write_update(duration_field, new_value);
+    updates.write_scalar(duration_field, new_value);
   }
   
   pub fn write_remaining_duration_update(
@@ -387,7 +404,7 @@ impl CountdownTimerIntegration {
     remaining_duration_field: &String,
     previous_synchronization_time_field: &String,
   ) {
-    updates.write_update(remaining_duration_field, new_value);
+    updates.write_scalar(remaining_duration_field, new_value);
   }
   
   pub fn write_previous_synchrinization_time_update(
@@ -397,7 +414,7 @@ impl CountdownTimerIntegration {
     remaining_duration_field: &String,
     previous_synchronization_time_field: &String,
   ) {
-    updates.write_update(previous_synchronization_time_field, new_value);
+    updates.write_scalar(previous_synchronization_time_field, new_value);
   }
 }
 
@@ -408,9 +425,9 @@ pub fn serialize_countdown_timer(
   remaining_duration_field: &String,
   previous_synchronization_time_field: &String,
 ) {
-  context.write_serializable_scalar_value(duration_field, &value.duration());
-  context.write_serializable_scalar_value(remaining_duration_field, &value.remaining_duration());
-  context.write_serializable_scalar_value(previous_synchronization_time_field, &value.previous_synchronization_time());
+  context.write_scalar(duration_field, &value.duration());
+  context.write_scalar(remaining_duration_field, &value.remaining_duration());
+  context.write_scalar(previous_synchronization_time_field, &value.previous_synchronization_time());
 }
 
 pub fn deserialize_countdown_timer(

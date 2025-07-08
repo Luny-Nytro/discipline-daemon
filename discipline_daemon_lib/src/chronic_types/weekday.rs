@@ -115,6 +115,10 @@ impl Weekday {
       lhs - rhs
     }
   }
+
+  pub fn to_number(&self) -> u8 {
+    todo!()
+  }
 }
 
 impl fmt::Display for Weekday {

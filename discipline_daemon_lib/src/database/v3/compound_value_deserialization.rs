@@ -27,6 +27,16 @@ impl<'a> DeserializeCompoundValueContext<'a> {
       )
   }
 
+  pub fn read_i64(&self, field_identifier: &String) -> Result<i64, GenericError> {
+    self.retrieve_column_value(field_identifier)?.as_i64()
+  }
+  pub fn read_string_as_bytes(&self, field_identifier: &String) -> Result<&[u8], GenericError> {
+    todo!()
+  }
+  pub fn read_string(&self, field_identifier: &String) -> Result<String, GenericError> {
+    self.retrieve_column_value(field_identifier)?.as_string()
+  }
+
   // TODO: rename to deserializable_scalar_field
   pub fn deserializable_scalar<Value>(
     &self, 

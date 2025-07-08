@@ -11,12 +11,12 @@ pub trait CompoundValueSerializer {
 }
 
 pub struct SerializeCompoundValueContext {
-  column_names: String,
-  column_values: String,
+  pub column_names: String,
+  pub column_values: String,
 }
 
 impl SerializeCompoundValueContext {
-  fn new() -> Self {
+  pub fn new() -> Self {
     Self {
       column_names: String::new(),
       column_values: String::new(),
@@ -27,7 +27,7 @@ impl SerializeCompoundValueContext {
     self.column_names.len() > 0
   }
 
-  fn write_separating_commas(&mut self) {
+  pub fn write_separating_commas(&mut self) {
     if self.did_write_some_columns() {
       self.column_names.push_str(", ");
       self.column_values.push_str(", ");
@@ -43,68 +43,88 @@ impl SerializeCompoundValueContext {
   pub fn write_boolean(&mut self, field: &String, boolean: bool) {
     self.write_separating_commas();
     self.column_names.push_str(field);
-    self.column_values.push_str(if boolean { 
-      "TRUE" 
-    } else { 
-      "FALSE" 
-    });
+    self.column_values.push_str(if boolean { "TRUE" } else { "FALSE" });
   }
 
-  // fn push_i8(&mut self, column_info: &Column, number: i8) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_i8(&mut self, field: &String, number: i8) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_u8(&mut self, column_info: &Column, number: u8) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_u8(&mut self, field: &String, number: u8) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_i16(&mut self, column_info: &Column, number: i16) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_i16(&mut self, field: &String, number: i16) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_u16(&mut self, column_info: &Column, number: u16) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_u16(&mut self, field: &String, number: u16) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_i32(&mut self, column_info: &Column, number: i32) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_i32(&mut self, field: &String, number: i32) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_u32(&mut self, column_info: &Column, number: u32) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_u32(&mut self, field: &String, number: u32) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_i64(&mut self, column_info: &Column, number: i64) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_i64(&mut self, field: &String, number: i64) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_u64(&mut self, column_info: &Column, number: u64) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_u64(&mut self, field: &String, number: u64) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_f32(&mut self, column_info: &Column, number: f32) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_f32(&mut self, field: &String, number: f32) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_f64(&mut self, column_info: &Column, number: f64) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_f64(&mut self, field: &String, number: f64) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_isize(&mut self, column_info: &Column, number: isize) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
+  pub fn write_isize(&mut self, field: &String, number: isize) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
 
-  // fn push_usize(&mut self, column_info: &Column, number: usize) {
-  //   self.write_column(column_info, &number.to_string())
-  // }
-  
+  pub fn write_usize(&mut self, field: &String, number: usize) {
+    self.write_separating_commas();
+    self.column_names.push_str(field);
+    self.column_values.push_str(&number.to_string());
+  }
+
   pub fn write_string(&mut self, field: &String, string: &String) {
     self.write_separating_commas();
     self.column_names.push_str(field);
     escape_string_into(string, &mut self.column_values);
   }
 
-  pub fn write_serializable_scalar_value<Value: SerializableScalarValue>(
+  pub fn write_scalar<Value: SerializableScalarValue>(
     &mut self, 
     field: &String, 
     value: &Value,

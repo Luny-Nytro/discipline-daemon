@@ -51,7 +51,7 @@ impl TimeRange {
     }
   }
 
-  pub fn from_numbers(from: u32, till: u32) -> Result<TimeRange, GenericError> {    
+  pub fn from_timestamps(from: u32, till: u32) -> Result<TimeRange, GenericError> {    
     if from > FROM_MAX_VALUE {
       return Err(
         GenericError::new("creating a TimeRange from raw numbers")
@@ -206,6 +206,14 @@ impl TimeRange {
     clone.make_narrower_or_err(new_from, new_till)?;
     Ok(clone)
   }
+
+  pub fn from_as_timestamp(&self) -> u32 {
+    self.from
+  }
+
+  pub fn till_as_timestamp(&self) -> u32 {
+    self.till
+  }
 }
 
 pub mod database {
@@ -295,7 +303,7 @@ pub mod database {
           .change_context("deserialize a TimeRange")
       )?;
 
-      TimeRange::from_numbers(from, till).map_err(|error|
+      TimeRange::from_timestamps(from, till).map_err(|error|
         error.change_context("deserialize a TimeRange")
       )
     }

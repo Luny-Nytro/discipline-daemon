@@ -43,7 +43,7 @@ impl WeekdayRange {
     }
   }
 
-  pub fn from_numbers(from: u32, till: u32) -> Result<WeekdayRange, GenericError> {    
+  pub fn from_timestamps(from: u32, till: u32) -> Result<WeekdayRange, GenericError> {    
     if from > FROM_MAX_VALUE {
       return Err(GenericError::new("Failed to create WeekdayRange: 'from' is not in valid range")
         .add_attachment("from", from.to_string())
@@ -187,6 +187,14 @@ impl WeekdayRange {
     clone.make_narrower_or_err(new_from, new_till)?;
     Ok(clone)
   }
+
+  pub fn from_as_timestamp(&self) -> u32 {
+    self.from
+  }
+
+  pub fn till_as_timestamp(&self) -> u32 {
+    self.till
+  }
 }
 
 pub mod database {
@@ -276,7 +284,7 @@ pub mod database {
           .change_context("deserislizing a WeekdayRange")
       )?;
 
-      WeekdayRange::from_numbers(from, till).map_err(|error|
+      WeekdayRange::from_timestamps(from, till).map_err(|error|
         error.change_context("deserislizing a WeekdayRange")
       )
     }

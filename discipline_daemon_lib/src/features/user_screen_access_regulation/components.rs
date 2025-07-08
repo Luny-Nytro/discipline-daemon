@@ -41,6 +41,21 @@ pub struct Rule {
 }
 
 impl Rule {
+  pub fn new(id: Uuid, activator: RuleActivator) -> Self {
+    Self {
+      id,
+      activator,
+    }
+  }
+  
+  pub fn id(&self) -> &Uuid {
+    &self.id
+  }
+
+  pub fn activator(&self) -> &RuleActivator {
+    &self.activator
+  }
+  
   pub fn is_effective(&mut self, now: DateTime) -> bool {
     self.activator.is_effective(now)
   }
