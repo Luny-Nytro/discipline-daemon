@@ -199,6 +199,14 @@ impl Regulator {
     }
   }
   
+  pub fn is_applying_enabled(&self) -> bool {
+    self.is_applying_enabled
+  }
+
+  pub fn is_user_screen_access_blocked(&self) -> bool {
+    self.is_user_screen_access_blocked
+  }
+  
   fn allow_user_access(
     &mut self,
     username: &OperatingSystemUsername,

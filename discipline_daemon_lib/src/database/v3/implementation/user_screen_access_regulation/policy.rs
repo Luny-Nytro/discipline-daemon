@@ -42,33 +42,63 @@ fn serialize_policy(
 ) {
   context.write_scalar(&fields.id, policy.id());
   context.write_scalar(&fields.name, policy.name());
+  context.write_scalar(&fields.user_id, user_id);
   context.write_scalar(&fields.enabler_countdown_timer_duration, &policy.enabler().unpack_ref().duration());
   context.write_scalar(&fields.enabler_countdown_timer_remaining_duration, &policy.enabler().unpack_ref().remaining_duration());
   context.write_scalar(&fields.enabler_countdown_timer_previous_synchronization_time, &policy.enabler().unpack_ref().previous_synchronization_time());
+}
+
+
+#[derive(Debug, Clone)]
+pub struct NormalizedPolicy {
+  pub(super) id: Uuid,
+  pub(super) name: PolicyName,
+  pub(super) user_id: Uuid,
+  pub(super) enabler: PolicyEnabler,
+}
+
+impl NormalizedPolicy {
+  pub fn denormalize(
+    self, 
+    user_id: &Uuid,
+    normalized_rules: &Vec<NormalizedRule>,
+  ) -> Policy {
+    Policy::pack(
+      self.id,
+      self.name,
+      normalized_rules
+        .iter()
+        .filter(|rule| rule.user_id == *user_id && rule.policy_id == self.id)
+        .map(|rule| rule.clone().denormalize())
+        .collect(),
+      self.enabler,
+    )
+  }
 }
 
 fn deserialize_policy(
   context: &mut DeserializeCompoundValueContext,
   fields: &PolicyFields,
 )
-  -> Result<Policy, GenericError>
+  -> Result<NormalizedPolicy, GenericError>
 {
   let id = context.deserializable_scalar(&fields.id)?;
   let name = context.deserializable_scalar(&fields.name)?;
+  let user_id = context.deserializable_scalar(&fields.user_id)?;
   let enabler_duration = context.deserializable_scalar(&fields.enabler_countdown_timer_duration)?;
   let enabler_remaining_duration = context.deserializable_scalar(&fields.enabler_countdown_timer_remaining_duration)?;
   let enabler_previous_synchronization_time = context.deserializable_scalar(&fields.enabler_countdown_timer_previous_synchronization_time)?;
 
-  Ok(Policy::pack(
+  Ok(NormalizedPolicy {
     id, 
     name, 
-    Vec::new(), 
-    PolicyEnabler::pack(CountdownTimer::new_with_state(
+    user_id,
+    enabler: PolicyEnabler::pack(CountdownTimer::new_with_state(
       enabler_duration, 
       enabler_remaining_duration, 
       enabler_previous_synchronization_time,
     )),
-  ))
+  })
 }
 
 pub struct PolicyUpdateDraft<'a> {

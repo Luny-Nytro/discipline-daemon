@@ -101,35 +101,6 @@ impl<'a> CompoundValueSerializer for UserSerializer<'a> {
   }
 }
 
-pub struct NormalizedUser {
-  id: Uuid,
-  name: UserName,
-  operating_system_user_id: OperatingSystemUserId,
-  operating_system_username: OperatingSystemUsername,
-  operating_system_password: OperatingSystemPassword,
-  screen_access_regulator: user_screen_access_regulation::database::NormalizedRegulator
-}
-
-impl NormalizedUser {
-  pub fn denormalize(
-    self, 
-    user_screen_access_regulation_policies: &Vec<user_screen_access_regulation::database::NormalizedPolicy>,
-    user_screen_access_regulation_rules: &Vec<user_screen_access_regulation::database::NormalizedRule>,
-  ) -> User {
-    User {
-      name: self.name,
-      operating_system_user_id: self.operating_system_user_id,
-      operating_system_username: self.operating_system_username,
-      operating_system_password: self.operating_system_password,
-      screen_access_regulator: self.screen_access_regulator.denormalize(
-        &self.id,
-        user_screen_access_regulation_policies,
-        user_screen_access_regulation_rules,
-      ),
-      id: self.id,
-    }
-  }
-}
 
 pub struct UserDeserializer<'a> {
   user_specification: &'a UserSpecification

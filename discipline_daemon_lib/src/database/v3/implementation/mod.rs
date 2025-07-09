@@ -5,3 +5,6 @@ mod core;
 mod chronic;
 mod user_screen_access_regulation;
 mod common;
+
+mod users;
+pub use users::UserCollection;

@@ -88,30 +88,3 @@ impl CompoundValueDeserializer for PolicySpecification {
     })
   }
 }
-
-#[derive(Debug, Clone)]
-pub struct NormalizedPolicy {
-  pub(super) id: Uuid,
-  pub(super) name: PolicyName,
-  pub(super) user_id: Uuid,
-  pub(super) enabler: PolicyEnabler,
-}
-
-impl NormalizedPolicy {
-  pub fn denormalize(
-    self, 
-    user_id: &Uuid,
-    normalized_rules: &Vec<NormalizedRule>,
-  ) -> Policy {
-    Policy {
-      id: self.id,
-      name: self.name,
-      rules: normalized_rules
-        .iter()
-        .filter(|rule| rule.user_id == *user_id && rule.policy_id == self.id)
-        .map(|rule| rule.clone().denormalize())
-        .collect(),
-      enabler: self.enabler,
-    }
-  }
-}

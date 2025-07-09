@@ -42,7 +42,22 @@ pub struct User {
 }
 
 impl User {
-  pub fn new() {
-    
+  pub fn id(&self) -> &Uuid {
+    &self.id
+  }
+  pub fn name(&self) -> &UserName {
+    &self.name
+  }
+  pub fn operating_system_user_id(&self) -> &OperatingSystemUserId {
+    &self.operating_system_user_id
+  }
+  pub fn operating_system_user_name(&self) -> &OperatingSystemUsername {
+    &self.operating_system_username
+  }
+  pub fn operating_system_user_password(&self) -> &OperatingSystemPassword {
+    &self.operating_system_password
+  }
+  pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulator {
+    &self.screen_access_regulator
   }
 }

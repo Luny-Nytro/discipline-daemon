@@ -32,6 +32,23 @@ impl RuleFields {
   }
 }
 
+#[derive(Debug, Clone)]
+pub struct NormalizedRule {
+  pub(super) id: Uuid,
+  pub(super) user_id: Uuid,
+  pub(super) policy_id: Uuid,
+  pub(super) activator: RuleActivator,
+}
+
+impl NormalizedRule {
+  pub fn denormalize(self) -> Rule {
+    Rule {
+      id: self.id,
+      activator: self.activator,
+    }
+  }
+}
+
 fn serialize_rule(
   context: &mut SerializeCompoundValueContext,
   rule: &Rule,
@@ -67,9 +84,11 @@ fn deserialize_rule(
   context: &mut DeserializeCompoundValueContext,
   fields: &RuleFields,
 ) 
-  -> Result<Rule, GenericError> 
+  -> Result<NormalizedRule, GenericError> 
 {
   let id = context.deserializable_scalar(&fields.id)?;
+  let user_id = context.deserializable_scalar(&fields.user_id)?;
+  let policy_id = context.deserializable_scalar(&fields.policy_id)?;
   let activator_type = context.deserializable_scalar(&fields.activator_enum_type)?;
   let activator = match activator_type {
     RuleActivatorType::AllTheTime => {
@@ -93,7 +112,12 @@ fn deserialize_rule(
     }
   };
 
-  Ok(Rule::new(id, activator))
+  Ok(NormalizedRule {
+    id,
+    user_id,
+    activator,
+    policy_id,
+  })
 }
 
 pub struct RuleCollection<'a> {

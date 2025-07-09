@@ -1,11 +1,11 @@
 use std::path::PathBuf;
-use super::*;
+use super::implementation::*;
 use crate::*;
 
 pub struct Database {
   // pub(super) connection: rusqlite::Connection,
-  // pub(super) collections: Vec<Collection>,
-  // pub(super) singleton_collection: Collection,
+  pub user: UserCollection,
+
 }
 
 impl Database {

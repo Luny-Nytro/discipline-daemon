@@ -8,15 +8,15 @@ pub enum RuleActivatorType {
   InWeekdayRange,
 }
 
-impl RuleActivatorType {
-  pub fn to_number(&self) -> u8 {
-    todo!()
-  }
+// impl RuleActivatorType {
+//   pub fn to_number(&self) -> u8 {
+//     todo!()
+//   }
 
-  pub fn from_number(number: u8) -> Result<Self, GenericError> {
-    todo!()
-  }
-}
+//   pub fn from_number(number: u8) -> Result<Self, GenericError> {
+//     todo!()
+//   }
+// }
 
 impl SerializableScalarValue for RuleActivatorType {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {

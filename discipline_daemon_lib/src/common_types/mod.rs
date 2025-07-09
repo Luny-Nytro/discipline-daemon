@@ -1,4 +1,3 @@
-pub use crate::Uuid;
 
 pub mod operating_system_user_id;
 pub use operating_system_user_id::OperatingSystemUserId;
