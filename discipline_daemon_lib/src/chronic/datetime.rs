@@ -178,52 +178,52 @@ impl<'de> Deserialize<'de> for DateTime {
   }
 }
 
-pub mod database {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::DateTime;
+// pub mod database {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::DateTime;
 
-  // pub struct Adapter;
+//   // pub struct Adapter;
   
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
+//   // impl Adapter {
+//   //   pub fn new() -> Self {
+//   //     Self {}
+//   //   }
+//   // }
 
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = DateTime;
+//   // impl ScalarTypeAdapter for Adapter {
+//   //   type Type = DateTime;
 
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.write_i64(self.timestamp());    
-  //   }
+//   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
+//   //     context.write_i64(self.timestamp());    
+//   //   }
 
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let timestamp = value.as_i64().map_err(|error|
-  //       error.change_context("Failed to create a DateTime from ColumnValue: ColumnValue is not a i64")
-  //     )?;
+//   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
+//   //     let timestamp = value.as_i64().map_err(|error|
+//   //       error.change_context("Failed to create a DateTime from ColumnValue: ColumnValue is not a i64")
+//   //     )?;
 
-  //     DateTime::from_timestamp(timestamp).ok_or_else(|| 
-  //       GenericError::new("Failed to create a DateTime from an i64 ColumnValue: Failed to create a DateTime from timestamp")
-  //         .attach_info("timestamp", timestamp.to_string())
-  //     )  
-  //   }
-  // }
+//   //     DateTime::from_timestamp(timestamp).ok_or_else(|| 
+//   //       GenericError::new("Failed to create a DateTime from an i64 ColumnValue: Failed to create a DateTime from timestamp")
+//   //         .attach_info("timestamp", timestamp.to_string())
+//   //     )  
+//   //   }
+//   // }
 
-  impl IntoScalarValue for DateTime {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      self.timestamp()
-    }
-  }
+//   impl IntoScalarValue for DateTime {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       self.timestamp()
+//     }
+//   }
 
-  impl FromScalarValue for DateTime {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value
-        .as_i64()
-        .and_then(DateTime::from_timestamp_or_generic_error)
-        .map_err(|error|
-          error.change_context("deserializing a datetime")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for DateTime {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value
+//         .as_i64()
+//         .and_then(DateTime::from_timestamp_or_generic_error)
+//         .map_err(|error|
+//           error.change_context("deserializing a datetime")
+//         )
+//     }
+//   }
+// }

@@ -51,7 +51,7 @@ impl TimeRange {
     }
   }
 
-  pub fn from_numbers(from: u32, till: u32) -> Result<TimeRange, GenericError> {    
+  pub fn from_timestamps(from: u32, till: u32) -> Result<TimeRange, GenericError> {    
     if from > FROM_MAX_VALUE {
       return Err(
         GenericError::new("creating a TimeRange from raw numbers")
@@ -86,6 +86,7 @@ impl TimeRange {
     Ok(TimeRange { from, till })
   }
 
+  // TODO: Rename to "unpack"
   pub fn as_numbers(&self) -> (u32, u32) {
     (self.from, self.till)
   }
@@ -205,98 +206,106 @@ impl TimeRange {
     clone.make_narrower_or_err(new_from, new_till)?;
     Ok(clone)
   }
-}
 
-pub mod database {
-  use crate::database::*;
-  use crate::{GenericError, Time};
-  use super::TimeRange;
-
-  pub struct Specification {
-    from: Field,
-    till: Field,
+  pub fn from_as_timestamp(&self) -> u32 {
+    self.from
   }
 
-  impl IsCompoundType for Specification {
-    fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
-      Ok(Self {
-        from: definer.writable_required_field("From")?,
-        till: definer.writable_required_field("Till")?,
-      })
-    }
-
-    fn display_name(&self) -> &str {
-      "TimeRange"
-    }
-  }
-
-  impl Specification {
-    pub fn write_from(
-      &self, 
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &Time,
-    ) -> 
-      Result<(), GenericError> 
-    {
-      changes.write_scalar_field(&self.from, new_value)
-    }
-
-    pub fn write_till(
-      &self, 
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &Time,
-    ) -> 
-      Result<(), GenericError>
-    {
-      changes.write_scalar_field(&self.from, new_value)
-    }
-
-    pub fn write_range(
-      &self, 
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &TimeRange,
-    ) -> 
-      Result<(), GenericError>
-    {
-      changes.write_scalar_field(&self.from, &new_value.from)?;
-      changes.write_scalar_field(&self.till, &new_value.till)
-    }
-  }
-
-  impl<'a> CompoundValueSerializer for Specification {
-    type CompoundValue = TimeRange;
-
-    fn serialize_into(
-      &self, 
-      value: &Self::CompoundValue,
-      context: &mut CompoundValueSerializerContext, 
-    ) -> 
-      Result<(), GenericError>
-    {
-      context.serializable_scalar(&self.from, &value.from)?; 
-      context.serializable_scalar(&self.till, &value.till) 
-    }
-  }
-
-  impl<'a> CompoundValueDeserializer for Specification {
-    type CompoundValue = TimeRange;
-
-    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
-      let from = context.deserializable_scalar(&self.from).map_err(|error| 
-        error
-          .change_context("deserialize the 'from' field")
-          .change_context("deserialize a TimeRange")
-      )?;
-
-      let till = context.deserializable_scalar(&self.till).map_err(|error| 
-        error
-          .change_context("deserialize the 'till' field")
-          .change_context("deserialize a TimeRange")
-      )?;
-
-      TimeRange::from_numbers(from, till).map_err(|error|
-        error.change_context("deserialize a TimeRange")
-      )
-    }
+  pub fn till_as_timestamp(&self) -> u32 {
+    self.till
   }
 }
+
+// pub mod database {
+//   use crate::database::*;
+//   use crate::{GenericError, Time};
+//   use super::TimeRange;
+
+//   pub struct Specification {
+//     from: Field,
+//     till: Field,
+//   }
+
+//   impl IsCompoundType for Specification {
+//     fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+//       Ok(Self {
+//         from: definer.writable_required_field("From")?,
+//         till: definer.writable_required_field("Till")?,
+//       })
+//     }
+
+//     fn display_name(&self) -> &str {
+//       "TimeRange"
+//     }
+//   }
+
+//   impl Specification {
+//     pub fn write_from(
+//       &self, 
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &Time,
+//     ) -> 
+//       Result<(), GenericError> 
+//     {
+//       changes.write_scalar_field(&self.from, new_value)
+//     }
+
+//     pub fn write_till(
+//       &self, 
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &Time,
+//     ) -> 
+//       Result<(), GenericError>
+//     {
+//       changes.write_scalar_field(&self.from, new_value)
+//     }
+
+//     pub fn write_range(
+//       &self, 
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &TimeRange,
+//     ) -> 
+//       Result<(), GenericError>
+//     {
+//       changes.write_scalar_field(&self.from, &new_value.from)?;
+//       changes.write_scalar_field(&self.till, &new_value.till)
+//     }
+//   }
+
+//   impl<'a> CompoundValueSerializer for Specification {
+//     type CompoundValue = TimeRange;
+
+//     fn serialize_into(
+//       &self, 
+//       value: &Self::CompoundValue,
+//       context: &mut CompoundValueSerializerContext, 
+//     ) -> 
+//       Result<(), GenericError>
+//     {
+//       context.serializable_scalar(&self.from, &value.from)?; 
+//       context.serializable_scalar(&self.till, &value.till) 
+//     }
+//   }
+
+//   impl<'a> CompoundValueDeserializer for Specification {
+//     type CompoundValue = TimeRange;
+
+//     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
+//       let from = context.deserializable_scalar(&self.from).map_err(|error| 
+//         error
+//           .change_context("deserialize the 'from' field")
+//           .change_context("deserialize a TimeRange")
+//       )?;
+
+//       let till = context.deserializable_scalar(&self.till).map_err(|error| 
+//         error
+//           .change_context("deserialize the 'till' field")
+//           .change_context("deserialize a TimeRange")
+//       )?;
+
+//       TimeRange::from_timestamps(from, till).map_err(|error|
+//         error.change_context("deserialize a TimeRange")
+//       )
+//     }
+//   }
+// }

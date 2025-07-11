@@ -98,52 +98,52 @@ impl<'de> Deserialize<'de> for Hour {
   }
 }
 
-pub mod database {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::Hour;
+// pub mod database {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::Hour;
 
-  // pub struct Adapter {}
+//   // pub struct Adapter {}
 
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
+//   // impl Adapter {
+//   //   pub fn new() -> Self {
+//   //     Self {}
+//   //   }
+//   // }
 
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = Hour;
+//   // impl ScalarTypeAdapter for Adapter {
+//   //   type Type = Hour;
 
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.write_u32(self.value());
-  //   }
+//   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
+//   //     context.write_u32(self.value());
+//   //   }
 
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let number = value.as_u32().map_err(|error|
-  //       error.change_context("Failed to create an Hour from a ColumnValue: Expected ColumnValue to be a u32")
-  //     )?;
+//   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
+//   //     let number = value.as_u32().map_err(|error|
+//   //       error.change_context("Failed to create an Hour from a ColumnValue: Expected ColumnValue to be a u32")
+//   //     )?;
 
-  //     Hour::try_from0(number).ok_or_else(|| 
-  //       GenericError::new("Failed to create an Hour from a u32 ColumnValue: Expected ColumnValue to be in this range 0 ..= 23")
-  //         .attach_info("ColumnValue", number.to_string())
-  //     )        
-  //   }
-  // }
+//   //     Hour::try_from0(number).ok_or_else(|| 
+//   //       GenericError::new("Failed to create an Hour from a u32 ColumnValue: Expected ColumnValue to be in this range 0 ..= 23")
+//   //         .attach_info("ColumnValue", number.to_string())
+//   //     )        
+//   //   }
+//   // }
 
-  impl IntoScalarValue for Hour {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      self.value()
-    }
-  }
+//   impl IntoScalarValue for Hour {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       self.value()
+//     }
+//   }
 
-  impl FromScalarValue for Hour {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value
-        .as_u32()
-        .and_then(Hour::from_0_or_generic_error)
-        .map_err(|error|
-          error.change_context("deserializing an hour")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for Hour {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value
+//         .as_u32()
+//         .and_then(Hour::from_0_or_generic_error)
+//         .map_err(|error|
+//           error.change_context("deserializing an hour")
+//         )
+//     }
+//   }
+// }

@@ -6,7 +6,7 @@ use crate::database::{
 
 use crate::{
   GenericError, user, 
-  user_screen_access_regulation, State
+  user_screen_access_regulation, AppState
 };
 
 pub struct StateSpecification {
@@ -48,7 +48,7 @@ impl StateSpecification {
 }
 
 impl CompoundValueSerializer for StateSpecification {
-  type CompoundValue = State;
+  type CompoundValue = AppState;
 
   fn serialize_into(
     &self, 
@@ -140,7 +140,7 @@ impl StateSpecification {
     &self, 
     database: &Database,
   ) -> 
-    Result<State, GenericError> 
+    Result<AppState, GenericError> 
   {
     database.load_top_level_compound_value(
       self, 
@@ -206,7 +206,7 @@ impl StateSpecification {
       ))
       .collect();
 
-    let state = State {
+    let state = AppState {
       users,
       user_screen_access_regulation_common_info: state.user_access,
     };

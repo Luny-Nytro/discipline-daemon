@@ -3,10 +3,8 @@ use super::*;
 macro_rules! write_number {
   ($method:ident: $type:ty) => {
     pub fn $method(&mut self, field: &str, new_value: $type) {
-      if self.did_write_an_update() {
+      if !self.is_empty() {
         self.code.push_str(", ");
-      } else {
-        self.code.push_str("SET ");
       }
 
       self.code.push_str(field);
@@ -28,8 +26,8 @@ impl CollectionItemUpdateDraft {
     }
   }
 
-  fn did_write_an_update(&self) -> bool {
-    self.code.len() > 0
+  pub fn is_empty(&self) -> bool {
+    self.code.is_empty()
   }
 
   write_number!(write_i8: i8);
@@ -47,16 +45,13 @@ impl CollectionItemUpdateDraft {
   write_number!(write_f32: f32);
   write_number!(write_f64: f64);
   
-
   pub fn write_scalar(
     &mut self, 
     field: &String, 
     new_value: &impl SerializableScalarValue,
   ) {
-    if self.did_write_an_update() {
+    if !self.is_empty() {
       self.code.push_str(", ");
-    } else {
-      self.code.push_str("SET ");
     }
 
     self.code.push_str(field);
@@ -68,10 +63,8 @@ impl CollectionItemUpdateDraft {
     &mut self, 
     field: &String, 
   ) {
-    if self.did_write_an_update() {
+    if self.is_empty() {
       self.code.push_str(", ");
-    } else {
-      self.code.push_str("SET ");
     }
 
     self.code.push_str(field);
@@ -79,7 +72,7 @@ impl CollectionItemUpdateDraft {
     self.code.push_str("NULL");
   }
 
-  pub(super) fn finish(&self) -> Option<&String> {
+  pub(super) fn updates(&self) -> Option<&String> {
     Some(&self.code)
   }
 }

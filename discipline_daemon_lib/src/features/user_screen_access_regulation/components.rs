@@ -199,6 +199,19 @@ impl Regulator {
     }
   }
   
+  pub fn pack(
+    policies: Vec<Policy>,
+    is_applying_enabled: bool,
+    is_user_screen_access_blocked: bool,
+  ) -> Self {
+    Self {
+      policies,
+      is_applying_enabled,
+      is_user_screen_access_blocked,
+      operating_system_calls: OperatingSystemCalls,
+    }
+  }
+
   pub fn is_applying_enabled(&self) -> bool {
     self.is_applying_enabled
   }
@@ -352,6 +365,16 @@ impl CommonInfo {
 
   pub(super) fn default_applying_interval() -> Duration {
     Duration::from_minutes(5).unwrap()
+  }
+
+  pub fn pack(
+    private_password: OperatingSystemPassword,
+    applying_interval: Duration
+  ) -> Self {
+    Self {
+      applying_interval,
+      private_password,
+    }
   }
 
   pub fn private_password(&self) -> &OperatingSystemPassword {

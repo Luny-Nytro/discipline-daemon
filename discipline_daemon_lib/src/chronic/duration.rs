@@ -208,49 +208,49 @@ impl<'de> Deserialize<'de> for Duration {
   }
 }
 
-pub mod database_serde {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::Duration;
+// pub mod database_serde {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::Duration;
 
-  // pub struct Adapter;
+//   // pub struct Adapter;
 
-  // impl Adapter {
-  //   pub fn new() -> Self {
-  //     Self {}
-  //   }
-  // }
+//   // impl Adapter {
+//   //   pub fn new() -> Self {
+//   //     Self {}
+//   //   }
+//   // }
 
-  // impl ScalarTypeAdapter for Adapter {
-  //   type Type = Duration;
+//   // impl ScalarTypeAdapter for Adapter {
+//   //   type Type = Duration;
 
-  //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
-  //     context.write_u64(self.total_milliseconds());      
-  //   }
+//   //   fn serialize(&self, value: &Self::Type, context: SerializeScalarValueContext) {
+//   //     context.write_u64(self.total_milliseconds());      
+//   //   }
 
-  //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
-  //     let milliseconds = value.as_u64().map_err(|error|
-  //       error.change_context("Failed to create a Duration from a ColumnValue: ColumnValue is not a u64 number")
-  //     )?;
+//   //   fn deserialize(&self, value: ColumnValue) -> Result<Self::Type, GenericError> {
+//   //     let milliseconds = value.as_u64().map_err(|error|
+//   //       error.change_context("Failed to create a Duration from a ColumnValue: ColumnValue is not a u64 number")
+//   //     )?;
 
-  //     Ok(Duration::from_milliseconds(value))        
-  //   }
-  // }
+//   //     Ok(Duration::from_milliseconds(value))        
+//   //   }
+//   // }
 
-  impl IntoScalarValue for Duration {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      self.total_milliseconds()
-    }
-  }
+//   impl IntoScalarValue for Duration {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       self.total_milliseconds()
+//     }
+//   }
 
-  impl FromScalarValue for Duration {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value
-        .as_u64()
-        .map(Duration::from_milliseconds)
-        .map_err(|error|
-          error.change_context("deserializing a duration")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for Duration {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value
+//         .as_u64()
+//         .map(Duration::from_milliseconds)
+//         .map_err(|error|
+//           error.change_context("deserializing a duration")
+//         )
+//     }
+//   }
+// }

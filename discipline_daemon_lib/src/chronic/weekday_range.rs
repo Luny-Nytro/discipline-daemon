@@ -197,96 +197,96 @@ impl WeekdayRange {
   }
 }
 
-pub mod database {
-  use crate::{database::*, Weekday};
-  use super::WeekdayRange;
-  use crate::GenericError;
+// pub mod database {
+//   use crate::{database::*, Weekday};
+//   use super::WeekdayRange;
+//   use crate::GenericError;
 
-  pub struct Specification {
-    from: Field,
-    till: Field,
-  }
+//   pub struct Specification {
+//     from: Field,
+//     till: Field,
+//   }
 
-  impl IsCompoundType for Specification {
-    fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
-      Ok(Self {
-        from: definer.writable_required_field("From")?,
-        till: definer.writable_required_field("Till")?,
-      })
-    }
+//   impl IsCompoundType for Specification {
+//     fn new(definer: &mut CompoundTypeDefiner) -> Result<Self, GenericError> {
+//       Ok(Self {
+//         from: definer.writable_required_field("From")?,
+//         till: definer.writable_required_field("Till")?,
+//       })
+//     }
 
-    fn display_name(&self) -> &str {
-      "WeekdayRange"
-    }
-  }
+//     fn display_name(&self) -> &str {
+//       "WeekdayRange"
+//     }
+//   }
 
-  impl Specification {
-    pub fn set_from(
-      &self,
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &Weekday
-    ) ->
-      Result<(), GenericError>
-    {
-      changes.write_scalar_field(&self.from, new_value)
-    }
+//   impl Specification {
+//     pub fn set_from(
+//       &self,
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &Weekday
+//     ) ->
+//       Result<(), GenericError>
+//     {
+//       changes.write_scalar_field(&self.from, new_value)
+//     }
 
-    pub fn set_till(
-      &self,
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &Weekday
-    ) ->
-      Result<(), GenericError>
-    {
-      changes.write_scalar_field(&self.till, new_value)
-    }
+//     pub fn set_till(
+//       &self,
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &Weekday
+//     ) ->
+//       Result<(), GenericError>
+//     {
+//       changes.write_scalar_field(&self.till, new_value)
+//     }
 
-    pub fn change_range(
-      &self,
-      changes: &mut CollectionItemModificationsDraft,
-      new_value: &WeekdayRange
-    ) ->
-      Result<(), GenericError>
-    {
-      changes.write_scalar_field(&self.from, &new_value.from)?;
-      changes.write_scalar_field(&self.till, &new_value.till)
-    }
-  }
+//     pub fn change_range(
+//       &self,
+//       changes: &mut CollectionItemModificationsDraft,
+//       new_value: &WeekdayRange
+//     ) ->
+//       Result<(), GenericError>
+//     {
+//       changes.write_scalar_field(&self.from, &new_value.from)?;
+//       changes.write_scalar_field(&self.till, &new_value.till)
+//     }
+//   }
 
-  impl CompoundValueSerializer for Specification {
-    type CompoundValue = WeekdayRange;
+//   impl CompoundValueSerializer for Specification {
+//     type CompoundValue = WeekdayRange;
 
-    fn serialize_into(
-      &self, 
-      value: &Self::CompoundValue,
-      context: &mut CompoundValueSerializerContext, 
-    ) ->
-      Result<(), GenericError>
-    {
-      context.serializable_scalar(&self.from, &value.from)?;
-      context.serializable_scalar(&self.till, &value.till)
-    }
-  }
+//     fn serialize_into(
+//       &self, 
+//       value: &Self::CompoundValue,
+//       context: &mut CompoundValueSerializerContext, 
+//     ) ->
+//       Result<(), GenericError>
+//     {
+//       context.serializable_scalar(&self.from, &value.from)?;
+//       context.serializable_scalar(&self.till, &value.till)
+//     }
+//   }
 
-  impl CompoundValueDeserializer for Specification {
-    type CompoundValue = WeekdayRange;
+//   impl CompoundValueDeserializer for Specification {
+//     type CompoundValue = WeekdayRange;
 
-    fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
-      let from = context.deserializable_scalar(&self.from).map_err(|error| 
-        error
-          .change_context("deserializing the the 'from' field")
-          .change_context("deserislizing a WeekdayRange")
-      )?;
+//     fn deserialize(&self, context: &CompoundValueDeserializerContext) -> Result<Self::CompoundValue, GenericError> {
+//       let from = context.deserializable_scalar(&self.from).map_err(|error| 
+//         error
+//           .change_context("deserializing the the 'from' field")
+//           .change_context("deserislizing a WeekdayRange")
+//       )?;
 
-      let till = context.deserializable_scalar(&self.till).map_err(|error|
-        error
-          .change_context("deserializing the 'till' field")
-          .change_context("deserislizing a WeekdayRange")
-      )?;
+//       let till = context.deserializable_scalar(&self.till).map_err(|error|
+//         error
+//           .change_context("deserializing the 'till' field")
+//           .change_context("deserislizing a WeekdayRange")
+//       )?;
 
-      WeekdayRange::from_timestamps(from, till).map_err(|error|
-        error.change_context("deserislizing a WeekdayRange")
-      )
-    }
-  }
-}
+//       WeekdayRange::from_timestamps(from, till).map_err(|error|
+//         error.change_context("deserislizing a WeekdayRange")
+//       )
+//     }
+//   }
+// }

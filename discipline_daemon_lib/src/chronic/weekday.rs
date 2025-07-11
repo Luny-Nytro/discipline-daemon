@@ -198,49 +198,49 @@ impl<'de> Deserialize<'de> for Weekday {
   }
 }
 
-mod database {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::*;
+// mod database {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::*;
 
-  impl IntoScalarValue for Weekday {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      match self {
-        Sunday    => 0,
-        Monday    => 1,
-        Tuesday   => 2,
-        Wednesday => 3,
-        Thursday  => 4,
-        Friday    => 5,
-        Saturday  => 6,
-      }
-    }
-  }
+//   impl IntoScalarValue for Weekday {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       match self {
+//         Sunday    => 0,
+//         Monday    => 1,
+//         Tuesday   => 2,
+//         Wednesday => 3,
+//         Thursday  => 4,
+//         Friday    => 5,
+//         Saturday  => 6,
+//       }
+//     }
+//   }
 
-  impl FromScalarValue for Weekday {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      let number = value
-        .as_u8()
-        .map_err(|error| 
-          error.change_context("deserializing a Weekday")
-        )?;
+//   impl FromScalarValue for Weekday {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       let number = value
+//         .as_u8()
+//         .map_err(|error| 
+//           error.change_context("deserializing a Weekday")
+//         )?;
       
-      match number {
-        0 => Ok(Sunday),
-        1 => Ok(Monday),
-        2 => Ok(Tuesday),
-        3 => Ok(Wednesday),
-        4 => Ok(Thursday),
-        5 => Ok(Friday),
-        6 => Ok(Saturday),
-        _ => {
-          Err(
-            GenericError::new("deserializing a Weekday")
-              .add_error("scalar value is an integer but it's outside the valid range 0 ..= 6")
-              .add_attachment("scalar value", number.to_string())
-          )
-        }
-      }
-    }
-  }  
-}
+//       match number {
+//         0 => Ok(Sunday),
+//         1 => Ok(Monday),
+//         2 => Ok(Tuesday),
+//         3 => Ok(Wednesday),
+//         4 => Ok(Thursday),
+//         5 => Ok(Friday),
+//         6 => Ok(Saturday),
+//         _ => {
+//           Err(
+//             GenericError::new("deserializing a Weekday")
+//               .add_error("scalar value is an integer but it's outside the valid range 0 ..= 6")
+//               .add_attachment("scalar value", number.to_string())
+//           )
+//         }
+//       }
+//     }
+//   }  
+// }

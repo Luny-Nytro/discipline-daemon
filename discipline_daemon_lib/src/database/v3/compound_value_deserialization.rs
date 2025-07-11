@@ -11,7 +11,7 @@ pub trait CompoundValueDeserializer {
   ) -> Result<Self::CompoundValue, GenericError>;
 }
 
-pub struct DeserializeCompoundValueContext<'a>(&'a Row<'a>);
+pub struct DeserializeCompoundValueContext<'a>(pub &'a Row<'a>);
 
 impl<'a> DeserializeCompoundValueContext<'a> {
   fn retrieve_column_value(&self, field_identifier: &String) -> Result<ScalarValue, GenericError> {

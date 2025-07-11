@@ -4,14 +4,14 @@ pub use database::{NormalizedState, StateSpecification};
 use crate::{user_screen_access_regulation, User, Uuid};
 
 #[derive(Debug)]
-pub struct State {
+pub struct AppState {
   pub users: Vec<User>,
   pub user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo,
   // pub shadow_vaults: shadow_vaults::Feature,
   // pub networking_access: networking_access::Feature,
 }
 
-impl Default for State {
+impl Default for AppState {
   fn default() -> Self {
     Self {
       users: Vec::new(),
@@ -20,7 +20,7 @@ impl Default for State {
   }
 }
 
-impl State {
+impl AppState {
   pub fn find_user_by_id(&self, user_id: &Uuid) -> Option<&User> {
     self.users.iter().find(|user| user.id == *user_id)
   }

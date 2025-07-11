@@ -26,6 +26,7 @@ pub struct UserFields {
   screen_access_regulation_is_applying_enabled: String,
   screen_access_regulation_is_user_screen_access_blocked: String,
 }
+
 pub struct NormalizedUser {
   id: Uuid,
   name: UserName,
@@ -37,24 +38,24 @@ pub struct NormalizedUser {
 }
 
 impl NormalizedUser {
-  // pub fn denormalize(
-  //   self, 
-  //   user_screen_access_regulation_policies: &Vec<user_screen_access_regulation::database::NormalizedPolicy>,
-  //   user_screen_access_regulation_rules: &Vec<user_screen_access_regulation::database::NormalizedRule>,
-  // ) -> User {
-  //   User {
-  //     name: self.name,
-  //     operating_system_user_id: self.operating_system_user_id,
-  //     operating_system_username: self.operating_system_username,
-  //     operating_system_password: self.operating_system_password,
-  //     screen_access_regulator: self.screen_access_regulator.denormalize(
-  //       &self.id,
-  //       user_screen_access_regulation_policies,
-  //       user_screen_access_regulation_rules,
-  //     ),
-  //     id: self.id,
-  //   }
-  // }
+  pub fn denormalize(
+    self, 
+    user_screen_access_regulation_policies: &Vec<UserScreenAccessPolicyNormalized>,
+    user_screen_access_regulation_rules: &Vec<UserScreenAccessRuleNormalized>,
+  ) -> User {
+    User {
+      name: self.name,
+      operating_system_user_id: self.operating_system_user_id,
+      operating_system_username: self.operating_system_user_name,
+      operating_system_password: self.operating_system_user_password,
+      screen_access_regulator: user_screen_access_regulation::Regulator::pack(
+        &self.id,
+        user_screen_access_regulation_policies,
+        user_screen_access_regulation_rules,
+      ),
+      id: self.id,
+    }
+  }
 }
 
 pub fn serialize_user(
@@ -102,6 +103,30 @@ pub struct UserCollection {
 }
 
 impl UserCollection {
+  pub fn new(
+    collection_name: String,
+    user_id_field: String,
+    user_name_field: String,
+    user_operating_system_user_id_field: String,
+    user_operating_system_user_name_field: String,
+    user_operating_system_user_password_field: String,
+    user_screen_access_regulation_is_applying_enabled_field: String,
+    user_screen_access_regulation_is_user_screen_access_blocked_field: String,
+  ) -> Self {
+    Self {
+      name: collection_name,
+      fields: UserFields {
+        id: user_id_field,
+        name: user_name_field,
+        operating_system_user_id: user_operating_system_user_id_field,
+        operating_system_user_name: user_operating_system_user_name_field,
+        operating_system_user_password: user_operating_system_user_password_field,
+        screen_access_regulation_is_applying_enabled: user_screen_access_regulation_is_applying_enabled_field,
+        screen_access_regulation_is_user_screen_access_blocked: user_screen_access_regulation_is_user_screen_access_blocked_field,
+      }
+    }
+  }
+
   pub fn write_definition_into(&self, code: &mut String) {
     code.push_str("CREATE TABLE IF NOT EXISTS ");
     code.push_str(&self.name);
@@ -146,11 +171,43 @@ impl UserCollection {
     code.push_str(";");
   }
 
-  pub fn update_user(&self, code: &mut String, user_update_draft: &UserUpdateDraft) {
-    
+  pub fn write_retrieve_all_users(&self, code: &mut String) {
+    code.push_str("SELECT * FROM ");
+    code.push_str(&self.name);
+    code.push_str(";");
+  }
+
+  pub fn retrieve_all_users(&self, database: &Database) -> Result<Vec<NormalizedUser>, GenericError> {
+    let mut code = String::new();
+    self.write_retrieve_all_users(&mut code);
+
+    let mut statement = database.connection.prepare(&code).map_err(|error| 
+      GenericError::new("")
+    )?;
+    let mut iterator = statement.query(&code).map_err(|error| 
+      GenericError::new("")
+    )?;
+    let mut rules = Vec::new();
+    loop {
+      let item = iterator.next().map_err(|error| 
+        GenericError::new("")
+      )?;
+      let Some(item) = item else {
+        return Ok(rules);
+      };
+      let mut context = DeserializeCompoundValueContext(item);
+      rules.push(deserialize_user(&mut context, &self.fields)?);
+    }
+  }
+
+  pub fn update_user(&self, code: &mut String, user_id: &Uuid, user_update_draft: &UserUpdateDraft) {
+    user_update_draft.maybe_write_update_statement_into(code, user_id);
+  }
+
+  pub fn create_user_update_draft<'a>(&self, database: &'a Database) -> UserUpdateDraft<'a> {
+    UserUpdateDraft::new(database)
   }
 }
-
 pub struct UserUpdateDraft<'a> {
   draft: CollectionItemUpdateDraft,
   database: &'a Database,
@@ -178,25 +235,59 @@ impl<'a> UserUpdateDraft<'a> {
     self.draft.write_scalar(&self.collection.fields.screen_access_regulation_is_user_screen_access_blocked, &new_value);
   }
 
-  pub fn commit(&self, user_id: &Uuid) -> Result<(), GenericError> {
-    let Some(updates) = self.draft.finish() else {
-      return Ok(());
+  pub fn maybe_write_update_statement_into(&self, code: &mut String, user_id: &Uuid) {
+    let Some(updates) = self.draft.updates() else {
+      return;
     };
 
-    let mut code = String::new();
     code.push_str("UPDATE ");
     code.push_str(&self.collection.name);
-    code.push_str(" ");
+    code.push_str(" SET ");
     code.push_str(&updates);
     code.push_str(" WHERE ");
     code.push_str(&self.collection.fields.id);
     code.push_str(" = ");
-    serialize_scalar_value_into(user_id, &mut code);
+    serialize_scalar_value_into(user_id, code);
     code.push_str(";");
+  }
+
+  pub fn commit(&self, user_id: &Uuid) -> Result<(), GenericError> {
+    if self.draft.is_empty() {
+      return Ok(())
+    }
+
+    let mut code = String::new();
+    self.maybe_write_update_statement_into(&mut code, user_id);
     self.database.execute(&code)
   }
 }
 
-// pub struct UserCollectionUpdateDraft<'a> {
-//   collection: &
-// }
+pub struct UserCollectionUpdateDraft<'a> {
+  code: String,
+  database: &'a Database,
+}
+
+impl<'a> UserCollectionUpdateDraft<'a> {
+  pub fn new(database: &'a Database) -> Self {
+    Self {
+      code: String::new(),
+      database,
+    }
+  }
+  
+  pub fn add_user(&mut self, user: &User) {
+    self.database.user.add_user(&mut self.code, user);
+  }
+  
+  pub fn delete_user(&mut self, user_id: &Uuid) {
+    self.database.user.delete_user(&mut self.code, user_id);
+  }
+  
+  pub fn update_user(&mut self, user_id: &Uuid, user_update_draft: &UserUpdateDraft) {
+    self.database.user.update_user(&mut self.code, user_id, user_update_draft);
+  }
+  
+  pub fn commit(&self) -> Result<(), GenericError> {
+    self.database.execute(&self.code)
+  }
+}

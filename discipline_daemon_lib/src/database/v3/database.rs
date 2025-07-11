@@ -1,11 +1,13 @@
-use std::path::PathBuf;
+use rusqlite::Connection;
+
 use super::implementation::*;
-use crate::*;
+use crate::{database::v3::implementation, *};
 
 pub struct Database {
-  // pub(super) connection: rusqlite::Connection,
+  pub connection: Connection,
   pub user: UserCollection,
-
+  pub user_screen_access_regulation_rule: UserScreenAccessRuleCollection,
+  pub user_screen_access_regulation_policy: UserScreenAccessPolicyCollection,
 }
 
 impl Database {
@@ -42,6 +44,7 @@ impl Database {
     // })
   // }
 
+  // TODO: Skip executing empty statements
   pub(super) fn execute(&self, code: &str) -> 
     Result<(), GenericError>
   {

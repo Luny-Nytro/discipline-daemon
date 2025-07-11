@@ -144,25 +144,25 @@ mod serde_impl {
 
 }
 
-mod database_serde {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::Time;
+// mod database_serde {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::Time;
 
-  impl IntoScalarValue for Time {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      self.0
-    }
-  }
+//   impl IntoScalarValue for Time {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       self.0
+//     }
+//   }
 
-  impl FromScalarValue for Time {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value
-        .as_u32()
-        .and_then(Time::try_from_timestamp_or_generic_error)
-        .map_err(|error|
-          error.change_context("deserializing a Time")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for Time {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value
+//         .as_u32()
+//         .and_then(Time::try_from_timestamp_or_generic_error)
+//         .map_err(|error|
+//           error.change_context("deserializing a Time")
+//         )
+//     }
+//   }
+// }

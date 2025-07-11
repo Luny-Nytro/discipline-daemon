@@ -11,11 +11,11 @@ pub use to_public_repr::ToPublicRepr;
 pub mod operation;
 pub use operation::*;
 
-pub mod chronic_types;
-pub use chronic_types::*;
+pub mod chronic;
+pub use chronic::*;
 
-pub mod common_types;
-pub use common_types::{
+pub mod common;
+pub use common::{
   OperatingSystemPassword,
   OperatingSystemUserId,
   OperatingSystemUsername,
@@ -36,7 +36,7 @@ pub mod user;
 pub use user::User;
 
 pub mod state;
-pub use state::{State, NormalizedState, StateSpecification};
+pub use state::{AppState, NormalizedState, StateSpecification};
 
 pub mod daemon;
 pub use daemon::*;

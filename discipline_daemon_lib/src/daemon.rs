@@ -3,14 +3,14 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
 use crate::{
-  GenericError, IsOperation, State, 
+  GenericError, IsOperation, AppState, 
   StateSpecification, DateTime, Duration,
   InternalOperationOutcome,
 };
 use crate::database::Database;
 
 pub struct Daemon {
-  pub state: State,
+  pub state: AppState,
   pub database_specification: StateSpecification,
   pub database_connection: Database,
   pub http_server_address: String,
