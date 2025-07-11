@@ -41,28 +41,28 @@ impl OperatingSystemPassword {
   }
 }
 
-mod database {
-  use crate::database::*;
-  use super::OperatingSystemPassword;
-  use crate::GenericError;
+// mod database {
+//   use crate::database::*;
+//   use super::OperatingSystemPassword;
+//   use crate::GenericError;
 
-  impl IntoScalarValue for OperatingSystemPassword {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      &self.0
-    }
-  }
+//   impl IntoScalarValue for OperatingSystemPassword {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       &self.0
+//     }
+//   }
 
-  impl FromScalarValue for OperatingSystemPassword {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value
-        .as_string()
-        .and_then(OperatingSystemPassword::new_or_generic_error)
-        .map_err(|error|
-          error.change_context("deserializing an OperatingSystemPassword")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for OperatingSystemPassword {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value
+//         .as_string()
+//         .and_then(OperatingSystemPassword::new_or_generic_error)
+//         .map_err(|error|
+//           error.change_context("deserializing an OperatingSystemPassword")
+//         )
+//     }
+//   }
+// }
 
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};

@@ -177,7 +177,31 @@ pub struct RuleCollection {
 }
 
 impl RuleCollection {
-  pub fn write_definition(&self, code: &mut String) {
+  pub fn new(
+    collection_name: String,
+    rule_id: String,
+    rule_user_id: String,
+    rule_policy_id: String,
+    rule_activator_enum_type: String,
+    rule_activator_enum_data_1: String,
+    rule_activator_enum_data_2: String,
+    rule_position: String,
+  ) -> Self {
+    Self {
+      name: collection_name,
+      fields: RuleFields {
+        id: rule_id,
+        user_id: rule_user_id,
+        policy_id: rule_policy_id,
+        activator_enum_type: rule_activator_enum_type,
+        activator_enum_data_1: rule_activator_enum_data_1,
+        activator_enum_data_2: rule_activator_enum_data_2,
+        position: rule_position,
+      }
+    }
+  }
+
+  pub fn write_definition_into(&self, code: &mut String) {
     code.push_str("CREATE TABLE IF NOT EXISTS "); 
     code.push_str(&self.name); 
     code.push_str(" (");
@@ -218,7 +242,7 @@ impl RuleCollection {
     code.push_str(" AND ");
     code.push_str(&self.fields.position);
     code.push_str(" >= ");
-    serialize_scalar_value_into(position, code);
+    serialize_scalar_value_into(&position, code);
     code.push_str(";");
     
     code.push_str("INSERT INTO ");
@@ -292,7 +316,7 @@ impl RuleCollection {
     code.push_str(" AND ");
     code.push_str(&self.fields.position);
     code.push_str(" > ");
-    serialize_scalar_value_into(rule_position, code);
+    serialize_scalar_value_into(&rule_position, code);
     code.push_str(";");
   }
 
@@ -311,15 +335,24 @@ impl RuleCollection {
     self.write_retrieve_all_rules(&mut code);
 
     let mut statement = database.connection.prepare(&code).map_err(|error| 
-      GenericError::new("")
+      GenericError::new("retrieving all user screen access regulation rules")
+        .add_error("failed to prepare statement")
+        .add_attachment("code", &code)
+        .add_attachment("sqlite error", error.to_string())
     )?;
-    let mut iterator = statement.query(&code).map_err(|error| 
-      GenericError::new("")
+    let mut iterator = statement.query(()).map_err(|error| 
+      GenericError::new("retrieving all user screen access regulation rules")
+        .add_error("failed to run query code")
+        .add_attachment("code", &code)
+        .add_attachment("sqlite error", error.to_string())
     )?;
     let mut rules = Vec::new();
     loop {
       let item = iterator.next().map_err(|error| 
-        GenericError::new("")
+        GenericError::new("retrieving all user screen access regulation rules")
+        .add_error("retreiving the next item of sqlite iterator")
+        .add_attachment("code", &code)
+        .add_attachment("sqlite error", error.to_string())
       )?;
       let Some(item) = item else {
         return Ok(rules);

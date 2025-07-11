@@ -1,5 +1,5 @@
 use crate::user_screen_access_regulation::*;
-use super::screen_access_regulation_rule::NormalizedRule;
+use super::screen_access_regulation_rule_collection::NormalizedRule;
 use crate::{Uuid, CountdownTimer, Duration, DateTime};
 use super::*;
 
@@ -38,19 +38,17 @@ pub struct NormalizedPolicy {
 }
 
 impl NormalizedPolicy {
-  pub fn denormalize(
-    self, 
-    user_id: &Uuid,
-    normalized_rules: &Vec<NormalizedRule>,
-  ) -> Policy {
+  pub fn denormalize(self, rules: &Vec<NormalizedRule>) -> Policy {
+    let rules = rules
+      .iter()
+      .filter(|rule| rule.user_id == self.user_id && rule.policy_id == self.id)
+      .map(|rule| rule.clone().denormalize())
+      .collect();
+    
     Policy::pack(
       self.id,
       self.name,
-      normalized_rules
-        .iter()
-        .filter(|rule| rule.user_id == *user_id && rule.policy_id == self.id)
-        .map(|rule| rule.clone().denormalize())
-        .collect(),
+      rules,
       self.enabler,
     )
   }
@@ -91,11 +89,11 @@ fn deserialize_policy(
     name, 
     user_id,
     position,
-    enabler: PolicyEnabler::pack(CountdownTimer::new_with_state(
+    enabler: PolicyEnabler::pack(
       enabler_duration, 
       enabler_remaining_duration, 
       enabler_previous_synchronization_time,
-    )),
+    ),
   })
 }
 
@@ -167,12 +165,6 @@ impl<'a> PolicyUpdateDraft<'a> {
 }
 
 impl PolicyCollection {
-  pub fn create_policy_update_draft<'a>(&self, database: &'a Database) -> PolicyUpdateDraft<'a> {
-    PolicyUpdateDraft::new(database)
-  }
-}
-
-impl PolicyCollection {
   pub fn new(
     collection_name: String,
     policy_id_field: String,
@@ -232,7 +224,7 @@ impl PolicyCollection {
     code.push_str(" + 1 WHERE ");
     code.push_str(&self.fields.position);
     code.push_str(" >= ");
-    serialize_scalar_value_into(position, code);
+    serialize_scalar_value_into(&position, code);
     code.push_str(" AND ");
     code.push_str(&self.fields.user_id);
     code.push_str(" = ");
@@ -274,7 +266,7 @@ impl PolicyCollection {
     code.push_str(" - 1 WHERE ");
     code.push_str(&self.fields.position);
     code.push_str(" > ");
-    serialize_scalar_value_into(position, code);
+    serialize_scalar_value_into(&position, code);
     code.push_str(" AND ");
     code.push_str(&self.fields.user_id);
     serialize_scalar_value_into(user_id, code);
@@ -315,12 +307,12 @@ impl PolicyCollection {
 
   pub fn retrieve_all_policies(&self, database: &Database) -> Result<Vec<NormalizedPolicy>, GenericError> {
     let mut code = String::new();
-    self.write_retrieve_all_rules(&mut code);
+    self.write_retrieve_all_policies(&mut code);
 
     let mut statement = database.connection.prepare(&code).map_err(|error| 
       GenericError::new("")
     )?;
-    let mut iterator = statement.query(&code).map_err(|error| 
+    let mut iterator = statement.query(()).map_err(|error| 
       GenericError::new("")
     )?;
     let mut rules = Vec::new();
@@ -335,6 +327,18 @@ impl PolicyCollection {
       rules.push(deserialize_policy(&mut context, &self.fields)?);
     }
   }
+
+  pub fn create_policy_update_draft<'a>(&self, database: &'a Database) -> PolicyUpdateDraft<'a> {
+    PolicyUpdateDraft::new(database)
+  }
+
+  pub fn create_collection_update_draft<'a>(&self, database: &'a Database) -> PolicyCollectionUpdateDraft<'a> {
+    PolicyCollectionUpdateDraft { 
+      database
+    }
+  }
 }
 
-pub struct PolicyCollectionUpdateDraft {}
+pub struct PolicyCollectionUpdateDraft<'a> {
+  database: &'a Database
+}

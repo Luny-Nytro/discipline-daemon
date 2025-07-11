@@ -102,27 +102,27 @@ impl OperatingSystemUsername {
   }
 }
 
-pub mod database_serde {
-  use super::OperatingSystemUsername;
-  use crate::database::*;
-  use crate::GenericError;
+// pub mod database_serde {
+//   use super::OperatingSystemUsername;
+//   use crate::database::*;
+//   use crate::GenericError;
 
-  impl IntoScalarValue for OperatingSystemUsername {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      &self.0
-    }
-  }
+//   impl IntoScalarValue for OperatingSystemUsername {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       &self.0
+//     }
+//   }
 
-  impl FromScalarValue for OperatingSystemUsername {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value.as_string()
-        .and_then(OperatingSystemUsername::new_or_generic_error)
-        .map_err(|error|
-          error.change_context("deserializing an OperatingSystemUsername")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for OperatingSystemUsername {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value.as_string()
+//         .and_then(OperatingSystemUsername::new_or_generic_error)
+//         .map_err(|error|
+//           error.change_context("deserializing an OperatingSystemUsername")
+//         )
+//     }
+//   }
+// }
 
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};

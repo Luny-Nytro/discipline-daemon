@@ -44,27 +44,27 @@ impl Password {
   }
 }
 
-mod database {
-  use crate::database::*;
-  use crate::GenericError;
-  use super::Password;
+// mod database {
+//   use crate::database::*;
+//   use crate::GenericError;
+//   use super::Password;
 
-  impl IntoScalarValue for Password {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      &self.0
-    }
-  }
+//   impl IntoScalarValue for Password {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       &self.0
+//     }
+//   }
 
-  impl FromScalarValue for Password {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value.as_string()
-        .map(Password)
-        .map_err(|error|
-          error.change_context("deserializing a password")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for Password {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value.as_string()
+//         .map(Password)
+//         .map_err(|error|
+//           error.change_context("deserializing a password")
+//         )
+//     }
+//   }
+// }
 
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};

@@ -36,9 +36,9 @@ pub struct User {
   pub id: Uuid,
   pub name: UserName,
   pub operating_system_user_id: OperatingSystemUserId,
-  pub operating_system_username: OperatingSystemUsername,
-  pub operating_system_password: OperatingSystemPassword,
-  pub screen_access_regulator: user_screen_access_regulation::Regulator,
+  pub operating_system_user_name: OperatingSystemUsername,
+  pub operating_system_user_password: OperatingSystemPassword,
+  pub screen_access_regulation: user_screen_access_regulation::Regulator,
 }
 
 impl User {
@@ -52,12 +52,31 @@ impl User {
     &self.operating_system_user_id
   }
   pub fn operating_system_user_name(&self) -> &OperatingSystemUsername {
-    &self.operating_system_username
+    &self.operating_system_user_name
   }
   pub fn operating_system_user_password(&self) -> &OperatingSystemPassword {
-    &self.operating_system_password
+    &self.operating_system_user_password
   }
   pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulator {
-    &self.screen_access_regulator
+    &self.screen_access_regulation
+  }
+
+  pub fn pack(
+    id: Uuid,
+    name: UserName,
+    operating_system_user_id: OperatingSystemUserId,
+    operating_system_user_name: OperatingSystemUsername,
+    operating_system_user_password: OperatingSystemPassword,
+    screen_access_regulation: user_screen_access_regulation::Regulator,
+  ) -> Self 
+  {
+    Self {
+      id, 
+      name,
+      operating_system_user_id,
+      operating_system_user_name,
+      operating_system_user_password,
+      screen_access_regulation,
+    }
   }
 }

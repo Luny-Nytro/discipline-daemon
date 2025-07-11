@@ -67,27 +67,27 @@ impl OperatingSystemUserId {
   }
 }
 
-mod database {
-  use crate::database::*;
-  use super::OperatingSystemUserId;
-  use crate::GenericError;
+// mod database {
+//   use crate::database::*;
+//   use super::OperatingSystemUserId;
+//   use crate::GenericError;
 
-  impl IntoScalarValue for OperatingSystemUserId {
-    fn into_scalar_value(&self) -> impl IsScalarValue {
-      &self.0
-    }
-  }
+//   impl IntoScalarValue for OperatingSystemUserId {
+//     fn into_scalar_value(&self) -> impl IsScalarValue {
+//       &self.0
+//     }
+//   }
 
-  impl FromScalarValue for OperatingSystemUserId {
-    fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-      value.as_u32()
-        .map(OperatingSystemUserId)
-        .map_err(|error|
-          error.change_context("deserializing an OperatingSystemUserId")
-        )
-    }
-  }
-}
+//   impl FromScalarValue for OperatingSystemUserId {
+//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
+//       value.as_u32()
+//         .map(OperatingSystemUserId)
+//         .map_err(|error|
+//           error.change_context("deserializing an OperatingSystemUserId")
+//         )
+//     }
+//   }
+// }
 
 mod serde_impl {
   use serde::{Deserialize, Deserializer, Serialize, Serializer};

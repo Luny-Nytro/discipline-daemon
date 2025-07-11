@@ -4,15 +4,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
 use crate::{
   GenericError, IsOperation, AppState, 
-  StateSpecification, DateTime, Duration,
+  DateTime, Duration,
   InternalOperationOutcome,
 };
+
 use crate::database::Database;
 
 pub struct Daemon {
   pub state: AppState,
-  pub database_specification: StateSpecification,
-  pub database_connection: Database,
+  pub database: Database,
   pub http_server_address: String,
   pub is_running: bool,
 }
@@ -30,13 +30,7 @@ impl Daemon {
         .change_context("creating daemon")
     )?;
 
-    let state_database_specification = StateSpecification::new(database.define_namespace()).map_err(|error|
-      error
-        .change_context("creating state database specification")
-        .change_context("creating daemon")
-    )?;
-
-    let state = state_database_specification.load(&database).map_err(|error|
+    let state = database.load(&database).map_err(|error|
       error
         .change_context("loading daemon state from the database")
         .change_context("creating daemon")
@@ -44,9 +38,8 @@ impl Daemon {
 
     Ok(DaemonMutex::new(Daemon {
       state,
-      database_specification: state_database_specification,
+      database,
       is_running: false,
-      database_connection: database,
       http_server_address: format!("127.0.0.1:{http_server_port}"),
     }))
   }
@@ -180,10 +173,10 @@ impl SynchronizationThread {
     let mut errors = Vec::new();
     
     for user in &mut daemon.state.users {
-      if let Err(error) = user.screen_access_regulator.apply(
+      if let Err(error) = user.screen_access_regulation.apply(
         now, 
-        &user.operating_system_username, 
-        &user.operating_system_password, 
+        &user.operating_system_user_name, 
+        &user.operating_system_user_password, 
         &private_password,
       ) {
         errors.push(error);

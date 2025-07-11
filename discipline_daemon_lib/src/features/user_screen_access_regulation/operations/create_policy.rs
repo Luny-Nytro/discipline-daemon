@@ -25,7 +25,7 @@ impl IsOperation for CreatePolicy {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
-    let regulator = &mut user.screen_access_regulator;
+    let regulator = &mut user.screen_access_regulation;
 
     if regulator.reached_maximum_polices_allowed() {
       return InternalOperationOutcome::public_outcome(Outcome::ReachedMaximumPolicesAllowed);

@@ -34,7 +34,7 @@ impl IsOperation for Operation {
       .state
       .users
       .iter()
-      .any(|user| user.operating_system_username == self.operating_system_user_name)
+      .any(|user| user.operating_system_user_name == self.operating_system_user_name)
     {
       return InternalOperationOutcome::public_outcome(Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged);
     }
@@ -64,9 +64,9 @@ impl IsOperation for Operation {
       id: self.user_id.unwrap_or_else(Uuid::new_v4),
       name: self.user_name,
       operating_system_user_id: operating_system_user_id,
-      operating_system_username: self.operating_system_user_name,
-      operating_system_password: self.operating_system_user_password,
-      screen_access_regulator: user_screen_access_regulation::Regulator::new(Vec::new()),
+      operating_system_user_name: self.operating_system_user_name,
+      operating_system_user_password: self.operating_system_user_password,
+      screen_access_regulation: user_screen_access_regulation::Regulator::new(Vec::new()),
     };
 
     if let Err(error) = daemon

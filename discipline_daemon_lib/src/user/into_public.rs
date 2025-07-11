@@ -28,9 +28,9 @@ impl IntoPublic for User {
       id: self.id,
       name: self.name,
       operating_system_user_id: self.operating_system_user_id,
-      operating_system_user_name: self.operating_system_username,
-      operating_system_user_password: self.operating_system_password,
-      screen_access_regulator: self.screen_access_regulator.into_public(),
+      operating_system_user_name: self.operating_system_user_name,
+      operating_system_user_password: self.operating_system_user_password,
+      screen_access_regulator: self.screen_access_regulation.into_public(),
     }
   }
 }

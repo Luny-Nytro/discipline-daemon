@@ -1,6 +1,3 @@
-pub mod database;
-pub use database::{NormalizedState, StateSpecification};
-
 use crate::{user_screen_access_regulation, User, Uuid};
 
 #[derive(Debug)]

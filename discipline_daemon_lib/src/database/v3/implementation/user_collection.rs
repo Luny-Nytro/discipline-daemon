@@ -28,13 +28,13 @@ pub struct UserFields {
 }
 
 pub struct NormalizedUser {
-  id: Uuid,
-  name: UserName,
-  operating_system_user_id: OperatingSystemUserId,
-  operating_system_user_name: OperatingSystemUsername,
-  operating_system_user_password: OperatingSystemPassword,
-  screen_access_regulation_is_applying_enabled: bool,
-  screen_access_regulation_is_user_screen_access_blocked: bool,
+  pub(super) id: Uuid,
+  pub(super) name: UserName,
+  pub(super) operating_system_user_id: OperatingSystemUserId,
+  pub(super) operating_system_user_name: OperatingSystemUsername,
+  pub(super) operating_system_user_password: OperatingSystemPassword,
+  pub(super) screen_access_regulation_is_applying_enabled: bool,
+  pub(super) screen_access_regulation_is_user_screen_access_blocked: bool,
 }
 
 impl NormalizedUser {
@@ -43,18 +43,25 @@ impl NormalizedUser {
     user_screen_access_regulation_policies: &Vec<UserScreenAccessPolicyNormalized>,
     user_screen_access_regulation_rules: &Vec<UserScreenAccessRuleNormalized>,
   ) -> User {
-    User {
-      name: self.name,
-      operating_system_user_id: self.operating_system_user_id,
-      operating_system_username: self.operating_system_user_name,
-      operating_system_password: self.operating_system_user_password,
-      screen_access_regulator: user_screen_access_regulation::Regulator::pack(
-        &self.id,
-        user_screen_access_regulation_policies,
-        user_screen_access_regulation_rules,
+    let policies = user_screen_access_regulation_policies
+      .iter()
+      .filter(|policy| policy.user_id == self.id)
+      .cloned()
+      .map(|policy| policy.denormalize(user_screen_access_regulation_rules))
+      .collect();
+
+    User::pack(
+      self.id,
+      self.name,
+      self.operating_system_user_id,
+      self.operating_system_user_name,
+      self.operating_system_user_password,
+      user_screen_access_regulation::Regulator::pack(
+        policies,
+        self.screen_access_regulation_is_applying_enabled,
+        self.screen_access_regulation_is_user_screen_access_blocked,
       ),
-      id: self.id,
-    }
+    )
   }
 }
 
@@ -184,7 +191,7 @@ impl UserCollection {
     let mut statement = database.connection.prepare(&code).map_err(|error| 
       GenericError::new("")
     )?;
-    let mut iterator = statement.query(&code).map_err(|error| 
+    let mut iterator = statement.query(()).map_err(|error| 
       GenericError::new("")
     )?;
     let mut rules = Vec::new();
@@ -207,7 +214,12 @@ impl UserCollection {
   pub fn create_user_update_draft<'a>(&self, database: &'a Database) -> UserUpdateDraft<'a> {
     UserUpdateDraft::new(database)
   }
+
+  pub fn create_collection_update_draft<'a>(&self, database: &'a Database) -> UserCollectionUpdateDraft<'a> {
+    UserCollectionUpdateDraft::new(database) 
+  }
 }
+
 pub struct UserUpdateDraft<'a> {
   draft: CollectionItemUpdateDraft,
   database: &'a Database,

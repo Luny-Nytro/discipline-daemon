@@ -28,7 +28,7 @@ impl IsOperation for Operation {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
-    let regulator = &mut user.screen_access_regulator;
+    let regulator = &mut user.screen_access_regulation;
 
     if regulator.is_applying_enabled == self.new_value {
       return InternalOperationOutcome::public_outcome(Outcome::NoActionNeeded);

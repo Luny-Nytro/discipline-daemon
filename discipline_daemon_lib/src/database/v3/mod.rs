@@ -14,8 +14,6 @@ mod compound_value_updates;
 use compound_value_updates::CollectionItemUpdateDraft;
 
 mod database;
-use database::Database;
-
-use crate::Weekday;
+pub use database::Database;
 
 mod implementation;

@@ -25,7 +25,7 @@ impl IsOperation for DeletePolicy {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
     };
 
-    let regulator = &mut user.screen_access_regulator;
+    let regulator = &mut user.screen_access_regulation;
 
     let Some(policy) = regulator.find_policy_by_id_mut(&self.policy_id) else {
       return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);

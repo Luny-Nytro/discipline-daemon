@@ -1,5 +1,3 @@
-pub mod database;
-
 pub mod into_public;
 pub use into_public::*;
 

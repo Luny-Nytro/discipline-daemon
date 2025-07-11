@@ -4,6 +4,7 @@ pub mod utility;
 pub use utility::GenericError;
 
 pub mod database;
+pub use database::Database;
 
 pub mod to_public_repr;
 pub use to_public_repr::ToPublicRepr;
@@ -36,7 +37,7 @@ pub mod user;
 pub use user::User;
 
 pub mod state;
-pub use state::{AppState, NormalizedState, StateSpecification};
+pub use state::AppState;
 
 pub mod daemon;
 pub use daemon::*;

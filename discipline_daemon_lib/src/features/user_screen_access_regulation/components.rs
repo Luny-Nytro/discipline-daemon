@@ -112,10 +112,15 @@ impl PolicyEnabler {
     self.timer.synchronize(now);
   }
 
-  pub fn pack(timer: CountdownTimer) -> Self {
-    Self {
-      timer
-    }
+  pub fn pack(
+    duration: Duration,
+    remaining_duration: Duration,
+    previous_synchronization_time: DateTime
+  ) -> Self {
+    todo!()
+    // Self {
+    //   timer
+    // }
   }
 
   pub fn unpack_ref(&self) -> &CountdownTimer {
@@ -208,7 +213,7 @@ impl Regulator {
       policies,
       is_applying_enabled,
       is_user_screen_access_blocked,
-      operating_system_calls: OperatingSystemCalls,
+      operating_system_calls: OperatingSystemCalls::new(),
     }
   }
 

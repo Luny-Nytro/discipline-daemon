@@ -31,7 +31,7 @@ impl IsOperation for Operation {
     };
     
     let Some(policy) = user
-      .screen_access_regulator
+      .screen_access_regulation
       .find_policy_by_id_mut(&self.policy_id) else 
     {
       return InternalOperationOutcome::public_outcome(Outcome::ThereIsNoPolicyWithId(self.policy_id));

@@ -1,14 +1,14 @@
 use super::*;
 
-pub trait CompoundValueSerializer {
-  type CompoundValue;
+// pub trait CompoundValueSerializer {
+//   type CompoundValue;
 
-  fn serialize(
-    &self, 
-    value: &Self::CompoundValue,
-    context: &mut SerializeCompoundValueContext, 
-  );
-}
+//   fn serialize(
+//     &self, 
+//     value: &Self::CompoundValue,
+//     context: &mut SerializeCompoundValueContext, 
+//   );
+// }
 
 pub struct SerializeCompoundValueContext {
   pub column_names: String,
@@ -134,40 +134,40 @@ impl SerializeCompoundValueContext {
     serialize_scalar_value_into(value, &mut self.column_values);
   }
 
-  pub fn write_serializable_compound_value<Value>(
-    &mut self, 
-    serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
-    value: &Value,
-  ) {
-    serializer
-      // TODO: Maybe map the error and change the context and add a proper error message
-      .serialize(value, self);
-  }
-}
-
-pub(super) fn serialize_compound_value_into<Value>(
-  serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
-  value: &Value,
-  into: &mut String,
-) {
-  let mut context = SerializeCompoundValueContext::new();
-  serializer.serialize(value, &mut context);
-    // .map_err(|error| 
-    //   error
-    //     .change_context("serializing a compound value into its sqlite representation")
-    //     .add_error("the 'write_into' method of the value's CompoundValueSerializer implementation failed")
-    // )?;
-
-  // if !context.did_write_some_columns() {
-  //   return Err(
-  //     GenericError::new("serializing a compound value into its sqlite representation")
-  //       .add_error("the 'write_into' of the value's CompoundValueSerializer implementation did not write itself into the provided CompoundValueSerializerContext")
-  //   );
+  // pub fn write_serializable_compound_value<Value>(
+  //   &mut self, 
+  //   serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
+  //   value: &Value,
+  // ) {
+  //   serializer
+  //     // TODO: Maybe map the error and change the context and add a proper error message
+  //     .serialize(value, self);
   // }
-
-  into.push_str("(");
-  into.push_str(&context.column_names);
-  into.push_str(") VALUES (");
-  into.push_str(&context.column_values);
-  into.push_str(")");
 }
+
+// pub(super) fn serialize_compound_value_into<Value>(
+//   serializer: &impl CompoundValueSerializer<CompoundValue = Value>,
+//   value: &Value,
+//   into: &mut String,
+// ) {
+//   let mut context = SerializeCompoundValueContext::new();
+//   serializer.serialize(value, &mut context);
+//     // .map_err(|error| 
+//     //   error
+//     //     .change_context("serializing a compound value into its sqlite representation")
+//     //     .add_error("the 'write_into' method of the value's CompoundValueSerializer implementation failed")
+//     // )?;
+
+//   // if !context.did_write_some_columns() {
+//   //   return Err(
+//   //     GenericError::new("serializing a compound value into its sqlite representation")
+//   //       .add_error("the 'write_into' of the value's CompoundValueSerializer implementation did not write itself into the provided CompoundValueSerializerContext")
+//   //   );
+//   // }
+
+//   into.push_str("(");
+//   into.push_str(&context.column_names);
+//   into.push_str(") VALUES (");
+//   into.push_str(&context.column_values);
+//   into.push_str(")");
+// }
