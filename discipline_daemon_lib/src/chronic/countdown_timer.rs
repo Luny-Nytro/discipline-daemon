@@ -17,7 +17,7 @@ impl CountdownTimer {
     }
   }
 
-  pub fn new_with_state(
+  pub fn pack(
     duration: Duration,
     remaining_duration: Duration,
     previous_synchronization_time: DateTime,
@@ -49,8 +49,8 @@ impl CountdownTimer {
     self.remaining_duration
   }
 
-  pub fn previous_synchronization_time(&self) -> &DateTime {
-    &self.previous_synchronization_time
+  pub fn previous_synchronization_time(&self) -> DateTime {
+    self.previous_synchronization_time
   }
 
   pub fn change_remaining_duration(&mut self, new_value: Duration) {

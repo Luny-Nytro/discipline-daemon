@@ -6,6 +6,8 @@ use crate::{
   TimeRange, Uuid, Weekday, WeekdayRange
 };
 
+// TODO: Add a variant that is effective according to a weekday and time range condition
+// TODO: Add a variant that is effective according to a screen time allowance condition
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RuleActivator {
   AllTheTime,
@@ -112,19 +114,30 @@ impl PolicyEnabler {
     self.timer.synchronize(now);
   }
 
+  pub fn enabled_duration(&self) -> Duration {
+    self.timer.duration()
+  }
+
+  pub fn remaining_enabled_duration(&self) -> Duration {
+    self.timer.remaining_duration()
+  }
+
+  pub fn previous_synchronization_time(&self) -> DateTime {
+    self.timer.previous_synchronization_time()
+  }
+
   pub fn pack(
     duration: Duration,
     remaining_duration: Duration,
     previous_synchronization_time: DateTime
   ) -> Self {
-    todo!()
-    // Self {
-    //   timer
-    // }
-  }
-
-  pub fn unpack_ref(&self) -> &CountdownTimer {
-    &self.timer
+    Self {
+      timer: CountdownTimer::pack(
+        duration,
+        remaining_duration, 
+        previous_synchronization_time,
+      )
+    }
   }
 }
 
@@ -348,6 +361,10 @@ impl Regulator {
   }
 }
 
+// TODO: Add maximum_policies_number and maximum_rules_number fields
+// that the user may modify
+
+// TODO: Add policies_number and rules_number fields for tracking memory usage.
 #[derive(Debug)]
 pub struct CommonInfo {
   pub(super) private_password: OperatingSystemPassword,

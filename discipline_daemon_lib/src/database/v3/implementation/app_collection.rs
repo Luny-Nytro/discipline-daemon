@@ -44,7 +44,7 @@ fn serialize(
   context.write_scalar(&fields.user_screen_access_regulation_applying_interval, &app_state.user_screen_access_regulation_common_info.applying_interval());
 }
 
-pub fn deserialize(
+fn deserialize(
   context: &mut DeserializeCompoundValueContext,
   fields: &AppFields,
 )
@@ -93,7 +93,7 @@ impl AppCollection {
     code.push_str(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
   }
 
-  pub fn write_initialization_statement_into(&self, code: &mut String) -> NormalizedApp {
+  fn write_initialization_statement_into(&self, code: &mut String) -> NormalizedApp {
     code.push_str("INSERT INTO ");
     code.push_str(&self.name);
 
@@ -112,31 +112,24 @@ impl AppCollection {
     app
   }
 
-  pub fn initialize(&self, database: &Database) -> Result<NormalizedApp, GenericError> {
+  fn initialize(&self, database: &Database) -> Result<NormalizedApp, GenericError> {
     let mut code = String::new();
     let app = self.write_initialization_statement_into(&mut code);
     database.execute(&code)?;
     Ok(app)
   }
-}
 
-pub struct Retriever<'a> {
-  database: &'a Database,
-  collection: &'a AppCollection,
-}
-
-impl<'a> Retriever<'a> {
-  pub fn retrieve_app_normalized(&self) -> Result<NormalizedApp, GenericError> {
+  pub fn retrieve_normalized(&self, database: &Database) -> Result<NormalizedApp, GenericError> {
     let mut code = String::new();
     code.push_str("SELECT FROM ");
-    code.push_str(&self.collection.name);
+    code.push_str(&self.name);
     code.push_str(" WHERE ");
-    code.push_str(&self.collection.fields.id);
+    code.push_str(&self.fields.id);
     code.push_str(" = ");
     serialize_scalar_value_into(&0, &mut code);
     code.push_str(";");
 
-    let mut statement = self.database.connection.prepare(&code).map_err(|error|
+    let mut statement = database.connection.prepare(&code).map_err(|error|
       GenericError::new("")
     )?;
     let mut iterator = statement.query(()).map_err(|error|
@@ -146,26 +139,26 @@ impl<'a> Retriever<'a> {
       GenericError::new("")
     )?;
     let Some(item) = item else {
-      return self.collection.initialize(self.database);
+      return self.initialize(database);
     };
 
     let context = DeserializeCompoundValueContext(item);
     Ok(NormalizedApp {
-      id: context.deserializable_scalar(&self.collection.fields.id)?,
+      id: context.deserializable_scalar(&self.fields.id)?,
       user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::pack(
-        context.deserializable_scalar(&self.collection.fields.user_screen_access_regulation_private_password)?,
-        context.deserializable_scalar(&self.collection.fields.user_screen_access_regulation_applying_interval)?,
+        context.deserializable_scalar(&self.fields.user_screen_access_regulation_private_password)?,
+        context.deserializable_scalar(&self.fields.user_screen_access_regulation_applying_interval)?,
       )
     })
   }
 
-  pub fn retrieve_app(&self) -> Result<AppState, GenericError> {
-    let normalized_app = self.retrieve_app_normalized()?;
-    let normalized_users = self.database.user.retrieve_all_users(self.database)?;
-    let normalized_user_screen_access_regulation_rules = self.database.user_screen_access_regulation_rule.retrieve_all_rules(self.database)?;
-    let normalized_user_screen_access_regulation_policies = self.database.user_screen_access_regulation_policy.retrieve_all_policies(self.database)?;    
+  pub fn retrieve(&self, database: &Database) -> Result<AppState, GenericError> {
+    let normalized_app = self.retrieve_normalized(database)?;
+    let normalized_users = database.user.retrieve_all_users(database)?;
+    let normalized_user_screen_access_regulation_rules = database.user_screen_access_regulation_rule.retrieve_all_rules(database)?;
+    let normalized_user_screen_access_regulation_policies = database.user_screen_access_regulation_policy.retrieve_all_policies(database)?;    
 
-    let mut denormalized_users = normalized_users
+    let denormalized_users = normalized_users
       .into_iter()
       .map(|user| 
         user.denormalize(
@@ -179,4 +172,14 @@ impl<'a> Retriever<'a> {
 
     Ok(denormalized_app)
   }
+
+  pub fn create_update_draft<'a>(&self, database: &'a Database) -> AppUpdateDraft<'a> {
+    AppUpdateDraft {
+      database
+    }
+  }
+}
+
+pub struct AppUpdateDraft<'a> {
+  database: &'a Database
 }

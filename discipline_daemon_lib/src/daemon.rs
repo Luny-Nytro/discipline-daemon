@@ -10,6 +10,8 @@ use crate::{
 
 use crate::database::Database;
 
+// TODO: Add a global error logger field that is accessable via a method.
+// that operations should use to log internal errors.
 pub struct Daemon {
   pub state: AppState,
   pub database: Database,

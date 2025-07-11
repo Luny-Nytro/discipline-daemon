@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use rusqlite::Connection;
 use super::implementation::*;
-use crate::{database::v3::implementation, *};
+use crate::*;
 
 pub struct Database {
   pub connection: Connection,
@@ -97,6 +97,12 @@ impl Database {
     )
   }
 
+  pub fn retrieve_app_state(&self) -> Result<AppState, GenericError> {
+    self.app.retrieve(self)
+  }
+  pub fn create_app_update_draft(&self) -> app_collection::AppUpdateDraft {
+    self.app.create_update_draft(self)
+  }
   pub fn create_user_update_draft(&self) -> user_collection::UserUpdateDraft {
     self.user.create_user_update_draft(self)
   }
@@ -114,9 +120,5 @@ impl Database {
   }
   pub fn create_user_screen_access_regulation_policy_collection_update_draft(&self) -> screen_access_regulation_policy_collection::PolicyCollectionUpdateDraft {
     self.user_screen_access_regulation_policy.create_collection_update_draft(self)
-  }
-
-  pub fn load_app_state(&self) {
-    
   }
 }
