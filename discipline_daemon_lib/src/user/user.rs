@@ -4,7 +4,7 @@ use crate::{
   OperatingSystemUserId, OperatingSystemUsername, Uuid
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserName(String);
 
 impl UserName {
@@ -43,7 +43,7 @@ pub struct User {
 }
 
 impl User {
-  pub fn pack(
+  pub fn from_fields(
     id: Uuid,
     name: UserName,
     operating_system_user_id: OperatingSystemUserId,
@@ -80,40 +80,4 @@ impl User {
   pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulator {
     &self.screen_access_regulation
   }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChangeUserNameArgument {
-  user_id: Uuid,
-  new_user_name: UserName
-}
-
-#[derive(Debug, Clone)]
-pub enum ChangeUserNameOutcome {
-  NoSuchUser,
-  Success,
-  InternalError,
-}
-
-pub fn execute(
-  daemon: DaemonMutex, 
-  argument: ChangeUserNameArgument
-) 
-  -> ChangeUserNameOutcome
-{
-  let mut daemon = daemon.lock().unwrap();
-  let Some(user) = daemon.state.users.iter().find(predicate) else {
-    return ChangeUserNameOutcome::NoSuchUser;
-  };
-
-  let mut draft = daemon.database.create_user_update_draft();
-  draft.update_name(&argument.new_user_name);
-  
-  if let Err(error) = draft.commit(&argument.user_id) {
-    // daemon.internal_logger().log_error()
-    return ChangeUserNameOutcome::InternalError;
-  }
-
-  user.name = argument.new_user_name;
-  ChangeUserNameOutcome::Success
 }

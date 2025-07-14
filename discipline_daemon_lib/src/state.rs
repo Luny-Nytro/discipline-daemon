@@ -18,6 +18,12 @@ impl Default for AppState {
 }
 
 impl AppState {
+  pub fn find_user_index(&self, user_id: &Uuid) -> Option<usize> {
+    self.users.iter().position(|user| user.id == *user_id)
+  }
+  pub fn find_user_by_index_or_panic(&self, user_index: usize) -> &User {
+    &self.users[user_index]
+  }
   pub fn find_user_by_id(&self, user_id: &Uuid) -> Option<&User> {
     self.users.iter().find(|user| user.id == *user_id)
   }

@@ -1,6 +1,6 @@
 use super::{
-  Serialize, Deserialize, Uuid, IsOperation,
-  Daemon, DateTime, InternalOperationOutcome,
+  Serialize, Deserialize, Uuid, IsPRPC,
+  Daemon, DateTime, rule_db,
 };
 
 #[derive(Debug, Clone)]
@@ -10,6 +10,7 @@ pub enum Outcome {
   NoSuchRule,
   MayNotDeleteRuleWhilePolicyEnabled,
   Success,
+  InternalError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,48 +20,40 @@ pub struct Operation {
   rule_id: Uuid,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else
     {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
+      return Outcome::NoSuchUser;
     };
 
-    let regulator = &mut user.screen_access_regulation;
+    let regulation = &mut user.screen_access_regulation;
 
-    let Some(policy) = regulator
+    let Some(policy) = regulation
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);
+      return Outcome::NoSuchPolicy;
     };
 
     if policy.there_is_rule_with_id(&self.rule_id) {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchRule);
+      return Outcome::NoSuchRule;
     }
 
     let now = DateTime::now();
     if policy.is_enabled(now) {
-      return InternalOperationOutcome::public_outcome(Outcome::MayNotDeleteRuleWhilePolicyEnabled);
+      return Outcome::MayNotDeleteRuleWhilePolicyEnabled;
     }
 
-    if let Err(error) = daemon
-      .database_specification
-      .user_screen_access_regulator()
-      .delete_rule(
-        &daemon.database_connection, 
-        &self.user_id,
-        &self.policy_id, 
-        &self.rule_id,
-      )
-    {
-      return InternalOperationOutcome::internal_error(error.change_context("delete rule"));
+    if let Err(error) = rule_db::delete_rule(&daemon.database, &self.rule_id) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
     policy.remove_rule_by_id(&self.rule_id);
-    InternalOperationOutcome::public_outcome(Outcome::Success)
+    Outcome::Success
   }
 }

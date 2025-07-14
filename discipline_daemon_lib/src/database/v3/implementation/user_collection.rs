@@ -50,7 +50,7 @@ impl NormalizedUser {
       .map(|policy| policy.denormalize(user_screen_access_regulation_rules))
       .collect();
 
-    User::pack(
+    User::from_fields(
       self.id,
       self.name,
       self.operating_system_user_id,
@@ -65,7 +65,7 @@ impl NormalizedUser {
   }
 }
 
-pub fn serialize_user(
+fn serialize_user(
   context: &mut SerializeCompoundValueContext,
   fields: &UserFields,
   user: &User,
@@ -79,7 +79,7 @@ pub fn serialize_user(
   context.write_scalar(&fields.screen_access_regulation_is_user_screen_access_blocked, &user.screen_access_regulator().is_user_screen_access_blocked());
 }
 
-pub fn deserialize_user(
+fn deserialize_user(
   context: &mut DeserializeCompoundValueContext,
   fields: &UserFields,
 ) 
@@ -134,172 +134,223 @@ impl UserCollection {
     }
   }
 
-  pub fn write_definition_into(&self, code: &mut String) {
-    code.push_str("CREATE TABLE IF NOT EXISTS ");
-    code.push_str(&self.name);
-    code.push_str(" (");
-    code.push_str(&self.fields.id);
-    code.push_str(" TEXT PRIMARY KEY, ");
-    code.push_str(&self.fields.name);
-    code.push_str(" TEXT NOT NULL, ");
-    code.push_str(&self.fields.operating_system_user_id);
-    code.push_str(" INTEGER NOT NULL, ");
-    code.push_str(&self.fields.operating_system_user_name);
-    code.push_str(" TEXT NOT NULL, ");
-    code.push_str(&self.fields.operating_system_user_password);
-    code.push_str(" TEXT NOT NULL, ");
-    code.push_str(&self.fields.screen_access_regulation_is_applying_enabled);
-    code.push_str(" INTEGER NOT NULL, ");
-    code.push_str(&self.fields.screen_access_regulation_is_user_screen_access_blocked);
-    code.push_str(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
-  }
-
-  pub fn add_user(&self, code: &mut String, user: &User) {
-    code.push_str("INSERT INTO ");
-    code.push_str(&self.name);
-
-    let mut context = SerializeCompoundValueContext::new();
-    serialize_user(&mut context, &self.fields, user);
-
-    code.push_str(" (");
-    code.push_str(&context.column_names);
-    code.push_str(") VALUES (");
-    code.push_str(&context.column_values);
-    code.push_str(");");
-  }
-
-  pub fn delete_user(&self, code: &mut String, user_id: &Uuid) {
-    code.push_str("DELETE FROM ");
-    code.push_str(&self.name);
-    code.push_str(" WHERE ");
-    code.push_str(&self.fields.id);
-    code.push_str(" = ");
-    serialize_scalar_value_into(user_id, code);
-    code.push_str(";");
-  }
-
-  pub fn write_retrieve_all_users(&self, code: &mut String) {
-    code.push_str("SELECT * FROM ");
-    code.push_str(&self.name);
-    code.push_str(";");
-  }
-
-  pub fn retrieve_all_users(&self, database: &Database) -> Result<Vec<NormalizedUser>, GenericError> {
-    let mut code = String::new();
-    self.write_retrieve_all_users(&mut code);
-
-    let mut statement = database.connection.prepare(&code).map_err(|error| 
-      GenericError::new("")
-    )?;
-    let mut iterator = statement.query(()).map_err(|error| 
-      GenericError::new("")
-    )?;
-    let mut rules = Vec::new();
-    loop {
-      let item = iterator.next().map_err(|error| 
-        GenericError::new("")
-      )?;
-      let Some(item) = item else {
-        return Ok(rules);
-      };
-      let mut context = DeserializeCompoundValueContext(item);
-      rules.push(deserialize_user(&mut context, &self.fields)?);
-    }
-  }
-
-  pub fn update_user(&self, code: &mut String, user_id: &Uuid, user_update_draft: &UserUpdateDraft) {
-    user_update_draft.maybe_write_update_statement_into(code, user_id);
-  }
-
-  pub fn create_user_update_draft<'a>(&self, database: &'a Database) -> UserUpdateDraft<'a> {
-    UserUpdateDraft::new(database)
-  }
-
-  pub fn create_collection_update_draft<'a>(&self, database: &'a Database) -> UserCollectionUpdateDraft<'a> {
-    UserCollectionUpdateDraft::new(database) 
-  }
-}
-
-pub struct UserUpdateDraft<'a> {
-  draft: CollectionItemUpdateDraft,
-  database: &'a Database,
-  collection: &'a UserCollection,
-}
-
-impl<'a> UserUpdateDraft<'a> {
-  pub fn new(database: &'a Database) -> Self {
+  pub fn new_with_descriptive_field_names(collection_name: String) -> Self {
     Self {
-      draft: CollectionItemUpdateDraft::new(),
-      database,
-      collection: &database.user,
+      name: collection_name,
+      fields: UserFields {
+        id: "Id".into(),
+        name: "Name".into(),
+        operating_system_user_id: "OperatingSystemUserId".into(),
+        operating_system_user_name: "OperatingSystemUserName".into(),
+        operating_system_user_password: "OperatngSystemUserPassword".into(),
+        screen_access_regulation_is_applying_enabled: "UserScreenAccessRegulationIsApplyingEnabled".into(),
+        screen_access_regulation_is_user_screen_access_blocked: "UserScreenAccessRegulationIsUserScreenAccessBlocked".into(),
+      }
     }
   }
+}
 
-  pub fn update_name(&mut self, new_value: &UserName) {
-    self.draft.write_scalar(&self.database.user.fields.name, new_value);
-  }
+fn collection(database: &Database) -> &UserCollection {
+  &database.user
+}
 
-  pub fn update_screen_access_regulation_is_applying_enabled(&mut self, new_value: bool) {
-    self.draft.write_scalar(&self.collection.fields.screen_access_regulation_is_applying_enabled, &new_value);
-  }
+pub fn write_define(database: &Database, code: &mut DatabaseCode) {
+  let me = collection(database);
   
-  pub fn update_screen_access_regulation_is_user_screen_access_blocked(&mut self, new_value: bool) {
-    self.draft.write_scalar(&self.collection.fields.screen_access_regulation_is_user_screen_access_blocked, &new_value);
+  code.write("CREATE TABLE IF NOT EXISTS ");
+  code.write(&me.name);
+  code.write(" (");
+  code.write(&me.fields.id);
+  code.write(" TEXT PRIMARY KEY, ");
+  code.write(&me.fields.name);
+  code.write(" TEXT NOT NULL, ");
+  code.write(&me.fields.operating_system_user_id);
+  code.write(" INTEGER NOT NULL, ");
+  code.write(&me.fields.operating_system_user_name);
+  code.write(" TEXT NOT NULL, ");
+  code.write(&me.fields.operating_system_user_password);
+  code.write(" TEXT NOT NULL, ");
+  code.write(&me.fields.screen_access_regulation_is_applying_enabled);
+  code.write(" INTEGER NOT NULL, ");
+  code.write(&me.fields.screen_access_regulation_is_user_screen_access_blocked);
+  code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
+}
+
+pub fn write_add_user(database: &Database, code: &mut DatabaseCode, user: &User) {
+  let collection = collection(database);
+
+  code.write("INSERT INTO ");
+  code.write(&collection.name);
+
+  let mut context = SerializeCompoundValueContext::new();
+  serialize_user(&mut context, &collection.fields, user);
+
+  code.write(" (");
+  code.write(&context.column_names);
+  code.write(") VALUES (");
+  code.write(&context.column_values);
+  code.write(");");
+}
+
+pub fn add_user(database: &Database, user: &User) -> Result<(), GenericError> {
+  let mut draft = DatabaseCode::new();
+  write_add_user(database, &mut draft, user);
+  database.execute(draft.as_str())
+}
+
+pub fn write_delete_user(database: &Database, code: &mut DatabaseCode, user_id: &Uuid) {
+  let collection = collection(database);
+
+  code.write("DELETE FROM ");
+  code.write(&collection.name);
+  code.write(" WHERE ");
+  code.write(&collection.fields.id);
+  code.write(" = ");
+  serialize_scalar_value_into(user_id, code.as_mut());
+  code.write(";");
+}
+
+pub fn delete_user(database: &Database, user_id: &Uuid) -> Result<(), GenericError> {
+  let mut draft = DatabaseCode::new();
+  write_delete_user(database, &mut draft, user_id);
+  database.execute(draft.as_str())
+}
+
+pub fn write_retrieve_all(database: &Database, code: &mut DatabaseCode) {
+  let collection = collection(database);
+
+  code.write("SELECT * FROM ");
+  code.write(&collection.name);
+  code.write(";");
+}
+
+pub struct UserUpdateDraft {
+  draft: CollectionItemUpdateDraft
+}
+
+impl UserUpdateDraft {
+  pub fn new() -> Self {
+    Self {
+      draft: CollectionItemUpdateDraft::new()
+    }
+  }
+}
+
+pub fn write_name(
+  database: &Database, 
+  draft: &mut UserUpdateDraft, 
+  new_value: &UserName,
+) {
+  let collection = collection(database);
+  draft.draft.write_scalar(&collection.fields.name, new_value);
+}
+
+pub fn update_name(
+  database: &Database,
+  user_id: &Uuid,
+  new_value: &UserName,
+) -> Result<(), GenericError> {
+  let mut draft = UserUpdateDraft::new();
+  write_name(database, &mut draft, new_value);
+  commit_user_update_draft(database, &draft, user_id)
+}
+
+pub fn write_screen_access_regulation_is_applying_enabled(
+  database: &Database,
+  draft: &mut UserUpdateDraft,
+  new_value: bool,
+) {
+  let collection = collection(database);
+  draft.draft.write_scalar(&collection.fields.screen_access_regulation_is_applying_enabled, &new_value);
+}
+
+pub fn update_screen_access_regulation_is_applying_enabled(
+  database: &Database,
+  user_id: &Uuid,
+  new_value: bool,
+) -> Result<(), GenericError> {
+  let mut draft = UserUpdateDraft::new();
+  write_screen_access_regulation_is_applying_enabled(database, &mut draft, new_value);
+  commit_user_update_draft(database, &draft, user_id)
+}
+
+pub fn write_screen_access_regulation_is_user_screen_access_blocked(
+  database: &Database, 
+  draft: &mut UserUpdateDraft,
+  new_value: bool,
+) {
+  let collection = collection(database);
+  draft.draft.write_scalar(&collection.fields.screen_access_regulation_is_user_screen_access_blocked, &new_value);
+}
+
+pub fn write_update_user(
+  database: &Database, 
+  database_update_draft: &mut DatabaseCode, 
+  user_update_draft: &UserUpdateDraft, 
+  user_id: &Uuid,
+) {
+  let Some(updates) = user_update_draft.draft.updates() else {
+    return;
+  };
+
+  let collection = collection(database);
+
+  database_update_draft.write("UPDATE ");
+  database_update_draft.write(&collection.name);
+  database_update_draft.write(" SET ");
+  database_update_draft.write(&updates);
+  database_update_draft.write(" WHERE ");
+  database_update_draft.write(&collection.fields.id);
+  database_update_draft.write(" = ");
+  serialize_scalar_value_into(user_id, &mut database_update_draft.code);
+  database_update_draft.write(";");
+}
+
+// pub fn update_user() {
+
+// }
+
+pub fn commit_user_update_draft(
+  database: &Database,
+  user_update_draft: &UserUpdateDraft,
+  user_id: &Uuid,
+) -> Result<(), GenericError> {
+  if user_update_draft.draft.is_empty() {
+    return Ok(())
   }
 
-  pub fn maybe_write_update_statement_into(&self, code: &mut String, user_id: &Uuid) {
-    let Some(updates) = self.draft.updates() else {
-      return;
+  let mut database_update_draft = DatabaseCode::new();
+  write_update_user(database, &mut database_update_draft, user_update_draft, user_id);
+  database.execute(database_update_draft.as_ref())
+}
+
+pub fn retrieve_all(database: &Database) -> Result<Vec<NormalizedUser>, GenericError> {
+  let collection = collection(database);
+
+  let mut code = DatabaseCode::new();
+  write_retrieve_all(database, &mut code);
+
+  let mut statement = database.connection.prepare(&code.code).map_err(|error| 
+    GenericError::new("")
+  )?;
+
+  let mut iterator = statement.query(()).map_err(|error| 
+    GenericError::new("")
+  )?;
+  
+  let mut rules = Vec::new();
+  
+  loop {
+    let item = iterator.next().map_err(|error| 
+      GenericError::new("")
+    )?;
+  
+    let Some(item) = item else {
+      return Ok(rules);
     };
-
-    code.push_str("UPDATE ");
-    code.push_str(&self.collection.name);
-    code.push_str(" SET ");
-    code.push_str(&updates);
-    code.push_str(" WHERE ");
-    code.push_str(&self.collection.fields.id);
-    code.push_str(" = ");
-    serialize_scalar_value_into(user_id, code);
-    code.push_str(";");
-  }
-
-  pub fn commit(&self, user_id: &Uuid) -> Result<(), GenericError> {
-    if self.draft.is_empty() {
-      return Ok(())
-    }
-
-    let mut code = String::new();
-    self.maybe_write_update_statement_into(&mut code, user_id);
-    self.database.execute(&code)
-  }
-}
-
-pub struct UserCollectionUpdateDraft<'a> {
-  code: String,
-  database: &'a Database,
-}
-
-impl<'a> UserCollectionUpdateDraft<'a> {
-  pub fn new(database: &'a Database) -> Self {
-    Self {
-      code: String::new(),
-      database,
-    }
-  }
   
-  pub fn add_user(&mut self, user: &User) {
-    self.database.user.add_user(&mut self.code, user);
-  }
+    let mut context = DeserializeCompoundValueContext(item);
   
-  pub fn delete_user(&mut self, user_id: &Uuid) {
-    self.database.user.delete_user(&mut self.code, user_id);
-  }
-  
-  pub fn update_user(&mut self, user_id: &Uuid, user_update_draft: &UserUpdateDraft) {
-    self.database.user.update_user(&mut self.code, user_id, user_update_draft);
-  }
-  
-  pub fn commit(&self) -> Result<(), GenericError> {
-    self.database.execute(&self.code)
+    rules.push(deserialize_user(&mut context, &collection.fields)?);
   }
 }

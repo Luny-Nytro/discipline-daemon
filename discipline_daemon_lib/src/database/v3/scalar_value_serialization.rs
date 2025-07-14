@@ -1,72 +1,73 @@
+
 pub struct SerializeScalarValueContext<'a> {
-  into: &'a mut String,
+  code: &'a mut String,
 }
 
 impl<'a> SerializeScalarValueContext<'a> {
   pub(super) fn new(into: &'a mut String) -> Self {
     Self { 
-      into,  
+      code: into,  
     }
   }
 
   pub fn write_null(&mut self) {
-    self.into.push_str("NULL");
+    self.code.push_str("NULL");
   }
 
   pub fn write_boolean(&mut self, boolean: bool) {
-    self.into.push_str(if boolean { "TRUE" } else { "FALSE" });
+    self.code.push_str(if boolean { "TRUE" } else { "FALSE" });
   }
 
   pub fn write_i8(&mut self, number: i8) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_u8(&mut self, number: u8) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_i16(&mut self, number: i16) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_u16(&mut self, number: u16) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_i32(&mut self, number: i32) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_u32(&mut self, number: u32) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_i64(&mut self, number: i64) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_u64(&mut self, number: u64) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_f32(&mut self, number: f32) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_f64(&mut self, number: f64) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_isize(&mut self, number: isize) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_usize(&mut self, number: usize) {
-    self.into.push_str(&number.to_string());
+    self.code.push_str(&number.to_string());
   }
 
   pub fn write_string(&mut self, string: &String) {
-    escape_string_into(string, self.into);
+    escape_string_into(string, self.code);
   }  
 }
 
@@ -90,7 +91,7 @@ pub trait SerializableScalarValue {
 
 pub fn serialize_scalar_value_into(
   scalar_value: &impl SerializableScalarValue,
-  into: &mut String,
+  code: &mut String,
 ) {
-  scalar_value.serialize(&mut SerializeScalarValueContext { into });
+  scalar_value.serialize(&mut SerializeScalarValueContext { code });
 }

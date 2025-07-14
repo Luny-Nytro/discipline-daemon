@@ -1,6 +1,6 @@
 use super::{
-  Serialize, Deserialize, Daemon, IsOperation, Uuid,
-  IntoPublic, RuleCreator, Policy, InternalOperationOutcome, RulePublicRepr,
+  Serialize, Deserialize, Daemon, IsPRPC, Uuid,
+  IntoPublic, RuleCreator, Policy, rule_db, RulePublicRepr,
 };
 
 #[derive(Debug, Clone)]
@@ -9,7 +9,8 @@ pub enum Outcome {
   ThereIsNoPolicyWithId(Uuid),
   RuleCreationLimitReached,
   ProvidedRuleIdIsUsedByAnotherRule,
-  Success(RulePublicRepr)
+  Success(RulePublicRepr),
+  InternalError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,49 +20,47 @@ pub struct Operation {
   rule_creator: RuleCreator,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::ThereIsNoUserWithId(self.user_id));
+      return Outcome::ThereIsNoUserWithId(self.user_id);
     };
     
     let Some(policy) = user
       .screen_access_regulation
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::ThereIsNoPolicyWithId(self.policy_id));
+      return Outcome::ThereIsNoPolicyWithId(self.policy_id);
     };
 
     if policy.rules.len() >= Policy::MAX_RULES {
-      return InternalOperationOutcome::public_outcome(Outcome::RuleCreationLimitReached);
+      return Outcome::RuleCreationLimitReached;
     }
 
     if let Some(rule_id) = self.rule_creator.id {
       if policy.rules.iter().any(|rule| rule.id == rule_id) {
-        return InternalOperationOutcome::public_outcome(Outcome::ProvidedRuleIdIsUsedByAnotherRule);
+        return Outcome::ProvidedRuleIdIsUsedByAnotherRule;
       }
     }
 
     let rule = self.rule_creator.create();
-    if let Err(error) = daemon
-      .database_specification
-      .user_screen_access_regulator()
-      .add_rule(
-        &daemon.database_connection, 
-        &self.user_id, 
-        &self.policy_id,
-        &rule, 
-      ) 
-    {
-      return InternalOperationOutcome::internal_error(error);
+    if let Err(error) = rule_db::add_rule(
+      &daemon.database, 
+      &rule, 
+      &self.user_id, 
+      &self.policy_id, 
+      policy.rules.len(),
+    ) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
     policy.rules.push(rule.clone());
-    InternalOperationOutcome::public_outcome(Outcome::Success(rule.into_public()))
+    Outcome::Success(rule.into_public())
   }
 }

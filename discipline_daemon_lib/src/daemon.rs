@@ -1,14 +1,15 @@
 use clap::{Parser, command};
+use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread::{sleep, spawn};
 use crate::{
-  GenericError, IsOperation, AppState, 
+  GenericError, AppState, 
   DateTime, Duration,
-  InternalOperationOutcome,
 };
 
 use crate::database::Database;
+use crate::database::app_collection as db;
 
 // TODO: Add a global error logger field that is accessable via a method.
 // that operations should use to log internal errors.
@@ -32,7 +33,8 @@ impl Daemon {
         .change_context("creating daemon")
     )?;
 
-    let state = database.load(&database).map_err(|error|
+    
+    let state = db::retrieve(&database).map_err(|error|
       error
         .change_context("loading daemon state from the database")
         .change_context("creating daemon")
@@ -59,15 +61,19 @@ impl Daemon {
     &self.http_server_address
   }
 
-  pub fn execute<Operation>(
-    &mut self, 
-    operation: Operation,
-  ) -> 
-    InternalOperationOutcome<Operation::Outcome>
-  where 
-    Operation: IsOperation
-  {
-    operation.execute(self)
+  // pub fn execute<Operation>(
+  //   &mut self, 
+  //   operation: Operation,
+  // ) -> 
+  //   InternalOperationOutcome<Operation::Outcome>
+  // where 
+  //   Operation: Operation
+  // {
+  //   operation.execute(self)
+  // }
+
+  pub fn log_internal_error(&mut self, error: impl Debug) {
+
   }
 }
 

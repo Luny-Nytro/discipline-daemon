@@ -119,7 +119,7 @@ impl TimeRange {
     Duration::from_milliseconds((self.till - self.from) as u64)
   }
 
-  pub fn contains(&self, time: Time) -> bool {
+  pub fn contains_time(&self, time: Time) -> bool {
     let time = time.milliseconds_since_midnight();
     self.from <= time && time <= self.till
   }

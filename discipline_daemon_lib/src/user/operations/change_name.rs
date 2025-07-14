@@ -1,6 +1,6 @@
 use super::{
-  Daemon, IsOperation, Serialize, Deserialize, Uuid, UserName,
-  InternalOperationOutcome,
+  Daemon, IsPRPC, Serialize, Deserialize, Uuid, UserName,
+  db,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,29 +13,27 @@ pub struct Operation {
 pub enum Outcome {
   NoSuchUser,
   Success,
+  InternalError,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
+      return Outcome::NoSuchUser;
     };
 
-    if let Err(error) = daemon
-      .database_specification
-      .user_module()
-      .change_user_name(
-        &daemon.database_connection, 
-        &self.user_id, 
-        &self.new_user_name
-      )
-    {
-      return InternalOperationOutcome::internal_error(error);
+    if let Err(error) = db::update_name(
+      &daemon.database, 
+      &self.user_id, 
+      &self.new_user_name
+    ) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
     user.name = self.new_user_name;
-    InternalOperationOutcome::public_outcome(Outcome::Success)
+    Outcome::Success
   }
 }

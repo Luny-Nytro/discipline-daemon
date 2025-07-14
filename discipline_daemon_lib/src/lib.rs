@@ -1,4 +1,8 @@
+mod logic;
+
 use uuid::Uuid;
+
+// mod with_pointers;
 
 pub mod utility;
 pub use utility::GenericError;
@@ -6,11 +10,8 @@ pub use utility::GenericError;
 pub mod database;
 pub use database::Database;
 
-pub mod to_public_repr;
-pub use to_public_repr::ToPublicRepr;
-
-pub mod operation;
-pub use operation::*;
+pub mod prpc;
+pub use prpc::*;
 
 pub mod chronic;
 pub use chronic::*;
@@ -41,9 +42,6 @@ pub use state::AppState;
 
 pub mod daemon;
 pub use daemon::*;
-
-// pub mod operation;
-// pub use operation::IsOperation;
 
 // pub mod synchronize_source;
 // pub use synchronize_source::*;

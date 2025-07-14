@@ -14,6 +14,7 @@ mod compound_value_updates;
 use compound_value_updates::CollectionItemUpdateDraft;
 
 mod database;
-pub use database::Database;
+pub use database::*;
 
 mod implementation;
+pub use implementation::*;

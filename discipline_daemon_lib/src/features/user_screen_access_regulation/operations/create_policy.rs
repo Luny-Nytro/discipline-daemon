@@ -1,7 +1,7 @@
 use super::{
   Serialize, Deserialize, Uuid, Daemon, 
   PolicyCreator, DateTime, PolicyPublicRepr,
-  IsOperation, IntoPublic, InternalOperationOutcome,
+  IsPRPC, IntoPublic, policy_db,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,38 +15,36 @@ pub enum Outcome {
   NoSuchUser,
   ReachedMaximumPolicesAllowed,
   Success(PolicyPublicRepr),
+  InternalError,
 }
 
-impl IsOperation for CreatePolicy {
+impl IsPRPC for CreatePolicy {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
+      return Outcome::NoSuchUser;
     };
 
-    let regulator = &mut user.screen_access_regulation;
+    let regulation = &mut user.screen_access_regulation;
 
-    if regulator.reached_maximum_polices_allowed() {
-      return InternalOperationOutcome::public_outcome(Outcome::ReachedMaximumPolicesAllowed);
+    if regulation.reached_maximum_polices_allowed() {
+      return Outcome::ReachedMaximumPolicesAllowed;
     }
 
     let now = DateTime::now();
     let policy = self.policy_creator.create(now);
 
-    if let Err(error) = daemon
-      .database_specification
-      .user_screen_access_regulator()
-      .add_policy(
-        &daemon.database_connection, 
-        &self.user_id,
-        &policy, 
-      )
-    {
-      return InternalOperationOutcome::internal_error(error);
+    if let Err(error) = policy_db::add_policy(
+      &daemon.database, 
+      &policy, 
+      &self.user_id
+    ) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
-    regulator.add_policy(policy.clone());
-    InternalOperationOutcome::public_outcome(Outcome::Success(policy.into_public()))
+    regulation.add_policy(policy.clone());
+    Outcome::Success(policy.into_public())
   }
 }

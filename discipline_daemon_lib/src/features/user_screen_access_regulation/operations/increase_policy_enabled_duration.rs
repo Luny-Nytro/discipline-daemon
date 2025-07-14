@@ -1,6 +1,6 @@
 use super::{
-  Serialize, Deserialize, Daemon, Duration, IsOperation, Uuid,
-  InternalOperationOutcome
+  Serialize, Deserialize, Daemon, Duration, IsPRPC, Uuid,
+  policy_db
 };
 
 #[derive(Debug, Clone)]
@@ -9,6 +9,7 @@ pub enum Outcome {
   NoSuchPolicy,
   WouldBeEffectiveForTooLong,
   Success,
+  InternalError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,22 +20,22 @@ pub struct Operation {
   increment: Duration,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
+      return Outcome::NoSuchUser;
     };
 
     let Some(policy) = user
       .screen_access_regulation
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchPolicy);
+      return Outcome::NoSuchPolicy;
     };
 
     let Some(new_remaining_duration) = policy
@@ -43,27 +44,23 @@ impl IsOperation for Operation {
       .remaining_duration()
       .checked_add(&self.increment) else 
     {
-      return InternalOperationOutcome::public_outcome(Outcome::WouldBeEffectiveForTooLong);
+      return Outcome::WouldBeEffectiveForTooLong;
     };
 
     if new_remaining_duration.total_weeks() > 3 {
-      return InternalOperationOutcome::public_outcome(Outcome::WouldBeEffectiveForTooLong);
+      return Outcome::WouldBeEffectiveForTooLong;
     }
 
-    if let Err(error) = daemon
-      .database_specification
-      .user_screen_access_regulator()
-      .change_policy_enabled_duration(
-        &daemon.database_connection, 
-        &self.user_id,
-        &self.policy_id, 
-        &self.increment,
-      )
-    {
-      return InternalOperationOutcome::internal_error(error);
+    if let Err(error) = policy_db::update_enabled_duration(
+      &daemon.database, 
+      &self.policy_id, 
+      new_remaining_duration,
+    ) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
     policy.enabler.timer.change_remaining_duration(self.increment);
-    InternalOperationOutcome::public_outcome(Outcome::Success)
+    Outcome::Success
   }
 }

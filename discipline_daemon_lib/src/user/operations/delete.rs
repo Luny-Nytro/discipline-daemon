@@ -1,5 +1,5 @@
 use super::{
-  Uuid, Serialize, Deserialize, InternalOperationOutcome, IsOperation, 
+  Uuid, Serialize, Deserialize, db, DateTime, IsPRPC, 
   Daemon,
 };
 
@@ -11,27 +11,35 @@ pub struct Operation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser { user_id: Uuid },
-  UserHasEnabledPolicies,
+  SomePoliciesAreEnabled,
+  InternalError,
   Success,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
-    if daemon.state.users.iter().all(|user| user.id != self.user_id) {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser { user_id: self.user_id });
-    }
-
-    if let Err(error) = daemon
-      .database_specification
-      .user_module()
-      .delete_user(&daemon.database_connection, &self.user_id)
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
+    let Some(user_index) = daemon.state.users.iter()
+      .position(|user| user.id == self.user_id) else 
     {
-      return InternalOperationOutcome::internal_error(error);
+      return Outcome::NoSuchUser { 
+        user_id: self.user_id 
+      };
+    };
+
+    let user = &mut daemon.state.users[user_index];
+    let now = DateTime::now();
+    if user.screen_access_regulation.are_some_policies_enabled(now) {
+      return Outcome::SomePoliciesAreEnabled;
+    }
+    
+    if let Err(error) = db::delete_user(&daemon.database, &self.user_id) {
+      daemon.log_internal_error(error);
+      return Outcome::InternalError;
     }
 
-    daemon.state.delete_user_by_id(&self.user_id);
-    InternalOperationOutcome::public_outcome(Outcome::Success)
+    daemon.state.users.remove(user_index);
+    Outcome::Success
   }
 }

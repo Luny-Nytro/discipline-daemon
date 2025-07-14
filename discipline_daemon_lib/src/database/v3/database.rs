@@ -72,13 +72,13 @@ impl Database {
       )
     };
 
-    let mut initialization_code = String::new();
-    database.app.write_definition_into(&mut initialization_code);
-    database.user.write_definition_into(&mut initialization_code);
-    database.user_screen_access_regulation_rule.write_definition_into(&mut initialization_code);
-    database.user_screen_access_regulation_policy.write_definition_into(&mut initialization_code);
+    let mut definitions = DatabaseCode::new();
+    app_collection::write_define(&database, &mut definitions);
+    user_collection::write_define(&database, &mut definitions);
+    screen_access_regulation_rule_integration::write_define(&database, &mut definitions);
+    screen_access_regulation_policy_collection::write_define(&database, &mut definitions);
 
-    database.execute(&initialization_code)?;
+    database.execute(definitions.as_str())?;
 
     Ok(database)
   }
@@ -96,29 +96,56 @@ impl Database {
         .add_attachment("code", code)
     )
   }
+}
 
-  pub fn retrieve_app_state(&self) -> Result<AppState, GenericError> {
-    self.app.retrieve(self)
+pub struct DatabaseCode {
+  pub(super) code: String
+}
+
+impl DatabaseCode {
+  pub fn new() -> Self {
+    Self {
+      code: String::new()
+    }
   }
-  pub fn create_app_update_draft(&self) -> app_collection::AppUpdateDraft {
-    self.app.create_update_draft(self)
+  
+  pub fn write(&mut self, str: &str) {
+    self.code.push_str(str);
   }
-  pub fn create_user_update_draft(&self) -> user_collection::UserUpdateDraft {
-    self.user.create_user_update_draft(self)
+
+  pub fn as_ref(&self) -> &String {
+    &self.code
   }
-  pub fn create_user_collection_update_draft(&self) -> user_collection::UserCollectionUpdateDraft {
-    self.user.create_collection_update_draft(self)
+
+  pub fn as_str(&self) -> &str {
+    &self.code
   }
-  pub fn create_user_screen_access_regulation_rule_update_draft(&self) -> screen_access_regulation_rule_collection::RuleUpdateDraft {
-    self.user_screen_access_regulation_rule.create_rule_update_draft(self)
-  }
-  pub fn create_user_screen_access_regulation_rule_collection_update_draft(&self) -> screen_access_regulation_rule_collection::RuleCollectionUpdateDraft {
-    self.user_screen_access_regulation_rule.create_collection_update_draft(self)
-  }
-  pub fn create_user_screen_access_regulation_policy_update_draft(&self) -> screen_access_regulation_policy_collection::PolicyUpdateDraft {
-    self.user_screen_access_regulation_policy.create_policy_update_draft(self)
-  }
-  pub fn create_user_screen_access_regulation_policy_collection_update_draft(&self) -> screen_access_regulation_policy_collection::PolicyCollectionUpdateDraft {
-    self.user_screen_access_regulation_policy.create_collection_update_draft(self)
+
+  pub fn as_mut(&mut self) -> &mut String {
+    &mut self.code
   }
 }
+
+// pub struct DatabaseCode {
+//   code: String
+// }
+
+// impl DatabaseCode {
+//   pub fn new() -> Self {
+//     Self {
+//       code: String::new(),
+//     }
+//   }
+
+//   pub(super) fn write(&self, string: &str) {
+
+//   }
+
+//   pub(super) fn as_mut(&mut self) -> &mut String {
+//     &mut self.code
+//   }
+
+//   pub(super) fn as_ref(&self) -> &str {
+//     &self.code
+//   }
+// }

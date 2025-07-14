@@ -1,14 +1,16 @@
 use super::{
   Serialize, Deserialize, Daemon, Uuid, DateTime, 
-  InternalOperationOutcome, IsOperation
+  update_screen_access_regulation_is_applying_enabled, IsPRPC
 };
+
 
 #[derive(Debug, Clone)]
 pub enum Outcome {
   NoSuchUser,
   NoActionNeeded,
-  MayNotSetToFalseWhenSomePoliciesAreEnabled,
+  SomePoliciesAreEnabled,
   Success,
+  InternalError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,41 +19,35 @@ pub struct Operation {
   new_value: bool,
 }
 
-impl IsOperation for Operation {
+impl IsPRPC for Operation {
   type Outcome = Outcome;
 
-  fn execute(self, daemon: &mut Daemon) -> InternalOperationOutcome<Outcome> {
-    let Some(user) = daemon
-      .state
-      .find_user_by_id_mut(&self.user_id) else 
-    {
-      return InternalOperationOutcome::public_outcome(Outcome::NoSuchUser);
+  fn execute(self, daemon: &mut Daemon) -> Outcome {
+    let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
+      return Outcome::NoSuchUser;
     };
 
-    let regulator = &mut user.screen_access_regulation;
+    let regulation = &mut user.screen_access_regulation;
 
-    if regulator.is_applying_enabled == self.new_value {
-      return InternalOperationOutcome::public_outcome(Outcome::NoActionNeeded);
+    if regulation.is_applying_enabled == self.new_value {
+      return Outcome::NoActionNeeded;
     }
 
     let now = DateTime::now();
-    if !self.new_value && regulator.are_some_policies_enabled(now) {
-      return InternalOperationOutcome::public_outcome(Outcome::MayNotSetToFalseWhenSomePoliciesAreEnabled);
+    if !self.new_value && regulation.are_some_policies_enabled(now) {
+      return Outcome::SomePoliciesAreEnabled;
     }
 
-    if let Err(error) = daemon
-      .database_specification
-      .user_module()
-      .change_user_screen_access_is_applying_enabled(
-        &daemon.database_connection,
-        &self.user_id,
-        self.new_value,
-      )
-    {
-      return InternalOperationOutcome::internal_error(error);
+    if let Err(error) = update_screen_access_regulation_is_applying_enabled(
+      &daemon.database,
+      &self.user_id,
+      self.new_value,
+    ) {
+      daemon.log_internal_error(error.to_debug_string());
+      return Outcome::InternalError;
     }
 
-    regulator.is_applying_enabled = self.new_value;
-    InternalOperationOutcome::public_outcome(Outcome::Success)
+    regulation.is_applying_enabled = self.new_value;
+    Outcome::Success
   }
 }

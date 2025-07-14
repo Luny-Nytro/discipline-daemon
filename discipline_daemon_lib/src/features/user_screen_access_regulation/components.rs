@@ -23,7 +23,7 @@ impl RuleActivator {
         now.weekday() == *weekday
       }
       RuleActivator::InTimeRange(time_range) => {
-        time_range.contains(now.time())
+        time_range.contains_time(now.time())
       }
       RuleActivator::InWeekdayRange(weekday_range) => {
         weekday_range.contains_weekday(now.weekday())
