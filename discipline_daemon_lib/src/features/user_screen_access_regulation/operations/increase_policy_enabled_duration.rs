@@ -1,9 +1,9 @@
 use super::{
-  Serialize, Deserialize, Daemon, Duration, IsPRPC, Uuid,
+  Serialize, Deserialize, Daemon, Duration, IsRemoteProcedureCall, Uuid,
   policy_db
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -20,7 +20,7 @@ pub struct Operation {
   increment: Duration,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
@@ -39,8 +39,7 @@ impl IsPRPC for Operation {
     };
 
     let Some(new_remaining_duration) = policy
-      .enabler
-      .timer
+      .protector()
       .remaining_duration()
       .checked_add(&self.increment) else 
     {
@@ -60,7 +59,7 @@ impl IsPRPC for Operation {
       return Outcome::InternalError;
     }
 
-    policy.enabler.timer.change_remaining_duration(self.increment);
+    policy.protector_mut().change_remaining_duration(self.increment);
     Outcome::Success
   }
 }

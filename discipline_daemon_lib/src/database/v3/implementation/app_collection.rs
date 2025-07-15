@@ -3,8 +3,10 @@ use super::*;
 
 pub struct AppFields {
   id: String,
-  user_screen_access_regulation_private_password: String,
-  user_screen_access_regulation_applying_interval: String,
+  // time_tracker_epoch: String,
+  // time_tracker_duration_since_epoch: String,
+  // user_screen_access_regulation_private_password: String,
+  // user_screen_access_regulation_applying_interval: String,
 }
 
 // We only have a single item in the GlobalAppDataCollection and this 
@@ -13,14 +15,17 @@ static ID: u8 = 0;
 
 pub struct NormalizedApp {
   id: u8,
-  user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo,
+  // time_tracker: TimeTracker,
+  // user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo,
 }
 
 impl Default for NormalizedApp {
   fn default() -> Self {
     Self {
       id: ID,
-      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default()
+      // TODO: Should we recieve the current DateTime as argument?
+      // time_tracker: TimeTracker::new(DateTime::now()),
+      // user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default()
     }
   }
 }
@@ -29,7 +34,9 @@ impl NormalizedApp {
   pub fn denormalize(self, users: Vec<User>) -> AppState {
     AppState {
       users,
-      user_screen_access_regulation_common_info: self.user_screen_access_regulation_common_info,
+      // time_tracker: self.time_tracker,
+      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo { },
+      // user_screen_access_regulation_common_info: self.user_screen_access_regulation_common_info,
     }
   }
 }
@@ -40,8 +47,8 @@ fn serialize(
   app_state: &AppState,
 ) {
   context.write_u8(&fields.id, ID);
-  context.write_scalar(&fields.user_screen_access_regulation_private_password, app_state.user_screen_access_regulation_common_info.private_password());
-  context.write_scalar(&fields.user_screen_access_regulation_applying_interval, &app_state.user_screen_access_regulation_common_info.applying_interval());
+  // context.write_scalar(&fields.user_screen_access_regulation_private_password, app_state.user_screen_access_regulation_common_info.private_password());
+  // context.write_scalar(&fields.user_screen_access_regulation_applying_interval, &app_state.user_screen_access_regulation_common_info.applying_interval());
 }
 
 fn deserialize(
@@ -52,10 +59,11 @@ fn deserialize(
 {
   Ok(NormalizedApp { 
     id: context.deserializable_scalar(&fields.id)?, 
-    user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::pack(
-      context.deserializable_scalar(&fields.user_screen_access_regulation_private_password)?,
-      context.deserializable_scalar(&fields.user_screen_access_regulation_applying_interval)?, 
-    )
+
+    // user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::from_fields(
+    //   context.deserializable_scalar(&fields.user_screen_access_regulation_private_password)?,
+    //   context.deserializable_scalar(&fields.user_screen_access_regulation_applying_interval)?, 
+    // )
   })
 }
 
@@ -75,8 +83,8 @@ impl AppCollection {
       name: collection_name,
       fields: AppFields {
         id: id_field,
-        user_screen_access_regulation_private_password: user_screen_access_regulation_private_password_field,
-        user_screen_access_regulation_applying_interval: user_screen_access_regulation_applying_interval_field,
+        // user_screen_access_regulation_private_password: user_screen_access_regulation_private_password_field,
+        // user_screen_access_regulation_applying_interval: user_screen_access_regulation_applying_interval_field,
       }
     }
   }
@@ -89,36 +97,36 @@ impl Database  {
 }
 
 pub fn write_define(database: &Database, code: &mut DatabaseCode) {
-  let collection = database.collection();
+  // let collection = database.collection();
 
-  code.write("CREATE TABLE IF NOT EXISTS ");
-  code.write(&collection.name);
-  code.write(" (");
-  code.write(&collection.fields.id);
-  code.write(" INTEGER PRIMARY KEY, ");
-  code.write(&collection.fields.user_screen_access_regulation_private_password);
-  code.write(" TEXT NOT NULL, ");
-  code.write(&collection.fields.user_screen_access_regulation_applying_interval);
-  code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
+  // code.write("CREATE TABLE IF NOT EXISTS ");
+  // code.write(&collection.name);
+  // code.write(" (");
+  // code.write(&collection.fields.id);
+  // code.write(" INTEGER PRIMARY KEY, ");
+  // code.write(&collection.fields.user_screen_access_regulation_private_password);
+  // code.write(" TEXT NOT NULL, ");
+  // code.write(&collection.fields.user_screen_access_regulation_applying_interval);
+  // code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
 }
 
 fn write_initialize_item(database: &Database, code: &mut DatabaseCode) -> NormalizedApp {
-  let collection = database.collection();
+  // let collection = database.collection();
 
-  code.write("INSERT INTO ");
-  code.write(&collection.name);
+  // code.write("INSERT INTO ");
+  // code.write(&collection.name);
 
   let app = NormalizedApp::default();
-  let mut context = SerializeCompoundValueContext::new();
-  context.write_u8(&collection.fields.id, ID);
-  context.write_scalar(&collection.fields.user_screen_access_regulation_private_password, app.user_screen_access_regulation_common_info.private_password());
-  context.write_scalar(&collection.fields.user_screen_access_regulation_applying_interval, &app.user_screen_access_regulation_common_info.applying_interval());
+  // let mut context = SerializeCompoundValueContext::new();
+  // context.write_u8(&collection.fields.id, ID);
+  // context.write_scalar(&collection.fields.user_screen_access_regulation_private_password, app.user_screen_access_regulation_common_info.private_password());
+  // context.write_scalar(&collection.fields.user_screen_access_regulation_applying_interval, &app.user_screen_access_regulation_common_info.applying_interval());
 
-  code.write(" (");
-  code.write(&context.column_names);
-  code.write(") VALUES (");
-  code.write(&context.column_values);
-  code.write(");");
+  // code.write(" (");
+  // code.write(&context.column_names);
+  // code.write(") VALUES (");
+  // code.write(&context.column_values);
+  // code.write(");");
 
   app
 }
@@ -126,43 +134,44 @@ fn write_initialize_item(database: &Database, code: &mut DatabaseCode) -> Normal
 fn initialize(database: &Database) -> Result<NormalizedApp, GenericError> {
   let mut code = DatabaseCode::new();
   let app = write_initialize_item(database, &mut code);
-  database.execute(code.as_str())?;
+  // database.execute(code.as_str())?;
   Ok(app)
 }
 
 pub fn retrieve_normalized(database: &Database) -> Result<NormalizedApp, GenericError> {
-  let collection = database.collection();
+  // let collection = database.collection();
 
-  let mut code = DatabaseCode::new();
-  code.write("SELECT FROM ");
-  code.write(&collection.name);
-  code.write(" WHERE ");
-  code.write(&collection.fields.id);
-  code.write(" = ");
-  serialize_scalar_value_into(&0, code.as_mut());
-  code.write(";");
+  // let mut code = DatabaseCode::new();
+  // code.write("SELECT FROM ");
+  // code.write(&collection.name);
+  // code.write(" WHERE ");
+  // code.write(&collection.fields.id);
+  // code.write(" = ");
+  // serialize_scalar_value_into(&0, code.as_mut());
+  // code.write(";");
 
-  let mut statement = database.connection.prepare(code.as_str()).map_err(|error|
-    GenericError::new("")
-  )?;
-  let mut iterator = statement.query(()).map_err(|error|
-    GenericError::new("")
-  )?;
-  let item = iterator.next().map_err(|error|
-    GenericError::new("")
-  )?;
-  let Some(item) = item else {
-    return initialize(database);
-  };
+  // let mut statement = database.connection.prepare(code.as_str()).map_err(|error|
+  //   GenericError::new("")
+  // )?;
+  // let mut iterator = statement.query(()).map_err(|error|
+  //   GenericError::new("")
+  // )?;
+  // let item = iterator.next().map_err(|error|
+  //   GenericError::new("")
+  // )?;
+  // let Some(item) = item else {
+  //   return initialize(database);
+  // };
 
-  let context = DeserializeCompoundValueContext(item);
-  Ok(NormalizedApp {
-    id: context.deserializable_scalar(&collection.fields.id)?,
-    user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::pack(
-      context.deserializable_scalar(&collection.fields.user_screen_access_regulation_private_password)?,
-      context.deserializable_scalar(&collection.fields.user_screen_access_regulation_applying_interval)?,
-    )
-  })
+  // let context = DeserializeCompoundValueContext(item);
+  // Ok(NormalizedApp {
+  //   id: context.deserializable_scalar(&collection.fields.id)?,
+  //   user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::from_fields(
+  //     context.deserializable_scalar(&collection.fields.user_screen_access_regulation_private_password)?,
+  //     context.deserializable_scalar(&collection.fields.user_screen_access_regulation_applying_interval)?,
+  //   )
+  // })
+  Ok(NormalizedApp { id: ID })
 }
 
 pub fn retrieve(database: &Database) -> Result<AppState, GenericError> {

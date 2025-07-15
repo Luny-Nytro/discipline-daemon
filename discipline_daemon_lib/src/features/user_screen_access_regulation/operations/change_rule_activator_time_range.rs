@@ -1,9 +1,9 @@
 use super::{
-  Serialize, Deserialize, Daemon, IsPRPC, TimeRange, Uuid, 
+  Serialize, Deserialize, Daemon, IsRemoteProcedureCall, TimeRange, Uuid, 
   RuleActivator, rule_db,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -22,7 +22,7 @@ pub struct Operation {
   new_time_range: TimeRange,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   // TODO: Refuse to execute this operation if it would result in making 
@@ -32,6 +32,8 @@ impl IsPRPC for Operation {
   // blocking himself outside of his account forever or most of the time.
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
+    
+
     let Some(user) = daemon
       .state
       .find_user_by_id_mut(&self.user_id) else 

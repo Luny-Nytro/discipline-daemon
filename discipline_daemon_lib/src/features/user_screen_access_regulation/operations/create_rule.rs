@@ -1,12 +1,12 @@
 use super::{
-  Serialize, Deserialize, Daemon, IsPRPC, Uuid,
-  IntoPublic, RuleCreator, Policy, rule_db, RulePublicRepr,
+  Serialize, Deserialize, Daemon, IsRemoteProcedureCall, Uuid,
+  IntoPublic, RuleCreator, rule_db, RulePublicRepr,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
-  ThereIsNoUserWithId(Uuid),
-  ThereIsNoPolicyWithId(Uuid),
+  NoSuchUser { user_id: Uuid },
+  NoSuchPolicy { policy_id: Uuid },
   RuleCreationLimitReached,
   ProvidedRuleIdIsUsedByAnotherRule,
   Success(RulePublicRepr),
@@ -20,7 +20,7 @@ pub struct Operation {
   rule_creator: RuleCreator,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
@@ -28,39 +28,38 @@ impl IsPRPC for Operation {
       .state
       .find_user_by_id_mut(&self.user_id) else 
     {
-      return Outcome::ThereIsNoUserWithId(self.user_id);
+      return Outcome::NoSuchUser { user_id: self.user_id };
     };
     
     let Some(policy) = user
       .screen_access_regulation
       .find_policy_by_id_mut(&self.policy_id) else 
     {
-      return Outcome::ThereIsNoPolicyWithId(self.policy_id);
+      return Outcome::NoSuchPolicy { policy_id: self.policy_id };
     };
 
-    if policy.rules.len() >= Policy::MAX_RULES {
+    if policy.reached_maximum_rules_allowed() {
       return Outcome::RuleCreationLimitReached;
     }
 
-    if let Some(rule_id) = self.rule_creator.id {
-      if policy.rules.iter().any(|rule| rule.id == rule_id) {
-        return Outcome::ProvidedRuleIdIsUsedByAnotherRule;
-      }
-    }
-
     let rule = self.rule_creator.create();
+    // Note: The database will handle verifing whether "self.creator.id" is available
+    // or taken.
+    //
+    // TODO: Let's do that ourselves so we can return "ProvidedRuleIdIsUsedByAnotherRule"
+    // since if the database were to fail, it won't tell us if it is because of a duplicate id. 
     if let Err(error) = rule_db::add_rule(
       &daemon.database, 
       &rule, 
       &self.user_id, 
       &self.policy_id, 
-      policy.rules.len(),
+      policy.rules_number(),
     ) {
       daemon.log_internal_error(error);
       return Outcome::InternalError;
     }
 
-    policy.rules.push(rule.clone());
+    policy.add_rule(rule.clone());
     Outcome::Success(rule.into_public())
   }
 }

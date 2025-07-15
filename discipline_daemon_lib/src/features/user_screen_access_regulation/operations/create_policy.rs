@@ -1,7 +1,7 @@
 use super::{
   Serialize, Deserialize, Uuid, Daemon, 
   PolicyCreator, DateTime, PolicyPublicRepr,
-  IsPRPC, IntoPublic, policy_db,
+  IsRemoteProcedureCall, IntoPublic, policy_db,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub struct CreatePolicy {
   policy_creator: PolicyCreator
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   ReachedMaximumPolicesAllowed,
@@ -18,10 +18,12 @@ pub enum Outcome {
   InternalError,
 }
 
-impl IsPRPC for CreatePolicy {
+impl IsRemoteProcedureCall for CreatePolicy {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
+    
+
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
       return Outcome::NoSuchUser;
     };

@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::{
   Uuid, OperatingSystemPassword, OperatingSystemUserId,
-  OperatingSystemUsername, IsPRPC, Daemon,
+  OperatingSystemUsername, IsRemoteProcedureCall, Daemon,
   user_screen_access_regulation,
   IntoPublic, DateTime
 };

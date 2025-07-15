@@ -1,6 +1,10 @@
-mod logic;
+mod api;
+pub use api::{IsRemoteProcedureCall, IntoPublic};
 
 use uuid::Uuid;
+
+mod operating_system_integration;
+pub use operating_system_integration::*;
 
 // mod with_pointers;
 
@@ -10,8 +14,6 @@ pub use utility::GenericError;
 pub mod database;
 pub use database::Database;
 
-pub mod prpc;
-pub use prpc::*;
 
 pub mod chronic;
 pub use chronic::*;
@@ -27,9 +29,6 @@ pub use common::{
   operating_system_username,
   password,
 };
-
-pub mod into_public;
-pub use into_public::*;
 
 pub mod features;
 pub use features::*;

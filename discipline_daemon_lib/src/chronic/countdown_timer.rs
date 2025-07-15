@@ -17,7 +17,7 @@ impl CountdownTimer {
     }
   }
 
-  pub fn pack(
+  pub fn from_fields(
     duration: Duration,
     remaining_duration: Duration,
     previous_synchronization_time: DateTime,
@@ -67,6 +67,9 @@ impl CountdownTimer {
     }
   }
 
+  pub fn synchronize_and_write_updates(&mut self, now: DateTime) {
+
+  }
 }
 
 // impl TimeSynchronizeListener for CountdownTimer {

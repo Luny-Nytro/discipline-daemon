@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::{Duration, IntoPublic};
-use super::{CommonInfo, Policy, PolicyEnabler, Regulator, Rule, RuleActivator};
+use crate::IntoPublic;
+use super::{Policy, Regulation, Rule, RuleActivator};
 
 pub type RuleActivatorPublicRepr = RuleActivator;
 
@@ -22,16 +22,6 @@ impl IntoPublic for Rule {
   }
 }
 
-pub type PolicyEnablerPublicRepr = PolicyEnabler;
-
-impl IntoPublic for PolicyEnabler {
-  type Output = PolicyEnablerPublicRepr;
-
-  fn into_public(self) -> Self::Output {
-    self.clone()
-  }
-}
-
 pub type PolicyPublicRepr = Policy;
 
 impl IntoPublic for PolicyPublicRepr {
@@ -43,35 +33,33 @@ impl IntoPublic for PolicyPublicRepr {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RegulatorPublicRepr {
+pub struct RegulationPublicRepr {
   policies: Vec<PolicyPublicRepr>,
-  is_applying_enabled: bool,
-  is_user_screen_acceess_blocked: bool,
+  is_regulation_enabled: bool,
 }
 
-impl IntoPublic for Regulator {
-  type Output = RegulatorPublicRepr;
+impl IntoPublic for Regulation {
+  type Output = RegulationPublicRepr;
 
   fn into_public(self) -> Self::Output {
-    RegulatorPublicRepr {
+    RegulationPublicRepr {
       policies: self.policies.into_public(),
-      is_applying_enabled: self.is_applying_enabled,
-      is_user_screen_acceess_blocked: self.is_user_screen_access_blocked,
+      is_regulation_enabled: self.is_regulation_enabled,
     }
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CommonInfoPublicRepr {
-  applying_interval: Duration,
-}
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct CommonInfoPublicRepr {
+//   applying_interval: Duration,
+// }
 
-impl IntoPublic for CommonInfo {
-  type Output = CommonInfoPublicRepr;
+// impl IntoPublic for CommonInfo {
+//   type Output = CommonInfoPublicRepr;
 
-  fn into_public(self) -> Self::Output {
-    CommonInfoPublicRepr {
-      applying_interval: self.applying_interval,
-    }
-  }
-}
+//   fn into_public(self) -> Self::Output {
+//     CommonInfoPublicRepr {
+//       applying_interval: self.applying_interval,
+//     }
+//   }
+// }

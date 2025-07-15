@@ -22,9 +22,10 @@ pub struct PolicyFields {
   id: String,
   user_id: String,
   name: String,
-  enabled_duration: String,  
-  remaining_enabled_duration: String,  
-  previous_synchronization_time: String,
+  is_enabled: String,
+  protection_duration: String,  
+  protection_remaining_duration: String,  
+  protection_previous_synchronization_time: String,
   position: String,
 }
 
@@ -33,7 +34,10 @@ pub struct NormalizedPolicy {
   pub(super) id: Uuid,
   pub(super) name: PolicyName,
   pub(super) user_id: Uuid,
-  pub(super) enabler: PolicyEnabler,
+  pub(super) is_enabled: bool,
+  pub(super) protection_duration: Duration,
+  pub(super) protection_remaining_duration: Duration,
+  pub(super) protection_previous_synchronization_time: DateTime,
   pub(super) position: usize,
 }
 
@@ -45,11 +49,14 @@ impl NormalizedPolicy {
       .map(|rule| rule.clone().denormalize())
       .collect();
     
-    Policy::pack(
+    Policy::from_fields(
       self.id,
       self.name,
       rules,
-      self.enabler,
+      self.is_enabled,
+      self.protection_duration,
+      self.protection_remaining_duration,
+      self.protection_previous_synchronization_time,
     )
   }
 }
@@ -65,9 +72,10 @@ fn serialize_policy(
   context.write_scalar(&fields.name, policy.name());
   context.write_scalar(&fields.user_id, user_id);
   context.write_usize(&fields.position, position);
-  context.write_scalar(&fields.enabled_duration, &policy.enabler().enabled_duration());
-  context.write_scalar(&fields.remaining_enabled_duration, &policy.enabler().remaining_enabled_duration());
-  context.write_scalar(&fields.previous_synchronization_time, &policy.enabler().previous_synchronization_time());
+  context.write_scalar(&fields.is_enabled, &policy.is_enabled());
+  context.write_scalar(&fields.protection_duration, &policy.protector().duration());
+  context.write_scalar(&fields.protection_remaining_duration, &policy.protector().remaining_duration());
+  context.write_scalar(&fields.protection_previous_synchronization_time, &policy.protector().previous_synchronization_time());
 }
 
 fn deserialize_policy(
@@ -80,20 +88,20 @@ fn deserialize_policy(
   let name = context.deserializable_scalar(&fields.name)?;
   let user_id = context.deserializable_scalar(&fields.user_id)?;
   let position = context.deserializable_scalar(&fields.position)?;
-  let enabler_duration = context.deserializable_scalar(&fields.enabled_duration)?;
-  let enabler_remaining_duration = context.deserializable_scalar(&fields.remaining_enabled_duration)?;
-  let enabler_previous_synchronization_time = context.deserializable_scalar(&fields.previous_synchronization_time)?;
+  let is_enabled = context.deserializable_scalar(&fields.is_enabled)?;
+  let protection_duration = context.deserializable_scalar(&fields.protection_duration)?;
+  let protection_remaining_duration = context.deserializable_scalar(&fields.protection_remaining_duration)?;
+  let protection_previous_synchronization_time = context.deserializable_scalar(&fields.protection_previous_synchronization_time)?;
 
   Ok(NormalizedPolicy {
     id, 
     name, 
     user_id,
     position,
-    enabler: PolicyEnabler::pack(
-      enabler_duration, 
-      enabler_remaining_duration, 
-      enabler_previous_synchronization_time,
-    ),
+    is_enabled,
+    protection_duration,
+    protection_remaining_duration,
+    protection_previous_synchronization_time,
   })
 }
 
@@ -105,23 +113,19 @@ pub struct PolicyCollection {
 impl PolicyCollection {
   pub fn new(
     collection_name: String,
-    policy_id_field: String,
-    policy_name_field: String,
-    policy_user_id_field: String,
-    policy_enabler_duration_field: String,
-    policy_enabler_remaining_duration_field: String,
-    policy_enabler_previous_synchronization_time_field: String,
   ) -> Self {
     Self {
       name: collection_name,
       fields: PolicyFields {
-        id: policy_id_field,
-        name: policy_name_field,
-        user_id: policy_user_id_field,
-        enabled_duration: policy_enabler_duration_field,
-        remaining_enabled_duration: policy_enabler_remaining_duration_field,
-        previous_synchronization_time: policy_enabler_previous_synchronization_time_field,
-        position: String::new(),
+        id: "Id".into(),
+        name: "Name".into(),
+        is_enabled: "IsEnabled".into(),
+        protection_duration: "ProtectionDuration".into(),
+        protection_remaining_duration: "ProtectionRemainingDuration".into(),
+        protection_previous_synchronization_time: "ProtectionPreviousSynchronizationTime".into(),
+        user_id: "UserId".into(),
+        position: "Position".into(),
+
       }
     }
   }
@@ -140,11 +144,11 @@ pub fn write_define(database: &Database, code: &mut DatabaseCode) {
   code.write(" TEXT NOT NULL, ");
   code.write(&collection.fields.name);
   code.write(" TEXT NOT NULL, ");
-  code.write(&collection.fields.enabled_duration);
+  code.write(&collection.fields.protection_duration);
   code.write(" INTEGER NOT NULL, ");
-  code.write(&collection.fields.remaining_enabled_duration);
+  code.write(&collection.fields.protection_remaining_duration);
   code.write(" INTEGER NOT NULL, ");
-  code.write(&collection.fields.previous_synchronization_time);
+  code.write(&collection.fields.protection_previous_synchronization_time);
   code.write(" INTEGER NOT NULL, ");
   code.write(&collection.fields.position);
   code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
@@ -309,13 +313,13 @@ pub fn update_name(database: &Database, policy_id: &Uuid, new_value: &PolicyName
 }
 
 pub fn enabled_condition(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &CountdownTimer) {
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.enabled_duration, &new_value.duration());
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.remaining_enabled_duration, &new_value.remaining_duration());
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.previous_synchronization_time, &new_value.previous_synchronization_time());
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_duration, &new_value.duration());
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_remaining_duration, &new_value.remaining_duration());
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_previous_synchronization_time, &new_value.previous_synchronization_time());
 }
 
 pub fn write_enabled_duration(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &Duration) {
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.enabled_duration, new_value);
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_duration, new_value);
 }
 
 pub fn update_enabled_duration(database: &Database, policy_id: &Uuid, new_value: Duration) -> Result<(), GenericError> {
@@ -325,11 +329,11 @@ pub fn update_enabled_duration(database: &Database, policy_id: &Uuid, new_value:
 }
 
 pub fn write_remaining_enabled_duration(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &Duration) {
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.remaining_enabled_duration, new_value);
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_remaining_duration, new_value);
 }
 
 pub fn write_previous_synchronization_time(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &DateTime) {
-  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.previous_synchronization_time, new_value);
+  draft.draft.write_scalar(&database.user_screen_access_regulation_policy.fields.protection_previous_synchronization_time, new_value);
 }
 
 // pub fn write_update_policy(database: &Database, database_update_draft: &mut DatabaseCode, policy_update_draft: &PolicyUpdateDraft, policy_id: &Uuid) {

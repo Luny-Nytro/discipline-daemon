@@ -17,7 +17,7 @@ pub struct UserPublicRepr {
   operating_system_user_id: OperatingSystemUserId,
   operating_system_user_name: OperatingSystemUsername,
   operating_system_user_password: OperatingSystemPassword,
-  screen_access_regulator: user_screen_access_regulation::RegulatorPublicRepr,
+  screen_access_regulator: user_screen_access_regulation::RegulationPublicRepr,
 }
 
 impl IntoPublic for User {

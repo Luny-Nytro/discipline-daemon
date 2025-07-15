@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::{CountdownTimer, DateTime, Duration, Uuid};
-use super::{Policy, PolicyEnabler, PolicyName, Rule, RuleActivator};
+use super::{Policy, PolicyName, Rule, RuleActivator};
 
 pub type RuleActivatorCreator = RuleActivator;
 
@@ -20,23 +20,10 @@ impl RuleCreator {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PolicyEablerCreator {
-  duration: Duration
-}
-
-impl PolicyEablerCreator {
-  pub fn create(self, now: DateTime) -> PolicyEnabler {
-    PolicyEnabler {
-      timer: CountdownTimer::new(self.duration, now)
-    }
-  }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyCreator {
   id: Option<Uuid>,
   name: PolicyName,
-  enabler: PolicyEablerCreator
+  protection_duration: Duration
 }
 
 impl PolicyCreator {
@@ -45,7 +32,8 @@ impl PolicyCreator {
       id: self.id.unwrap_or_else(Uuid::new_v4),
       name: self.name,
       rules: Vec::new(),
-      enabler: self.enabler.create(now),
+      is_effective: false,
+      protector: CountdownTimer::new(self.protection_duration, now),
     }
   }
 }

@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
-use super::OperatingSystemCalls;
 use crate::{
-  CountdownTimer, DateTime, Duration, GenericError, 
-  OperatingSystemPassword, OperatingSystemUsername, 
+  CountdownTimer, DaemonMutex, DateTime, Duration, GenericError, 
   TimeRange, Uuid, Weekday, WeekdayRange
 };
+
+pub const MAXIMUM_RULE_NUMBER: usize = 10;
+pub const MAXIMUM_POLICY_NUMBER: usize = 5;
 
 // TODO: Add a variant that is effective according to a weekday and time range condition
 // TODO: Add a variant that is effective according to a screen time allowance condition
@@ -17,7 +18,7 @@ pub enum RuleActivator {
 }
 
 impl RuleActivator {
-  pub fn is_effective(&mut self, now: DateTime) -> bool {
+  pub fn is_effective(&self, now: DateTime) -> bool {
     match self {
       RuleActivator::OnWeekday(weekday) => {
         now.weekday() == *weekday
@@ -58,7 +59,7 @@ impl Rule {
     &self.activator
   }
   
-  pub fn is_effective(&mut self, now: DateTime) -> bool {
+  pub fn is_effective(&self, now: DateTime) -> bool {
     self.activator.is_effective(now)
   }
 }
@@ -95,95 +96,91 @@ impl PolicyName {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PolicyEnabler {
-  pub(super) timer: CountdownTimer
-}
-
-impl PolicyEnabler {
-  pub fn new(duration: Duration) -> Self {
-    todo!()
-  }
-
-  pub fn is_effective(&mut self, now: DateTime) -> bool {
-    self.timer.synchronize(now);
-    self.timer.is_finished()
-  }
-
-  pub fn synchronize(&mut self, now: DateTime) {
-    self.timer.synchronize(now);
-  }
-
-  pub fn enabled_duration(&self) -> Duration {
-    self.timer.duration()
-  }
-
-  pub fn remaining_enabled_duration(&self) -> Duration {
-    self.timer.remaining_duration()
-  }
-
-  pub fn previous_synchronization_time(&self) -> DateTime {
-    self.timer.previous_synchronization_time()
-  }
-
-  pub fn pack(
-    duration: Duration,
-    remaining_duration: Duration,
-    previous_synchronization_time: DateTime
-  ) -> Self {
-    Self {
-      timer: CountdownTimer::pack(
-        duration,
-        remaining_duration, 
-        previous_synchronization_time,
-      )
-    }
-  }
-}
-
+// TODO: Disable a policy right when it's no longer protected
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Policy {
   pub(super) id: Uuid,
   pub(super) name: PolicyName,
   pub(super) rules: Vec<Rule>,
-  pub(super) enabler: PolicyEnabler,
+  pub(super) is_effective: bool,
+  pub(super) protector: CountdownTimer,
 }
 
 impl Policy {
-  pub const MAX_RULES: usize = 10;
+  pub(super) fn new(
+    id: Uuid, 
+    name: PolicyName, 
+    protection_duration: Duration,
+    protection_beginning: DateTime,
+  ) -> Self {
+    Policy {
+      id,
+      name,
+      rules: Vec::new(),
+      is_effective: false,
+      protector: CountdownTimer::new(protection_duration, protection_beginning),
+    }
+  }
 
-  pub fn pack(
+  pub fn from_fields(
     id: Uuid,
     name: PolicyName,
     rules: Vec<Rule>,
-    enabler: PolicyEnabler
+    is_enabled: bool,
+    protector_duration: Duration,
+    protector_remaining_duration: Duration,
+    protector_previous_synchronization_time: DateTime,
   ) 
     -> Self 
   {
-    Self { id, name, rules, enabler }
+    Self { 
+      id, 
+      name, 
+      rules, 
+      is_effective: is_enabled,
+      protector: CountdownTimer::from_fields(
+        protector_duration, 
+        protector_remaining_duration, 
+        protector_previous_synchronization_time
+      )
+    }
   }
   
   pub fn id(&self) -> &Uuid {
     &self.id
   }
+
   pub fn name(&self) -> &PolicyName {
     &self.name
   }
-  pub fn enabler(&self) -> &PolicyEnabler {
-    &self.enabler
+
+  pub fn protector(&self) -> &CountdownTimer {
+    &self.protector
   }
-  pub fn is_enabled(&mut self, now: DateTime) -> bool {
-    self.enabler.is_effective(now)
+  pub fn protector_mut(&mut self) -> &mut CountdownTimer {
+    &mut self.protector
   }
+  pub fn is_enabled(&self) -> bool {
+    self.is_effective
+  }
+
+  pub fn is_protected(&mut self, now: DateTime) -> bool {
+    self.protector.synchronize(now);
+    self.protector.is_running() && self.is_effective
+  }
+
   pub fn there_is_rule_with_id(&self, rule_id: &Uuid) -> bool {
     self.rules.iter().any(|rule| rule.id == *rule_id)
   }
+  
   pub fn find_rule_by_id(&self, rule_id: &Uuid) -> Option<&Rule> {
     self.rules.iter().find(|rule| rule.id == *rule_id)
   }
+  
   pub fn find_rule_by_id_mut(&mut self, rule_id: &Uuid) -> Option<&mut Rule> {
     self.rules.iter_mut().find(|rule| rule.id == *rule_id)
   }
+  
   pub fn remove_rule_by_id(&mut self, rule_id: &Uuid) {
     if let Some(index) = self
       .rules
@@ -193,144 +190,80 @@ impl Policy {
       self.rules.remove(index);
     }
   }
+
+  fn are_some_rules_effective(&self, now: DateTime) -> bool {
+    self.rules.iter().any(|rule| rule.is_effective(now))
+  } 
+
+  pub(super) fn reached_maximum_rules_allowed(&self) -> bool {
+    self.rules.len() >= MAXIMUM_RULE_NUMBER
+  }
+
+  pub(super) fn rules_number(&self) -> usize {
+    self.rules.len()
+  }
+
+  pub(super) fn add_rule(&mut self, rule: Rule) {
+    self.rules.push(rule);
+  }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Action {
+  Block,
+  Allow,
 }
 
 #[derive(Debug, Clone)]
-pub struct Regulator {
+pub struct Regulation {
   pub(super) policies: Vec<Policy>,
-  pub(super) is_applying_enabled: bool,
-  pub(super) is_user_screen_access_blocked: bool,
-  pub(super) operating_system_calls: OperatingSystemCalls,
+  pub(super) is_regulation_enabled: bool,
 }
 
-impl Regulator {
-  pub const MAX_POLICIES: usize = 5;
-
-  pub fn new(
-    policies: Vec<Policy>,
-  ) -> Self {
+impl Regulation {
+  pub fn new(policies: Vec<Policy>) -> Self {
     Self {
       policies,
-      is_applying_enabled: false,
-      is_user_screen_access_blocked: false,
-      operating_system_calls: OperatingSystemCalls::new(),
+      is_regulation_enabled: false,
     }
   }
   
-  pub fn pack(
-    policies: Vec<Policy>,
-    is_applying_enabled: bool,
-    is_user_screen_access_blocked: bool,
-  ) -> Self {
+  pub fn from_fields(policies: Vec<Policy>, is_regulation_enabled: bool) -> Self {
     Self {
       policies,
-      is_applying_enabled,
-      is_user_screen_access_blocked,
-      operating_system_calls: OperatingSystemCalls::new(),
+      is_regulation_enabled,
     }
   }
 
-  pub fn is_applying_enabled(&self) -> bool {
-    self.is_applying_enabled
-  }
-
-  pub fn is_user_screen_access_blocked(&self) -> bool {
-    self.is_user_screen_access_blocked
+  pub fn is_regulation_enabled(&self) -> bool {
+    self.is_regulation_enabled
   }
   
-  fn allow_user_access(
-    &mut self,
-    username: &OperatingSystemUsername,
-    password: &OperatingSystemPassword,
-  ) -> 
-    Result<(), GenericError> 
-  {
-    if !self.is_user_screen_access_blocked {
-      return Ok(());
-    }
-
-    match self
-      .operating_system_calls
-      .change_user_password(username, password) 
-    {
-      Ok(_) => {
-        self.is_user_screen_access_blocked = false;
-        Ok(())
-      }
-      Err(error) => {
-        Err(
-          error.change_context("Allow user screen access")
-        )
-      }
-    }
-  }
-
-  fn block_user_access(
-    &mut self, 
-    username: &OperatingSystemUsername,
-    private_password: &OperatingSystemPassword,
-  ) -> 
-    Result<(), GenericError> 
-  {
-    if self.is_user_screen_access_blocked {
-      return Ok(());
-    }
-
-    match self
-      .operating_system_calls
-      .change_user_password(username, private_password) 
-    {
-      Ok(_) => {
-        self.is_user_screen_access_blocked = false;
-      }
-      Err(error) => {
-        return Err(
-          error.change_context("Block user screen access")
-        )
-      }
-    }
-
-    self
-      .operating_system_calls
-      .gracefully_logout_user(username)
-      .map_err(|error| error.change_context("Block user screen access"))
-  }
-
-  pub fn apply(
-    &mut self, 
-    now: DateTime,
-    username: &OperatingSystemUsername,
-    password: &OperatingSystemPassword,
-    private_password: &OperatingSystemPassword,
-  ) -> 
-    Result<(), GenericError> 
-  {
-    if self.is_applying_enabled {
-      for policy in &mut self.policies {
-        if policy.is_enabled(now) {
-          for rule in &mut policy.rules {
-            if rule.is_effective(now) {
-              return self.block_user_access(
-                username,
-                private_password
-              );
-            }
-          }
-        }
-      }
-    }
-
-    self.allow_user_access(
-      username,
-      password
+  fn are_some_policies_effective(&mut self, now: DateTime) -> bool {
+    self.policies.iter_mut().any(|policy| 
+      policy.is_enabled() 
+      && 
+      policy.are_some_rules_effective(now)
     )
   }
 
-  pub fn are_some_policies_enabled(&mut self, now: DateTime) -> bool {
-    self.policies.iter_mut().any(|policy| policy.is_enabled(now))
+  fn calculate_action(&mut self, now: DateTime) -> Action {
+    if self.is_regulation_enabled && self.are_some_policies_effective(now) {
+      Action::Block
+    } else {
+      Action::Allow
+    }
   }
 
-  pub fn get_policy_by_id(&self, policy_id: &Uuid) -> Option<&Policy> {
+  pub fn are_some_policies_enabled(&self) -> bool {
+    self.policies.iter().any(|policy| policy.is_enabled())
+  }
+
+  pub fn are_some_policies_protected(&mut self, now: DateTime) -> bool {
+    self.policies.iter_mut().any(|policy| policy.is_protected(now))
+  }
+
+  pub fn find_policy_by_id(&self, policy_id: &Uuid) -> Option<&Policy> {
     self.policies.iter().find(|policy| policy.id == *policy_id)
   }
   
@@ -338,12 +271,12 @@ impl Regulator {
     self.policies.iter_mut().find(|policy| policy.id == *policy_id)
   }
 
-  pub fn policies_number(&self) -> u32 {
-    self.policies.len() as u32
+  pub fn policies_number(&self) -> usize {
+    self.policies.len()
   }
 
   pub fn reached_maximum_polices_allowed(&self) -> bool {
-    self.policies.len() >= Self::MAX_POLICIES
+    self.policies.len() >= MAXIMUM_POLICY_NUMBER
   }
 
   pub fn add_policy(&mut self, policy: Policy) {
@@ -367,43 +300,39 @@ impl Regulator {
 // TODO: Add policies_number and rules_number fields for tracking memory usage.
 #[derive(Debug)]
 pub struct CommonInfo {
-  pub(super) private_password: OperatingSystemPassword,
-  pub(super) applying_interval: Duration,
 }
 
 impl Default for CommonInfo {
   fn default() -> Self {
-    Self {
-      private_password: CommonInfo::generate_private_password(),
-      applying_interval: CommonInfo::default_applying_interval(),
-    }
+    Self {}
   }
 }
 
-impl CommonInfo {
-  pub(super) fn generate_private_password() -> OperatingSystemPassword {
-    OperatingSystemPassword::generate_random_password()
-  }
-
-  pub(super) fn default_applying_interval() -> Duration {
-    Duration::from_minutes(5).unwrap()
-  }
-
-  pub fn pack(
-    private_password: OperatingSystemPassword,
-    applying_interval: Duration
-  ) -> Self {
-    Self {
-      applying_interval,
-      private_password,
-    }
-  }
-
-  pub fn private_password(&self) -> &OperatingSystemPassword {
-    &self.private_password
-  }
+fn enforce_regulation(daemon_mutex: DaemonMutex) {
+  let now = DateTime::now();
   
-  pub fn applying_interval(&self) -> Duration {
-    self.applying_interval
-  }
+  let Ok(mut daemon) = daemon_mutex.lock_with_location("UserScreenAccessRegulationThread") else {
+    return;
+  };
+
+  let os = daemon.state.operating_system_integration();
+
+  for user in &mut daemon.state.users {
+    let action = user.screen_access_regulation.calculate_action(now);
+
+    match action {
+      Action::Allow => {
+        os.allow_user_access(&user.operating_system_user_id);
+      }
+      Action::Block => {
+        os.block_user_access(&user.operating_system_user_id);
+      }
+    }
+  }  
+}
+
+pub fn launch_thread(daemon_mutex: DaemonMutex) -> std::thread::JoinHandle<()> {
+  std::thread::spawn(|| {
+    enforce_regulation(daemon_mutex);
+  })
 }

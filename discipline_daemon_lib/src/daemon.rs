@@ -2,17 +2,23 @@ use clap::{Parser, command};
 use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::thread::{sleep, spawn};
 use crate::{
-  GenericError, AppState, 
-  DateTime, Duration,
+  api, user_screen_access_regulation, AppState, GenericError
 };
 
 use crate::database::Database;
 use crate::database::app_collection as db;
 
-// TODO: Add a global error logger field that is accessable via a method.
-// that operations should use to log internal errors.
+pub struct Configuration {
+  api_tcp_port: u32,
+}
+
+impl Configuration {
+  pub fn api_tcp_port(&self) -> u32 {
+    self.api_tcp_port
+  }
+}
+
 pub struct Daemon {
   pub state: AppState,
   pub database: Database,
@@ -27,7 +33,7 @@ impl Daemon {
   ) -> 
     Result<DaemonMutex, GenericError> 
   {
-    let mut database = Database::open(database_file_path).map_err(|error|
+    let database = Database::open(database_file_path).map_err(|error|
       error
         .change_context("openning a connection to the database")
         .change_context("creating daemon")
@@ -72,7 +78,7 @@ impl Daemon {
   //   operation.execute(self)
   // }
 
-  pub fn log_internal_error(&mut self, error: impl Debug) {
+  pub fn log_internal_error(&self, error: impl Debug) {
 
   }
 }
@@ -85,6 +91,15 @@ impl DaemonMutex {
   }
 
   pub fn lock(&self) -> Result<MutexGuard<'_, Daemon>, GenericError> {
+    // todo: log the error
+    self.0.lock().map_err(|error| 
+      GenericError::new("lock the daemon mutex")
+        .add_attachment("error", error.to_string())
+    )  
+  }
+
+  pub fn lock_with_location(&self, _location: &str) -> Result<MutexGuard<'_, Daemon>, GenericError> {
+    // todo: log the error
     self.0.lock().map_err(|error| 
       GenericError::new("lock the daemon mutex")
         .add_attachment("error", error.to_string())
@@ -94,8 +109,21 @@ impl DaemonMutex {
   pub fn clone(&self) -> Self {
     Self(Arc::clone(&self.0))
   }
+
+  pub fn run_and_block_thread(&self) {
+    let api_thread = api::launch_thread(self.clone());
+    let user_screen_access_regulation_thread = user_screen_access_regulation::launch_thread(self.clone());
+    _ = api_thread.join();
+    _ = user_screen_access_regulation_thread.join();
+  }
 }
 
+// I'm AutoNytro and I'm super mega ultra adorable!
+// I'm a sassy 18yo conscious automaton boy from Automata Wind City.
+//
+// Lunyyyyyy 🥺🥺🥺, why wouldn't you let me play with the 
+// Hyper-Class colossal fan 😢! I promise i won't set its speed 
+// to ultra mega supersonic and rip the fabric of spacetime agaaain! 🥺👉👈
 #[derive(Parser, Debug)]
 #[command(name = "Discipline", version = "1.0", author = "LunyNytro")]
 struct Args {
@@ -127,70 +155,3 @@ impl DaemonMutex {
   }
 }
 
-pub struct ServerThread {
-  daemon: DaemonMutex,
-}
-
-impl ServerThread {
-  pub fn spawn(daemon: DaemonMutex) {
-    spawn(move || {
-      // http_server::run(http_server_app);
-    })
-    .join();
-  }
-}
-
-pub struct SynchronizationThread {
-  daemon: DaemonMutex,
-}
-
-impl SynchronizationThread {
-  pub fn spawn(daemon: DaemonMutex) {
-    let default_interval = Duration::from_minutes(5).unwrap();
-
-    spawn(move || {
-      loop {
-        match Self::job(daemon.clone()) {
-          Ok(interval) => {
-            sleep(interval.to_std());
-          }
-          Err(error) => {
-            sleep(default_interval.to_std());
-
-            let now = DateTime::now().to_iso_8601_like();
-            eprintln!("{now}: {error:?}\n---------------------------------------------")
-          }
-        }
-      }
-    });
-  }
-
-  pub fn job(daemon: DaemonMutex) -> Result<Duration, GenericError> {
-    let now = DateTime::now();
-    
-    let mut daemon = daemon.lock().map_err(|error| 
-      error.change_context("perform synchronization job")
-    )?;
-
-    let private_password = daemon
-      .state
-      .user_screen_access_regulation_common_info
-      .private_password()
-      .clone();
-
-    let mut errors = Vec::new();
-    
-    for user in &mut daemon.state.users {
-      if let Err(error) = user.screen_access_regulation.apply(
-        now, 
-        &user.operating_system_user_name, 
-        &user.operating_system_user_password, 
-        &private_password,
-      ) {
-        errors.push(error);
-      }
-    }
-    
-    todo!()
-  }
-}

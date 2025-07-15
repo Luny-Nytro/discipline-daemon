@@ -10,7 +10,4 @@ pub use operations::*;
 mod creators;
 use creators::*;
 
-mod operating_system;
-use operating_system::OperatingSystemCalls;
-
 mod serde_impl;

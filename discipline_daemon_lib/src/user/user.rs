@@ -39,7 +39,7 @@ pub struct User {
   pub operating_system_user_id: OperatingSystemUserId,
   pub operating_system_user_name: OperatingSystemUsername,
   pub operating_system_user_password: OperatingSystemPassword,
-  pub screen_access_regulation: user_screen_access_regulation::Regulator,
+  pub screen_access_regulation: user_screen_access_regulation::Regulation,
 }
 
 impl User {
@@ -49,7 +49,7 @@ impl User {
     operating_system_user_id: OperatingSystemUserId,
     operating_system_user_name: OperatingSystemUsername,
     operating_system_user_password: OperatingSystemPassword,
-    screen_access_regulation: user_screen_access_regulation::Regulator,
+    screen_access_regulation: user_screen_access_regulation::Regulation,
   ) -> Self 
   {
     Self {
@@ -77,7 +77,7 @@ impl User {
   pub fn operating_system_user_password(&self) -> &OperatingSystemPassword {
     &self.operating_system_user_password
   }
-  pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulator {
+  pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulation {
     &self.screen_access_regulation
   }
 }

@@ -1,6 +1,6 @@
 use super::{
   Serialize, Deserialize, Uuid, Daemon,
-  DateTime, IsPRPC, policy_db,
+  DateTime, IsRemoteProcedureCall, policy_db,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -9,7 +9,7 @@ pub struct Operation {
   policy_id: Uuid,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -18,10 +18,12 @@ pub enum Outcome {
   InternalError,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
+    
+
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
       return Outcome::NoSuchUser;
     };
@@ -32,8 +34,8 @@ impl IsPRPC for Operation {
       return Outcome::NoSuchPolicy;
     };
 
-    let now = DateTime::now();
-    if policy.is_enabled(now) {
+    // let now = DateTime::now();
+    if policy.is_enabled() {
       return Outcome::MayNotDeletePolicyWhileEnabled;
     }
 

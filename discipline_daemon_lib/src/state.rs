@@ -1,7 +1,8 @@
-use crate::{user_screen_access_regulation, User, Uuid};
+use crate::{user_screen_access_regulation, DateTime, OperatingSystemIntegration, TimeTracker, User, Uuid};
 
 #[derive(Debug)]
 pub struct AppState {
+  // pub time_tracker: TimeTracker,
   pub users: Vec<User>,
   pub user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo,
   // pub shadow_vaults: shadow_vaults::Feature,
@@ -11,6 +12,8 @@ pub struct AppState {
 impl Default for AppState {
   fn default() -> Self {
     Self {
+      // TODO: Should we recieve the current as argument?
+      // time_tracker: TimeTracker::new(DateTime::now()),
       users: Vec::new(),
       user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo::default(),
     }
@@ -18,6 +21,9 @@ impl Default for AppState {
 }
 
 impl AppState {
+  pub fn operating_system_integration(&self) -> OperatingSystemIntegration {
+    todo!()
+  }
   pub fn find_user_index(&self, user_id: &Uuid) -> Option<usize> {
     self.users.iter().position(|user| user.id == *user_id)
   }

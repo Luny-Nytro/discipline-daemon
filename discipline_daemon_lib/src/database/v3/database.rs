@@ -52,13 +52,7 @@ impl Database {
         "UserScreenAccessRegulationIsUserScreenAccessBlocked".into(),
       ),
       user_screen_access_regulation_policy: UserScreenAccessPolicyCollection::new(
-        "UserScreenAccessRegulationPolicies".into(), 
-        "Id".into(), 
-        "Name".into(), 
-        "UserId".into(), 
-        "EnablerDuration".into(), 
-        "EnablerRemainingDuration".into(), 
-        "EnablerPreviousSynchronizationTime".into(),
+        "UserScreenAccessRegulationPolicies".into()
       ),
       user_screen_access_regulation_rule: UserScreenAccessRuleCollection::new(
         "UserScreenAccessRegulationRules".into(), 

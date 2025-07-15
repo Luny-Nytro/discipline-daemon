@@ -1,6 +1,6 @@
 use super::{
   Serialize, Deserialize, Uuid, PolicyName, Daemon,
-  IsPRPC, policy_db
+  IsRemoteProcedureCall, policy_db
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub struct ChangePolicyName {
   new_name: PolicyName
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   NoSuchPolicy,
@@ -18,10 +18,12 @@ pub enum Outcome {
   InternalError,
 }
 
-impl IsPRPC for ChangePolicyName {
+impl IsRemoteProcedureCall for ChangePolicyName {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
+    
+
     let Some(user) = daemon.state.find_user_by_id_mut(&self.user_id) else {
       return Outcome::NoSuchUser;
     };

@@ -1,10 +1,10 @@
 use super::{
   Serialize, Deserialize, Daemon, Uuid, DateTime, 
-  update_screen_access_regulation_is_applying_enabled, IsPRPC
+  user_db, IsRemoteProcedureCall
 };
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   NoActionNeeded,
@@ -19,7 +19,7 @@ pub struct Operation {
   new_value: bool,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
@@ -29,25 +29,25 @@ impl IsPRPC for Operation {
 
     let regulation = &mut user.screen_access_regulation;
 
-    if regulation.is_applying_enabled == self.new_value {
+    if regulation.is_regulation_enabled == self.new_value {
       return Outcome::NoActionNeeded;
     }
 
     let now = DateTime::now();
-    if !self.new_value && regulation.are_some_policies_enabled(now) {
+    if !self.new_value && regulation.are_some_policies_protected(now) {
       return Outcome::SomePoliciesAreEnabled;
     }
 
-    if let Err(error) = update_screen_access_regulation_is_applying_enabled(
+    if let Err(error) = user_db::update_screen_access_regulation_is_regulation_enabled(
       &daemon.database,
       &self.user_id,
       self.new_value,
     ) {
-      daemon.log_internal_error(error.to_debug_string());
+      daemon.log_internal_error(error);
       return Outcome::InternalError;
     }
 
-    regulation.is_applying_enabled = self.new_value;
+    regulation.is_regulation_enabled = self.new_value;
     Outcome::Success
   }
 }

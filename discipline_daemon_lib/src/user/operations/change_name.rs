@@ -1,7 +1,4 @@
-use super::{
-  Daemon, IsPRPC, Serialize, Deserialize, Uuid, UserName,
-  db,
-};
+use super::{Daemon, IsRemoteProcedureCall, Serialize, Deserialize, Uuid, UserName, db};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Operation {
@@ -9,14 +6,14 @@ pub struct Operation {
   new_user_name: UserName
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,
   Success,
   InternalError,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {

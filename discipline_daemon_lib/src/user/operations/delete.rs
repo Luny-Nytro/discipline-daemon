@@ -1,5 +1,5 @@
 use super::{
-  Uuid, Serialize, Deserialize, db, DateTime, IsPRPC, 
+  Uuid, Serialize, Deserialize, db, DateTime, IsRemoteProcedureCall, 
   Daemon,
 };
 
@@ -11,15 +11,17 @@ pub struct Operation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser { user_id: Uuid },
-  SomePoliciesAreEnabled,
+  SomeUserScreenAccessRegulationPoliciesAreProtected,
   InternalError,
   Success,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
+    
+
     let Some(user_index) = daemon.state.users.iter()
       .position(|user| user.id == self.user_id) else 
     {
@@ -30,8 +32,8 @@ impl IsPRPC for Operation {
 
     let user = &mut daemon.state.users[user_index];
     let now = DateTime::now();
-    if user.screen_access_regulation.are_some_policies_enabled(now) {
-      return Outcome::SomePoliciesAreEnabled;
+    if user.screen_access_regulation.are_some_policies_protected(now) {
+      return Outcome::SomeUserScreenAccessRegulationPoliciesAreProtected;
     }
     
     if let Err(error) = db::delete_user(&daemon.database, &self.user_id) {

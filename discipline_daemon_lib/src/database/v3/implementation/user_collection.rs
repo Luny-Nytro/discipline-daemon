@@ -23,7 +23,7 @@ pub struct UserFields {
   operating_system_user_id: String,
   operating_system_user_name: String,
   operating_system_user_password: String,
-  screen_access_regulation_is_applying_enabled: String,
+  screen_access_regulation_is_regulation_enabled: String,
   screen_access_regulation_is_user_screen_access_blocked: String,
 }
 
@@ -33,8 +33,8 @@ pub struct NormalizedUser {
   pub(super) operating_system_user_id: OperatingSystemUserId,
   pub(super) operating_system_user_name: OperatingSystemUsername,
   pub(super) operating_system_user_password: OperatingSystemPassword,
-  pub(super) screen_access_regulation_is_applying_enabled: bool,
-  pub(super) screen_access_regulation_is_user_screen_access_blocked: bool,
+  pub(super) screen_access_regulation_is_regulation_enabled: bool,
+  // pub(super) screen_access_regulation_is_user_screen_access_blocked: bool,
 }
 
 impl NormalizedUser {
@@ -56,10 +56,10 @@ impl NormalizedUser {
       self.operating_system_user_id,
       self.operating_system_user_name,
       self.operating_system_user_password,
-      user_screen_access_regulation::Regulator::pack(
+      user_screen_access_regulation::Regulation::from_fields(
         policies,
-        self.screen_access_regulation_is_applying_enabled,
-        self.screen_access_regulation_is_user_screen_access_blocked,
+        self.screen_access_regulation_is_regulation_enabled,
+        // self.screen_access_regulation_is_user_screen_access_blocked,
       ),
     )
   }
@@ -75,8 +75,8 @@ fn serialize_user(
   context.write_scalar(&fields.operating_system_user_id, user.operating_system_user_id());
   context.write_scalar(&fields.operating_system_user_name, user.operating_system_user_name());
   context.write_scalar(&fields.operating_system_user_password, user.operating_system_user_password());
-  context.write_scalar(&fields.screen_access_regulation_is_applying_enabled, &user.screen_access_regulator().is_applying_enabled());
-  context.write_scalar(&fields.screen_access_regulation_is_user_screen_access_blocked, &user.screen_access_regulator().is_user_screen_access_blocked());
+  context.write_scalar(&fields.screen_access_regulation_is_regulation_enabled, &user.screen_access_regulator().is_regulation_enabled());
+  // context.write_scalar(&fields.screen_access_regulation_is_user_screen_access_blocked, &user.screen_access_regulator().is_user_screen_access_blocked());
 }
 
 fn deserialize_user(
@@ -90,8 +90,8 @@ fn deserialize_user(
   let operating_system_user_id = context.deserializable_scalar(&fields.operating_system_user_id)?;
   let operating_system_user_name = context.deserializable_scalar(&fields.operating_system_user_name)?;
   let operating_system_user_password = context.deserializable_scalar(&fields.operating_system_user_password)?;
-  let screen_access_regulation_is_applying_enabled = context.deserializable_scalar(&fields.screen_access_regulation_is_applying_enabled)?;
-  let screen_access_regulation_is_user_screen_access_blocked = context.deserializable_scalar(&fields.screen_access_regulation_is_user_screen_access_blocked)?;
+  let screen_access_regulation_is_regulation_enabled = context.deserializable_scalar(&fields.screen_access_regulation_is_regulation_enabled)?;
+  // let screen_access_regulation_is_user_screen_access_blocked = context.deserializable_scalar(&fields.screen_access_regulation_is_user_screen_access_blocked)?;
 
   Ok(NormalizedUser {
     id,
@@ -99,8 +99,8 @@ fn deserialize_user(
     operating_system_user_id,
     operating_system_user_name,
     operating_system_user_password,
-    screen_access_regulation_is_applying_enabled,
-    screen_access_regulation_is_user_screen_access_blocked,
+    screen_access_regulation_is_regulation_enabled,
+    // screen_access_regulation_is_user_screen_access_blocked,
   })
 }
 
@@ -117,7 +117,7 @@ impl UserCollection {
     user_operating_system_user_id_field: String,
     user_operating_system_user_name_field: String,
     user_operating_system_user_password_field: String,
-    user_screen_access_regulation_is_applying_enabled_field: String,
+    user_screen_access_regulation_is_regulation_enabled_field: String,
     user_screen_access_regulation_is_user_screen_access_blocked_field: String,
   ) -> Self {
     Self {
@@ -128,7 +128,7 @@ impl UserCollection {
         operating_system_user_id: user_operating_system_user_id_field,
         operating_system_user_name: user_operating_system_user_name_field,
         operating_system_user_password: user_operating_system_user_password_field,
-        screen_access_regulation_is_applying_enabled: user_screen_access_regulation_is_applying_enabled_field,
+        screen_access_regulation_is_regulation_enabled: user_screen_access_regulation_is_regulation_enabled_field,
         screen_access_regulation_is_user_screen_access_blocked: user_screen_access_regulation_is_user_screen_access_blocked_field,
       }
     }
@@ -143,7 +143,7 @@ impl UserCollection {
         operating_system_user_id: "OperatingSystemUserId".into(),
         operating_system_user_name: "OperatingSystemUserName".into(),
         operating_system_user_password: "OperatngSystemUserPassword".into(),
-        screen_access_regulation_is_applying_enabled: "UserScreenAccessRegulationIsApplyingEnabled".into(),
+        screen_access_regulation_is_regulation_enabled: "UserScreenAccessRegulationIsApplyingEnabled".into(),
         screen_access_regulation_is_user_screen_access_blocked: "UserScreenAccessRegulationIsUserScreenAccessBlocked".into(),
       }
     }
@@ -170,7 +170,7 @@ pub fn write_define(database: &Database, code: &mut DatabaseCode) {
   code.write(" TEXT NOT NULL, ");
   code.write(&me.fields.operating_system_user_password);
   code.write(" TEXT NOT NULL, ");
-  code.write(&me.fields.screen_access_regulation_is_applying_enabled);
+  code.write(&me.fields.screen_access_regulation_is_regulation_enabled);
   code.write(" INTEGER NOT NULL, ");
   code.write(&me.fields.screen_access_regulation_is_user_screen_access_blocked);
   code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
@@ -255,22 +255,22 @@ pub fn update_name(
   commit_user_update_draft(database, &draft, user_id)
 }
 
-pub fn write_screen_access_regulation_is_applying_enabled(
+pub fn write_screen_access_regulation_is_regulation_enabled(
   database: &Database,
   draft: &mut UserUpdateDraft,
   new_value: bool,
 ) {
   let collection = collection(database);
-  draft.draft.write_scalar(&collection.fields.screen_access_regulation_is_applying_enabled, &new_value);
+  draft.draft.write_scalar(&collection.fields.screen_access_regulation_is_regulation_enabled, &new_value);
 }
 
-pub fn update_screen_access_regulation_is_applying_enabled(
+pub fn update_screen_access_regulation_is_regulation_enabled(
   database: &Database,
   user_id: &Uuid,
   new_value: bool,
 ) -> Result<(), GenericError> {
   let mut draft = UserUpdateDraft::new();
-  write_screen_access_regulation_is_applying_enabled(database, &mut draft, new_value);
+  write_screen_access_regulation_is_regulation_enabled(database, &mut draft, new_value);
   commit_user_update_draft(database, &draft, user_id)
 }
 

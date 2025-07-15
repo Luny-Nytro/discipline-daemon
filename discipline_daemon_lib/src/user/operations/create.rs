@@ -1,7 +1,7 @@
 use super::{
   Uuid, OperatingSystemPassword, OperatingSystemUserId,
   OperatingSystemUsername, User, UserName, Serialize, Deserialize,
-  IsPRPC, Daemon, db, user_screen_access_regulation,
+  IsRemoteProcedureCall, Daemon, db, user_screen_access_regulation,
   UserPublicRepr, IntoPublic, 
 }; 
 
@@ -13,6 +13,7 @@ pub struct Operation {
   operating_system_user_password: OperatingSystemPassword,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   UserIdIsUsedByAnotherUser,
   OperatingSystemUserWithGivenIdIsAlreadyManaged,
@@ -21,7 +22,7 @@ pub enum Outcome {
   InternalError,
 }
 
-impl IsPRPC for Operation {
+impl IsRemoteProcedureCall for Operation {
   type Outcome = Outcome;
 
   fn execute(self, daemon: &mut Daemon) -> Outcome {
@@ -31,10 +32,7 @@ impl IsPRPC for Operation {
       }
     }
 
-    if daemon
-      .state
-      .users
-      .iter()
+    if daemon.state.users.iter()
       .any(|user| user.operating_system_user_name == self.operating_system_user_name)
     {
       return Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged;
@@ -63,7 +61,7 @@ impl IsPRPC for Operation {
       operating_system_user_id: operating_system_user_id,
       operating_system_user_name: self.operating_system_user_name,
       operating_system_user_password: self.operating_system_user_password,
-      screen_access_regulation: user_screen_access_regulation::Regulator::new(Vec::new()),
+      screen_access_regulation: user_screen_access_regulation::Regulation::new(Vec::new()),
     };
 
     if let Err(error) = db::add_user(&daemon.database, &user) {

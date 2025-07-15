@@ -1,6 +1,88 @@
+use crate::{Duration, GenericError, OperatingSystemUserId};
+
+pub struct OsUser {
+  regulation_enforcing_interval: Duration,
+  is_screen_access_blocked: Duration,
+  // pub(super) private_password: OperatingSystemPassword,
+
+}
+
+pub struct OperatingSystemIntegration {
+
+}
+
+impl OperatingSystemIntegration {
+  pub fn block_user_access(&self, user_id: &OperatingSystemUserId) {
+    todo!()
+  }
+  pub fn allow_user_access(&self, user_id: &OperatingSystemUserId) {
+    todo!()
+  }
+}
+
+
+  // fn allow_user_access(
+  //   &mut self,
+  //   username: &OperatingSystemUsername,
+  //   password: &OperatingSystemPassword,
+  // ) -> 
+  //   Result<(), GenericError> 
+  // {
+  //   if !self.is_user_screen_access_blocked {
+  //     return Ok(());
+  //   }
+
+  //   match self
+  //     .operating_system_calls
+  //     .change_user_password(username, password) 
+  //   {
+  //     Ok(_) => {
+  //       self.is_user_screen_access_blocked = false;
+  //       Ok(())
+  //     }
+  //     Err(error) => {
+  //       Err(
+  //         error.change_context("Allow user screen access")
+  //       )
+  //     }
+  //   }
+  // }
+
+  // fn block_user_access(
+  //   &mut self, 
+  //   username: &OperatingSystemUsername,
+  //   private_password: &OperatingSystemPassword,
+  // ) -> 
+  //   Result<(), GenericError> 
+  // {
+  //   if self.is_user_screen_access_blocked {
+  //     return Ok(());
+  //   }
+
+  //   match self
+  //     .operating_system_calls
+  //     .change_user_password(username, private_password) 
+  //   {
+  //     Ok(_) => {
+  //       self.is_user_screen_access_blocked = false;
+  //     }
+  //     Err(error) => {
+  //       return Err(
+  //         error.change_context("Block user screen access")
+  //       )
+  //     }
+  //   }
+
+  //   self
+  //     .operating_system_calls
+  //     .gracefully_logout_user(username)
+  //     .map_err(|error| error.change_context("Block user screen access"))
+  // }
+
+
 use std::io::Write;
 use std::process::Command;
-use crate::{GenericError, OperatingSystemPassword, OperatingSystemUsername};
+use crate::{OperatingSystemPassword, OperatingSystemUsername};
 
 #[derive(Debug, Clone)]
 pub struct OperatingSystemCalls {}
