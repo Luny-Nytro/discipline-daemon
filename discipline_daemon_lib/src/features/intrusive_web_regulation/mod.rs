@@ -1,3 +1,26 @@
+/// Allow the user to specify conditions for regulating web access.
+/// 
+/// Regulations include:
+/// - blocking websites matching specified donain, url, .etc
+/// 
+/// Conditions include:
+/// - Webpage url, or specific url component
+/// - Whether an image classifier classifies an image as containing nudity
+/// - Media type (image, video, pdf, binary, android app package, .etc)
+/// - Time of day
+/// - Day of week
+/// - Webpage view time allowance
+/// - Webpage vist count allowance
+/// - YouTube video id, title, description or category
+/// - YouTube channel id, title, description or category
+/// - YouTube video sensistive status
+/// 
+/// Create a simple language to allow the user to match components and
+/// media types within webpages and specify what to do with them:
+/// - remove them if they are components
+/// - blur or replace them if they are images
+/// - blur them or remove the sound if they are videos
+
 mod media_types;
 
 use serde::{Deserialize, Serialize};

@@ -308,31 +308,31 @@ impl Default for CommonInfo {
   }
 }
 
-fn enforce_regulation(daemon_mutex: DaemonMutex) {
-  let now = DateTime::now();
+// fn enforce_regulation(daemon_mutex: DaemonMutex) {
+//   let now = DateTime::now();
   
-  let Ok(mut daemon) = daemon_mutex.lock_with_location("UserScreenAccessRegulationThread") else {
-    return;
-  };
+//   let Ok(mut daemon) = daemon_mutex.lock_with_location("UserScreenAccessRegulationThread") else {
+//     return;
+//   };
 
-  let os = daemon.state.operating_system_integration();
+//   let os = daemon.state.operating_system_integration();
 
-  for user in &mut daemon.state.users {
-    let action = user.screen_access_regulation.calculate_action(now);
+//   for user in &mut daemon.state.users {
+//     let action = user.screen_access_regulation.calculate_action(now);
 
-    match action {
-      Action::Allow => {
-        os.allow_user_access(&user.operating_system_user_id);
-      }
-      Action::Block => {
-        os.block_user_access(&user.operating_system_user_id);
-      }
-    }
-  }  
-}
+//     match action {
+//       Action::Allow => {
+//         os.allow_user_access(&user.operating_system_user_id);
+//       }
+//       Action::Block => {
+//         os.block_user_access(&user.operating_system_user_id);
+//       }
+//     }
+//   }  
+// }
 
-pub fn launch_thread(daemon_mutex: DaemonMutex) -> std::thread::JoinHandle<()> {
-  std::thread::spawn(|| {
-    enforce_regulation(daemon_mutex);
-  })
-}
+// pub fn launch_thread(daemon_mutex: DaemonMutex) -> std::thread::JoinHandle<()> {
+//   std::thread::spawn(|| {
+//     enforce_regulation(daemon_mutex);
+//   })
+// }

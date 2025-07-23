@@ -1,3 +1,12 @@
+/// Allow the user to specify conditions for when to block access
+/// to specified web domains.
+/// 
+/// Use a proxy server to achive that.
+/// 
+/// This method is non-intrusive: We don't read the user's encrypted web traffic.
+/// 
+/// This method is limited.
+
 // use std::net::TcpListener;
 
 // use httparse::{Request, Status};

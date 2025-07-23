@@ -1,6 +1,6 @@
 use std::process::Command;
 use crate::GenericError;
-use super::OperatingSystemUsername;
+use super::OperatingSystemUserName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OperatingSystemUserId(u32);
@@ -14,7 +14,7 @@ impl OperatingSystemUserId {
     self.0
   }
 
-  pub fn from_username(username: &OperatingSystemUsername) -> Result<OperatingSystemUserId, GenericError> {
+  pub fn from_username(username: &OperatingSystemUserName) -> Result<OperatingSystemUserId, GenericError> {
     let output = Command::new("id")
       .arg("-u")
       .arg(username.as_ref()) 

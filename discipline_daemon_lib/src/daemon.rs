@@ -111,10 +111,10 @@ impl DaemonMutex {
   }
 
   pub fn run_and_block_thread(&self) {
-    let api_thread = api::launch_thread(self.clone());
-    let user_screen_access_regulation_thread = user_screen_access_regulation::launch_thread(self.clone());
-    _ = api_thread.join();
-    _ = user_screen_access_regulation_thread.join();
+    // let api_thread = api::launch_thread(self.clone());
+    // let user_screen_access_regulation_thread = user_screen_access_regulation::launch_thread(self.clone());
+    // _ = api_thread.join();
+    // _ = user_screen_access_regulation_thread.join();
   }
 }
 

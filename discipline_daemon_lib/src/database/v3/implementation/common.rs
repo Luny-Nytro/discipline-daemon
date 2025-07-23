@@ -38,33 +38,33 @@ impl DeserializableScalarValue for OperatingSystemUserId {
   }
 }
 
-impl SerializableScalarValue for OperatingSystemUsername {
+impl SerializableScalarValue for OperatingSystemUserName {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {
     context.write_string(self.as_ref());
   }
 }
 
-impl DeserializableScalarValue for OperatingSystemUsername {
+impl DeserializableScalarValue for OperatingSystemUserName {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_string()
-      .and_then(OperatingSystemUsername::new_or_generic_error)
+      .and_then(OperatingSystemUserName::new_or_generic_error)
       .map_err(|error|
         error.change_context("deserializing an OperatingSystemUsername")
       )
   }
 }
 
-impl SerializableScalarValue for OperatingSystemPassword {
+impl SerializableScalarValue for OperatingSystemUserPassword {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {
     context.write_string(self.as_ref());
   }
 }
 
-impl DeserializableScalarValue for OperatingSystemPassword {
+impl DeserializableScalarValue for OperatingSystemUserPassword {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value
       .as_string()
-      .and_then(OperatingSystemPassword::new_or_generic_error)
+      .and_then(OperatingSystemUserPassword::new_or_generic_error)
       .map_err(|error|
         error.change_context("deserializing an OperatingSystemPassword")
       )

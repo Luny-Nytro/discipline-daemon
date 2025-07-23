@@ -1,4 +1,4 @@
-use crate::{user_screen_access_regulation, DateTime, OperatingSystemIntegration, TimeTracker, User, Uuid};
+use crate::{user_screen_access_regulation, DateTime, OperationScheduler, TimeTracker, User, Uuid};
 
 #[derive(Debug)]
 pub struct AppState {
@@ -21,7 +21,7 @@ impl Default for AppState {
 }
 
 impl AppState {
-  pub fn operating_system_integration(&self) -> OperatingSystemIntegration {
+  pub fn operating_system_integration(&self) -> OperationScheduler {
     todo!()
   }
   pub fn find_user_index(&self, user_id: &Uuid) -> Option<usize> {

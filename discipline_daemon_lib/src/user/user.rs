@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use crate::{
-  user_screen_access_regulation, DaemonMutex, GenericError, OperatingSystemPassword, 
-  OperatingSystemUserId, OperatingSystemUsername, Uuid
+  user_screen_access_regulation, DaemonMutex, GenericError, OperatingSystemUserPassword, 
+  OperatingSystemUserId, OperatingSystemUserName, Uuid
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,8 +37,8 @@ pub struct User {
   pub id: Uuid,
   pub name: UserName,
   pub operating_system_user_id: OperatingSystemUserId,
-  pub operating_system_user_name: OperatingSystemUsername,
-  pub operating_system_user_password: OperatingSystemPassword,
+  pub operating_system_user_name: OperatingSystemUserName,
+  pub operating_system_user_password: OperatingSystemUserPassword,
   pub screen_access_regulation: user_screen_access_regulation::Regulation,
 }
 
@@ -47,8 +47,8 @@ impl User {
     id: Uuid,
     name: UserName,
     operating_system_user_id: OperatingSystemUserId,
-    operating_system_user_name: OperatingSystemUsername,
-    operating_system_user_password: OperatingSystemPassword,
+    operating_system_user_name: OperatingSystemUserName,
+    operating_system_user_password: OperatingSystemUserPassword,
     screen_access_regulation: user_screen_access_regulation::Regulation,
   ) -> Self 
   {
@@ -71,10 +71,10 @@ impl User {
   pub fn operating_system_user_id(&self) -> &OperatingSystemUserId {
     &self.operating_system_user_id
   }
-  pub fn operating_system_user_name(&self) -> &OperatingSystemUsername {
+  pub fn operating_system_user_name(&self) -> &OperatingSystemUserName {
     &self.operating_system_user_name
   }
-  pub fn operating_system_user_password(&self) -> &OperatingSystemPassword {
+  pub fn operating_system_user_password(&self) -> &OperatingSystemUserPassword {
     &self.operating_system_user_password
   }
   pub fn screen_access_regulator(&self) -> &user_screen_access_regulation::Regulation {

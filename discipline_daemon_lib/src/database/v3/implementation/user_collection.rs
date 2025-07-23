@@ -31,8 +31,8 @@ pub struct NormalizedUser {
   pub(super) id: Uuid,
   pub(super) name: UserName,
   pub(super) operating_system_user_id: OperatingSystemUserId,
-  pub(super) operating_system_user_name: OperatingSystemUsername,
-  pub(super) operating_system_user_password: OperatingSystemPassword,
+  pub(super) operating_system_user_name: OperatingSystemUserName,
+  pub(super) operating_system_user_password: OperatingSystemUserPassword,
   pub(super) screen_access_regulation_is_regulation_enabled: bool,
   // pub(super) screen_access_regulation_is_user_screen_access_blocked: bool,
 }

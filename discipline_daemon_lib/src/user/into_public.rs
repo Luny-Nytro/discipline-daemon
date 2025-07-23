@@ -1,8 +1,8 @@
 use serde::{Serialize, Deserialize};
 
 use crate::{
-  user_screen_access_regulation, OperatingSystemPassword, 
-  OperatingSystemUserId, OperatingSystemUsername, 
+  user_screen_access_regulation, OperatingSystemUserPassword, 
+  OperatingSystemUserId, OperatingSystemUserName, 
   IntoPublic, Uuid
 };
 
@@ -15,8 +15,8 @@ pub struct UserPublicRepr {
   id: Uuid,
   name: UserName,
   operating_system_user_id: OperatingSystemUserId,
-  operating_system_user_name: OperatingSystemUsername,
-  operating_system_user_password: OperatingSystemPassword,
+  operating_system_user_name: OperatingSystemUserName,
+  operating_system_user_password: OperatingSystemUserPassword,
   screen_access_regulator: user_screen_access_regulation::RegulationPublicRepr,
 }
 

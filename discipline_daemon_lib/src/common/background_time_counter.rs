@@ -2,15 +2,6 @@ use serde::{Deserialize, Serialize};
 use crate::{Duration, DateTime};
 use super::SynchronizeArg;
 
-UserActiveTimeAllowance;
-
-UserActiveTimeCounter;
-UserActiveCountdownTime;
-DeviceActiveTimeCounter;
-DeviceActiveCountdownTimer;
-NetworkingEnabledTimeCounter;
-NetworkingEnabledCountdownTimer,
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackgroundTimeCounter {
   time_elapsed: Duration,

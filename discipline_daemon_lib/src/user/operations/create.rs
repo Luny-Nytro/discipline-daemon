@@ -1,6 +1,6 @@
 use super::{
-  Uuid, OperatingSystemPassword, OperatingSystemUserId,
-  OperatingSystemUsername, User, UserName, Serialize, Deserialize,
+  Uuid, OperatingSystemUserPassword, OperatingSystemUserId,
+  OperatingSystemUserName, User, UserName, Serialize, Deserialize,
   IsRemoteProcedureCall, Daemon, db, user_screen_access_regulation,
   UserPublicRepr, IntoPublic, 
 }; 
@@ -9,8 +9,8 @@ use super::{
 pub struct Operation {
   user_id: Option<Uuid>,
   user_name: UserName,
-  operating_system_user_name: OperatingSystemUsername,
-  operating_system_user_password: OperatingSystemPassword,
+  operating_system_user_name: OperatingSystemUserName,
+  operating_system_user_password: OperatingSystemUserPassword,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

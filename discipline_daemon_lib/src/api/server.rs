@@ -1,13 +1,7 @@
-use std::ops::DerefMut;
-
 use serde::{de::DeserializeOwned, Serialize};
 use tiny_http::{Header, Method, Request, Response, Server};
-
+use crate::{find_operation_type, DaemonMutex, IsRemoteProcedureCall};
 use super::*;
-
-use crate::find_operation_type;
-use crate::DaemonMutex;
-use crate::IsRemoteProcedureCall;
 
 // 4 KB
 const MAX_QUESTION_PAYLOAD_SIZE: usize = 4096; 
@@ -177,7 +171,7 @@ fn respond(daemon_mutex: DaemonMutex, question: &mut Request) -> ResponseCreator
         return ResponseCreator::InternalServerError;
       };
 
-      let daemon = daemon_guard.deref_mut();
+      let daemon = &mut *daemon_guard;
 
       ResponseCreator::json(operation.execute(daemon))
     }
@@ -214,7 +208,6 @@ pub fn run(daemon_mutex: DaemonMutex) {
     question.respond_with(response_creator);
   }
 }
-
 
 pub fn launch_thread(daemon_mutex: DaemonMutex) -> std::thread::JoinHandle<()> {
   std::thread::spawn(|| {

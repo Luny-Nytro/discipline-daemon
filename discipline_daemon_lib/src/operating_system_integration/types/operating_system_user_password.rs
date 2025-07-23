@@ -1,10 +1,10 @@
 use crate::GenericError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OperatingSystemPassword(String);
+pub struct OperatingSystemUserPassword(String);
 
-impl OperatingSystemPassword {
-  pub fn new(password: String) -> Option<OperatingSystemPassword> {
+impl OperatingSystemUserPassword {
+  pub fn new(password: String) -> Option<OperatingSystemUserPassword> {
     if password.is_empty() {
       None
     } else {
@@ -12,7 +12,7 @@ impl OperatingSystemPassword {
     }
   }
 
-  pub fn new_or_generic_error(password: String) -> Result<OperatingSystemPassword, GenericError> {
+  pub fn new_or_generic_error(password: String) -> Result<OperatingSystemUserPassword, GenericError> {
     if password.is_empty() {
       Err(
         GenericError::new("creating an OperatingSystemPassword")
@@ -27,7 +27,7 @@ impl OperatingSystemPassword {
     &self.0
   }
 
-  pub fn generate_random_password() -> OperatingSystemPassword {
+  pub fn generate_random_password() -> OperatingSystemUserPassword {
     use rand::{distr::Uniform, Rng};
 
     let mut rng = rand::rng();
@@ -37,38 +37,15 @@ impl OperatingSystemPassword {
       .map(|_| rng.sample(&letters) as char)
       .collect();
 
-    OperatingSystemPassword(password)
+    OperatingSystemUserPassword(password)
   }
 }
 
-// mod database {
-//   use crate::database::*;
-//   use super::OperatingSystemPassword;
-//   use crate::GenericError;
-
-//   impl IntoScalarValue for OperatingSystemPassword {
-//     fn into_scalar_value(&self) -> impl IsScalarValue {
-//       &self.0
-//     }
-//   }
-
-//   impl FromScalarValue for OperatingSystemPassword {
-//     fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-//       value
-//         .as_string()
-//         .and_then(OperatingSystemPassword::new_or_generic_error)
-//         .map_err(|error|
-//           error.change_context("deserializing an OperatingSystemPassword")
-//         )
-//     }
-//   }
-// }
-
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-  use super::OperatingSystemPassword;
+  use super::OperatingSystemUserPassword;
   
-  impl Serialize for OperatingSystemPassword {
+  impl Serialize for OperatingSystemUserPassword {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
       S: Serializer,
@@ -77,13 +54,13 @@ mod serde_impl {
     }
   }
   
-  impl<'de> Deserialize<'de> for OperatingSystemPassword {
+  impl<'de> Deserialize<'de> for OperatingSystemUserPassword {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
       D: Deserializer<'de>,
     {
       let password = String::deserialize(deserializer)?;
-      match OperatingSystemPassword::new(password) {
+      match OperatingSystemUserPassword::new(password) {
         Some(value) => {
           Ok(value)
         }
