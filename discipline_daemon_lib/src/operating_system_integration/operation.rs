@@ -1,6 +1,21 @@
+use std::sync::{Arc, Mutex};
+use super::*;
 
-pub struct Operation {}
+// pub enum ScheduledTask {
+//   ScreenAccessRegulationApplicationCheck,
+//   ScreenAccessRegulationApplicationAllow(OperatingSystemUserId),
+//   ScreenAccessRegulationApplicationBlock(OperatingSystemUserId),
+// }
 
-impl Operation {
-  pub fn execute(self) {}
+
+pub enum ScheduledTask {
+  ScreenAccessRegulationApplication(ScreenAccessRegulationScheduledTask)
+}
+
+impl ScheduledTask {
+  pub fn execute(
+    self, 
+    operatin_system_integration_data: Arc<Mutex<IntegrationData>>,
+    scheduler: Arc<OperationScheduler>
+  ) {}
 }

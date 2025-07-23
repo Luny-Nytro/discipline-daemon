@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 use crate::{
-  api, user_screen_access_regulation, AppState, GenericError
+  api, screen_access_regulation, GenericError
 };
 
 use crate::database::Database;
@@ -20,7 +20,7 @@ impl Configuration {
 }
 
 pub struct Daemon {
-  pub state: AppState,
+  // pub state: AppState,
   pub database: Database,
   pub http_server_address: String,
   pub is_running: bool,
@@ -47,7 +47,7 @@ impl Daemon {
     )?;
 
     Ok(DaemonMutex::new(Daemon {
-      state,
+      // state,
       database,
       is_running: false,
       http_server_address: format!("127.0.0.1:{http_server_port}"),

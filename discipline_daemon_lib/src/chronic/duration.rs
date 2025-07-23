@@ -132,7 +132,7 @@ impl Duration {
     self.0.checked_div(by).map(Self::from_milliseconds)
   }
 
-  pub fn to_std(&self) -> std::time::Duration {
+  pub fn as_standard_duration(&self) -> std::time::Duration {
     std::time::Duration::from_millis(self.0)
   }
 

@@ -12,7 +12,7 @@ use crate::{
   TimeRange, IsRemoteProcedureCall, IntoPublic,
 };
 
-use crate::user_screen_access_regulation::{
+use crate::screen_access_regulation::{
   PolicyName, PolicyCreator, PolicyPublicRepr,
   RulePublicRepr, RuleCreator, RuleActivator,
 };

@@ -1,4 +1,4 @@
-use crate::user_screen_access_regulation::*;
+use crate::screen_access_regulation::*;
 use super::screen_access_regulation_rule_integration::NormalizedRule;
 use crate::{Uuid, CountdownTimer, Duration, DateTime};
 use super::*;

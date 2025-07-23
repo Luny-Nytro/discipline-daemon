@@ -1,28 +1,131 @@
+use std::sync::Arc;
+use crate::features::screen_access_regulation::Action;
 use super::*;
 
-pub(super) struct UserScreenAccessData {
-  status: UserScreenAccessStatus
+// TODO: If terminating a user session takes too long, just kill the session.
+// TODO: Reduce lock duration in "block_user_screen_access"
+// TODO: Reduce lock duration in "allow_user_screen_access"
+// TODO: Allow the user to select from various session termination methods
+//       such as "pkill", "loginctl terminate-session" or just covering the screen after login in.
+
+pub struct CommonScreenAccessRegulationApplicationData {
+  private_password: OperatingSystemUserPassword,
 }
 
-pub enum UserScreenAccessStatus {
+impl CommonScreenAccessRegulationApplicationData {
+  pub fn new() -> Self {
+    Self {
+      private_password: OperatingSystemUserPassword::generate_random_password()
+    }
+  }
+}
+
+pub struct UserScreenAccessRegulationApplicationData {
+  status: UserScreenAccessRegulationApplictionStatus,
+  interval: Duration,
+}
+
+pub enum UserScreenAccessRegulationApplictionStatus {
   Unknown,
   LoginAllowed,
   LoginBlocked,
   LoginBlockedAndSessionTerminated,
 }
 
-pub enum UserScreenAccessRegulationAction {
-  Allow,
-  Block,
+pub enum ScreenAccessRegulationScheduledTask {
+  CheckAll,
+  RecheckOne(OperatingSystemUserId),
+  Allow(OperatingSystemUserId),
+  BlockLogin(OperatingSystemUserId),
+  TerminateSession(OperatingSystemUserId),
 }
 
-pub trait IsUserScreenAccessRegulation: Send {
-  fn action(&self, operating_system_user_id: OperatingSystemUserId) -> UserScreenAccessRegulationAction;
+impl Into<ScheduledTask> for ScreenAccessRegulationScheduledTask {
+  fn into(self) -> ScheduledTask {
+    ScheduledTask::ScreenAccessRegulationApplication(self)
+  }
 }
 
+impl ScreenAccessRegulationScheduledTask {
+  pub fn execute(
+    self, 
+    scheduler: Arc<OperationScheduler>,
+    integration: &mut IntegrationData,
+  ) {
+    match self {
+      Self::CheckAll => {
+
+      }
+    }
+  }
+}
+
+fn execute_check_all(
+  scheduler: Arc<OperationScheduler>,
+  integration: &mut IntegrationData,
+) {
+  let now = DateTime::now();
+  for user in integration.users.values_mut() {
+    let action = user.user_screen_access_regulation.calculate_action(now);
+
+    match user.user_screen_access_regulation_application.status {
+      UserScreenAccessRegulationApplictionStatus::Unknown => {
+        match action {
+          Action::Allow => {
+            scheduler.add_immediate_operation(
+              ScreenAccessRegulationScheduledTask::Allow(user.user_id)
+            );
+          }
+          Action::Block => {
+            scheduler.add_immediate_operation(
+              ScreenAccessRegulationScheduledTask::BlockLogin(user.user_id)
+            );
+          }
+        }
+      }
+      UserScreenAccessRegulationApplictionStatus::LoginAllowed => {
+        match action {
+          Action::Allow => {
+            scheduler.add_delayed_operation(
+              ScreenAccessRegulationScheduledTask::RecheckOne(user.user_id), 
+              user.user_screen_access_regulation_application.interval.as_standard_duration(),
+            );
+          }
+          Action::Block => {
+            scheduler.add_immediate_operation(
+              ScreenAccessRegulationScheduledTask::BlockLogin(user.user_id)
+            );
+          }
+        }
+      }
+      UserScreenAccessRegulationApplictionStatus::LoginBlocked => {
+        match action {
+          Action::Allow => {
+            scheduler.add_immediate_operation(
+              ScreenAccessRegulationScheduledTask::Allow(user.user_id)
+            );
+          }
+          Action::Block => {
+            scheduler.add_delayed_operation(
+              ScreenAccessRegulationScheduledTask::RecheckOne(user.user_id), 
+              user.user_screen_access_regulation_application.interval.as_standard_duration(),
+            );
+          }
+        }
+      }
+      UserScreenAccessRegulationApplictionStatus::LoginBlockedAndSessionTerminated => {
+        match action {
+          Action::Allow => {
+            scheduler
+          }
+        }
+      }
+    }
+  }
+}
 
 fn block_user_screen_access(
-  user: &mut OperatingSystemUser,
+  user: &mut UserInfo,
   blocked_user_password: &OperatingSystemUserPassword,
   // integration: &mut OperatingSystemIntegrationInternal<T>,
   // operating_system_user_id: OperatingSystemUserId,
@@ -103,7 +206,7 @@ fn allow_user_screen_access(
 }
 
 pub(super) fn user_screen_access_task(
-  integration: &mut OperatingSystemIntegrationData
+  integration: &mut IntegrationData
 ) -> Duration {
   todo!()
 // let action = integration

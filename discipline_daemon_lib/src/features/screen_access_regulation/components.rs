@@ -209,7 +209,7 @@ impl Policy {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Action {
+pub enum Action {
   Block,
   Allow,
 }
@@ -247,7 +247,7 @@ impl Regulation {
     )
   }
 
-  fn calculate_action(&mut self, now: DateTime) -> Action {
+  pub fn calculate_action(&mut self, now: DateTime) -> Action {
     if self.is_regulation_enabled && self.are_some_policies_effective(now) {
       Action::Block
     } else {

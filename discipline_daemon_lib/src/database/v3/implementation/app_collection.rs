@@ -35,7 +35,7 @@ impl NormalizedApp {
     AppState {
       users,
       // time_tracker: self.time_tracker,
-      user_screen_access_regulation_common_info: user_screen_access_regulation::CommonInfo { },
+      user_screen_access_regulation_common_info: screen_access_regulation::CommonInfo { },
       // user_screen_access_regulation_common_info: self.user_screen_access_regulation_common_info,
     }
   }

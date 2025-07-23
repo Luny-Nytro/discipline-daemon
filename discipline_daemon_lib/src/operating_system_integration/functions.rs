@@ -1,5 +1,7 @@
+use std::io::Write;
 use std::ffi::CStr;
 use std::mem::MaybeUninit;
+use std::process::Command;
 use super::*;
 
 pub enum RetrieveUserInfoGivenIdReturn {

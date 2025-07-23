@@ -1,5 +1,5 @@
 use crate::*;
-use crate::user_screen_access_regulation::*;
+use crate::screen_access_regulation::*;
 use super::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

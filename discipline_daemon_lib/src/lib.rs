@@ -27,27 +27,5 @@ pub use common::{
 pub mod features;
 pub use features::*;
 
-pub mod user;
-pub use user::User;
-
-pub mod state;
-pub use state::AppState;
-
 pub mod daemon;
 pub use daemon::*;
-
-// pub mod synchronize_source;
-// pub use synchronize_source::*;
-
-
-// pub mod web_client;
-
-// pub fn main() {
-//   // _ = AppMutex::open_from_command_line_arguments_then_run();
-// }
-
-// fn main() {}
-
-
-
-pub type Tried<A, B> = Result<A, B>;
