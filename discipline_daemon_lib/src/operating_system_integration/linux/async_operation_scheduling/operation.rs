@@ -8,14 +8,14 @@ use super::*;
 // }
 
 
-pub enum ScheduledTask {
-  ScreenAccessRegulationApplication(ScreenAccessRegulationScheduledTask)
+pub enum AsyncOperation {
+  ScreenAccessRegulationApplication(screen_access_regulation_application::ScreenAccessRegulationAsyncOperation)
 }
 
-impl ScheduledTask {
+impl AsyncOperation {
   pub fn execute(
     self, 
-    operatin_system_integration_data: Arc<Mutex<IntegrationData>>,
+    operatin_system_integration_data: Arc<Mutex<Data>>,
     scheduler: Arc<OperationScheduler>
   ) {}
 }

@@ -4,8 +4,9 @@ use std::mem::MaybeUninit;
 use std::process::Command;
 use super::*;
 
-pub enum RetrieveUserInfoGivenIdReturn {
+pub enum RetrieveUserInfoReturn {
   Success { 
+    user_id: OperatingSystemUserId,
     user_name: OperatingSystemUserName, 
     user_password: OperatingSystemUserPassword
   },
@@ -13,7 +14,7 @@ pub enum RetrieveUserInfoGivenIdReturn {
   Error,
 }
 
-pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> RetrieveUserInfoGivenIdReturn {
+pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> RetrieveUserInfoReturn {
   unsafe {
     // The user information (including name and other stuff) will eventually
     // be stored here.
@@ -60,52 +61,52 @@ pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> Retri
       }
       // The user with the specified UID does not exist.
       libc::ENOENT => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Permission Denied: This process lacks permission to read /etc/passwd or a 
       // user database (e.g., LDAP/NIS).
       libc::EACCES => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Interrupted by Signal: The call was interrupted by a signal (e.g., SIGINT).
       // We should try again in this case.
       libc::EINTR => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Buffer Too Small: The buffer we provided is too small.
       libc::ERANGE => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Rare/System-Level Errors (less common but possible):
       // Low-level I/O error while reading /etc/passwd or a user database.
       libc::EIO => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // EMFILE / ENFILE (Too Many Open Files): Process or system file descriptor 
       // limit reached.
       libc::EMFILE | libc::ENFILE => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Bad Memory Address: Invalid buffer pointer passed to "getpwuid_r".
       libc::EFAULT => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Invalid Argument: Invalid parameters (e.g., NULL output pointer)
       libc::EINVAL => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Out of Memory: Kernel or libc failed to allocate memory.
       libc::ENOMEM => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Error not specified in the man page for "getpwuid_r"
       _ => {
-        return RetrieveUserInfoGivenIdReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
     }
 
     if historical_baggage.is_null() {
-      return RetrieveUserInfoGivenIdReturn::NoSuchUser;
+      return RetrieveUserInfoReturn::NoSuchUser;
     }
 
     let user_information = user_information.assume_init();
@@ -114,30 +115,25 @@ pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> Retri
       CStr::from_ptr(user_information.pw_name)
         .to_string_lossy().into_owned()
     ) else {
-      return RetrieveUserInfoGivenIdReturn::Error;
+      return RetrieveUserInfoReturn::Error;
     };
 
     let Some(user_password) = OperatingSystemUserPassword::new(
       CStr::from_ptr(user_information.pw_passwd)
         .to_string_lossy().into_owned()
     ) else {
-      return RetrieveUserInfoGivenIdReturn::Error;
+      return RetrieveUserInfoReturn::Error;
     };
 
-    RetrieveUserInfoGivenIdReturn::Success { 
+    RetrieveUserInfoReturn::Success { 
+      user_id,
       user_name, 
       user_password,
     }
   }
 }
 
-pub enum RetrieveUserInfoGivenNameReturn {
-  Success { user_id: OperatingSystemUserId, user_password: OperatingSystemUserPassword },
-  NoSuchUser,
-  Error,
-}
-
-pub fn retrieve_user_info_given_user_name(user_name: &OperatingSystemUserName) -> RetrieveUserInfoGivenNameReturn {
+pub fn retrieve_user_info_given_user_name(user_name: OperatingSystemUserName) -> RetrieveUserInfoReturn {
   unsafe {
     // The user information (including name and other stuff) will eventually
     // be stored here.
@@ -184,52 +180,52 @@ pub fn retrieve_user_info_given_user_name(user_name: &OperatingSystemUserName) -
       }
       // The user with the specified UID does not exist.
       libc::ENOENT => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Permission Denied: This process lacks permission to read /etc/passwd or a 
       // user database (e.g., LDAP/NIS).
       libc::EACCES => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Interrupted by Signal: The call was interrupted by a signal (e.g., SIGINT).
       // We should try again in this case.
       libc::EINTR => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Buffer Too Small: The buffer we provided is too small.
       libc::ERANGE => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Rare/System-Level Errors (less common but possible):
       // Low-level I/O error while reading /etc/passwd or a user database.
       libc::EIO => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // EMFILE / ENFILE (Too Many Open Files): Process or system file descriptor 
       // limit reached.
       libc::EMFILE | libc::ENFILE => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Bad Memory Address: Invalid buffer pointer passed to "getpwnam_r".
       libc::EFAULT => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Invalid Argument: Invalid parameters (e.g., NULL output pointer)
       libc::EINVAL => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Out of Memory: Kernel or libc failed to allocate memory.
       libc::ENOMEM => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
       // Error not specified in the man page for "getpwnam_r"
       _ => {
-        return RetrieveUserInfoGivenNameReturn::Error;
+        return RetrieveUserInfoReturn::Error;
       }
     }
 
     if historical_baggage.is_null() {
-      return RetrieveUserInfoGivenNameReturn::NoSuchUser;
+      return RetrieveUserInfoReturn::NoSuchUser;
     }
     
     let user_information = user_information.assume_init();
@@ -239,12 +235,24 @@ pub fn retrieve_user_info_given_user_name(user_name: &OperatingSystemUserName) -
       CStr::from_ptr(user_information.pw_passwd)
         .to_string_lossy().into_owned()
     ) else {
-      return RetrieveUserInfoGivenNameReturn::Error;
+      return RetrieveUserInfoReturn::Error;
     };
 
-    RetrieveUserInfoGivenNameReturn::Success { 
+    RetrieveUserInfoReturn::Success { 
       user_id, 
+      user_name,
       user_password,
+    }
+  }
+}
+
+pub fn retrieve_user_info(user_identification_method: UserIdentificationMethod) -> RetrieveUserInfoReturn {
+  match user_identification_method {
+    UserIdentificationMethod::Id(user_id) => { 
+      retrieve_user_info_given_user_id(user_id)
+    }
+    UserIdentificationMethod::Name(user_name) => {
+      retrieve_user_info_given_user_name(user_name)
     }
   }
 }

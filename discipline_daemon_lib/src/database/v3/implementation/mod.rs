@@ -20,3 +20,5 @@ pub use user_collection::UserCollection;
 
 pub mod app_collection;
 pub use app_collection::AppCollection;
+
+mod operating_system_integration_linux;

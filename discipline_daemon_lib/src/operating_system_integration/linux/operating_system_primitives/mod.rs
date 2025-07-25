@@ -1,3 +1,6 @@
+mod user_identification_method;
+pub use user_identification_method::*;
+
 mod operating_system_user_id;
 pub use operating_system_user_id::*;
 

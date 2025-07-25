@@ -4,9 +4,12 @@ use std::thread::{spawn, JoinHandle};
 use std::time::{Duration, Instant};
 use super::*;
 
+mod operation;
+pub use operation::AsyncOperation;
+
 struct OperationSchedulerCrossThreadMutexedData {
   dropped: bool,
-  operations: BTreeMap<Instant, ScheduledTask>,
+  operations: BTreeMap<Instant, AsyncOperation>,
   worker_thread: Option<JoinHandle<()>>,
 }
 
@@ -17,7 +20,7 @@ pub struct OperationScheduler {
 
 impl OperationScheduler {
   pub fn new(
-    operating_system_integration_data: Arc<Mutex<IntegrationData>>,
+    operating_system_integration_data: Arc<Mutex<Data>>,
   ) -> Arc<Self> {
     let scheduler = Arc::new(OperationScheduler {
       condvar: Condvar::new(),
@@ -56,7 +59,7 @@ impl OperationScheduler {
 fn pick(
   condvar: &Condvar,
   mut data: MutexGuard<OperationSchedulerCrossThreadMutexedData>,
-) -> ScheduledTask {
+) -> AsyncOperation {
   let operation = loop {
     let now = Instant::now();
 
@@ -80,12 +83,12 @@ fn pick(
 }
 
 impl OperationScheduler {
-  pub fn add_immediate_operation(&self, operation: impl Into<ScheduledTask>) {
+  pub fn add_immediate_operation(&self, operation: impl Into<AsyncOperation>) {
     self.data.lock().unwrap().operations.insert(Instant::now(), operation.into());
     self.condvar.notify_one();
   }
 
-  pub fn add_delayed_operation(&self, operation: impl Into<ScheduledTask>, delay: Duration) {
+  pub fn add_delayed_operation(&self, operation: impl Into<AsyncOperation>, delay: Duration) {
     let time = Instant::now().checked_add(delay).unwrap();
     self.data.lock().unwrap().operations.insert(time, operation.into());
     self.condvar.notify_one();

@@ -3,6 +3,7 @@ use super::{
   Daemon, DateTime, rule_db,
 };
 
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Outcome {
   NoSuchUser,

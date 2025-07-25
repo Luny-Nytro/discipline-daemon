@@ -77,13 +77,13 @@ impl RuleFields {
 fn serialize_rule(
   context: &mut SerializeCompoundValueContext,
   rule: &Rule,
-  user_id: &Uuid,
+  // user_id: &Uuid,
   policy_id: &Uuid,
   position: usize,
   rule_fields: &RuleFields,
 ) {
   context.write_scalar(&rule_fields.id, rule.id());
-  context.write_scalar(&rule_fields.user_id, user_id);
+  // context.write_scalar(&rule_fields.user_id, user_id);
   context.write_scalar(&rule_fields.policy_id, policy_id);
   context.write_usize(&rule_fields.position, position);
   
@@ -247,7 +247,7 @@ pub fn write_add_rule(
   database: &Database,
   draft: &mut DatabaseCode, 
   rule: &Rule, 
-  user_id: &Uuid,
+  // user_id: &Uuid,
   policy_id: &Uuid,
   position: usize,
 ) {
@@ -277,7 +277,7 @@ pub fn write_add_rule(
   serialize_rule(
     &mut context, 
     rule, 
-    user_id,
+    // user_id,
     policy_id,
     position, 
     &collection.fields,
@@ -293,12 +293,12 @@ pub fn write_add_rule(
 pub fn add_rule(
   database: &Database,
   rule: &Rule, 
-  user_id: &Uuid,
+  // user_id: &Uuid,
   policy_id: &Uuid,
   position: usize,
 ) -> Result<(), GenericError> {
   let mut draft = DatabaseCode::new();
-  write_add_rule(database, &mut draft, rule, user_id, policy_id, position);
+  write_add_rule(database, &mut draft, rule, policy_id, position);
   database.execute(&draft.as_ref())
 }
 

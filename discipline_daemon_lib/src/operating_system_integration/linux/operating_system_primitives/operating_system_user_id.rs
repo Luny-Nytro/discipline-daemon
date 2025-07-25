@@ -2,7 +2,7 @@ use std::process::Command;
 use crate::GenericError;
 use super::OperatingSystemUserName;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct OperatingSystemUserId(u32);
 
 impl OperatingSystemUserId {

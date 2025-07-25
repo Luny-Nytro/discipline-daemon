@@ -68,7 +68,7 @@ impl Database {
 
     let mut definitions = DatabaseCode::new();
     app_collection::write_define(&database, &mut definitions);
-    user_collection::write_define(&database, &mut definitions);
+    // user_collection::write_define(&database, &mut definitions);
     screen_access_regulation_rule_integration::write_define(&database, &mut definitions);
     screen_access_regulation_policy_collection::write_define(&database, &mut definitions);
 
