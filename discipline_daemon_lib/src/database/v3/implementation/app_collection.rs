@@ -92,7 +92,7 @@ impl AppCollection {
 
 impl Database  {
   fn collection(&self) -> &AppCollection {
-    &self.app
+    &self.common
   }
 }
 
@@ -178,7 +178,7 @@ pub fn retrieve(database: &Database) -> Result<AppState, GenericError> {
   let normalized_app = retrieve_normalized(database)?;
   let normalized_users = user_collection::retrieve_all(database)?;
   let normalized_user_screen_access_regulation_rules = screen_access_regulation_rule_integration::retrieve_all_rules(database)?;
-  let normalized_user_screen_access_regulation_policies = screen_access_regulation_policy_collection::retrieve_all_policies(database)?;    
+  let normalized_user_screen_access_regulation_policies = screen_access_regulation_policy_integration::retrieve_all_policies(database)?;    
 
   let denormalized_users = normalized_users
     .into_iter()

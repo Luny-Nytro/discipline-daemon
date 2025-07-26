@@ -220,6 +220,15 @@ pub struct Regulation {
   pub(super) is_regulation_enabled: bool,
 }
 
+impl Default for Regulation {
+  fn default() -> Self {
+    Self {
+      is_regulation_enabled: false,
+      policies: Vec::new(),
+    }
+  }
+}
+
 impl Regulation {
   pub fn new(policies: Vec<Policy>) -> Self {
     Self {
@@ -228,10 +237,10 @@ impl Regulation {
     }
   }
   
-  pub fn from_fields(policies: Vec<Policy>, is_regulation_enabled: bool) -> Self {
+  pub fn from_fields(policies: Vec<Policy>) -> Self {
     Self {
       policies,
-      is_regulation_enabled,
+      is_regulation_enabled: todo!(),
     }
   }
 

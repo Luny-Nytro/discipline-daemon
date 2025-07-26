@@ -22,7 +22,45 @@ impl CommonScreenAccessRegulationApplicationData {
 
 pub struct UserScreenAccessRegulationApplicationData {
   status: UserScreenAccessRegulationApplictionStatus,
-  rechecking_interval: Duration,
+  enabled: bool,
+  checking_interval: Duration,
+}
+
+impl Default for UserScreenAccessRegulationApplicationData {
+  fn default() -> Self {
+    Self {
+      enabled: false,
+      status: UserScreenAccessRegulationApplictionStatus::Unknown,
+      checking_interval: Duration::from_minutes(5).unwrap(),
+    }
+  }
+}
+
+impl UserScreenAccessRegulationApplicationData {
+  pub fn enabled(&self) -> bool {
+    self.enabled
+  }
+
+  pub fn login_blocked(&self) -> bool {
+    match self.status {
+      UserScreenAccessRegulationApplictionStatus::Unknown => false,
+      UserScreenAccessRegulationApplictionStatus::LoginAllowed => false,
+      UserScreenAccessRegulationApplictionStatus::LoginBlocked => true,
+      UserScreenAccessRegulationApplictionStatus::LoginBlockedAndSessionTerminated => true,
+    }
+  }
+
+  pub fn check_interval(&self) -> Duration {
+    self.checking_interval
+  }
+
+  pub fn from_fields(
+    enabled: bool,
+    login_blocked: bool,
+    check_interval: Duration,
+  ) -> Self {
+    todo!()
+  }
 }
 
 pub enum UserScreenAccessRegulationApplictionStatus {
@@ -103,7 +141,7 @@ fn execute_check_all(
           Action::Allow => {
             scheduler.add_delayed_operation(
               ScreenAccessRegulationAsyncOperation::CheckOne(user.user_id), 
-              user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+              user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
             );
           }
           Action::Block => {
@@ -137,7 +175,7 @@ fn execute_check_all(
           Action::Block => {
             scheduler.add_delayed_operation(
               ScreenAccessRegulationAsyncOperation::CheckOne(user.user_id), 
-              user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+              user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
             );
           }
         }
@@ -179,7 +217,7 @@ fn execute_check_one(
         Action::Allow => {
           scheduler.add_delayed_operation(
             ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
-            user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+            user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
           );
         }
         Action::Block => {
@@ -213,7 +251,7 @@ fn execute_check_one(
         Action::Block => {
           scheduler.add_delayed_operation(
             ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
-            user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+            user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
           );
         }
       }
@@ -256,7 +294,7 @@ fn execute_allow_login(
       user.user_screen_access_regulation_application.status = UserScreenAccessRegulationApplictionStatus::LoginBlocked;
       scheduler.add_delayed_operation(
         ScreenAccessRegulationAsyncOperation::CheckOne(user_id),
-        user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+        user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
       );
     }
     Err(_) => {
@@ -266,7 +304,7 @@ fn execute_allow_login(
       // TODO: Handle this situation better.
       scheduler.add_delayed_operation(
         ScreenAccessRegulationAsyncOperation::AllowLogin(user_id),
-        user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration(),
+        user.user_screen_access_regulation_application.checking_interval.as_standard_duration(),
       );
     }
   }
@@ -313,7 +351,7 @@ fn execute_block_login(
 
       // The default action is to keep trying with an interval.
       // TODO: Handle this situation better.
-      let interval = user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration();
+      let interval = user.user_screen_access_regulation_application.checking_interval.as_standard_duration();
       drop(integration);
       scheduler.add_delayed_operation(
         ScreenAccessRegulationAsyncOperation::BlockLogin(user_id),
@@ -350,7 +388,7 @@ fn execute_terminate_session(
       // Note: Don't update the database because we store the "LoginBlocked" 
       // variant for both "LoginBlocked" and "LoginBlockedAndSessionTerminated".
       user.user_screen_access_regulation_application.status = UserScreenAccessRegulationApplictionStatus::LoginBlockedAndSessionTerminated;
-      let interval = user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration();
+      let interval = user.user_screen_access_regulation_application.checking_interval.as_standard_duration();
       drop(integration);
       scheduler.add_delayed_operation(
         ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
@@ -363,7 +401,7 @@ fn execute_terminate_session(
       // The default action is just to keep trying with an interval.
       // TODO: Handle this situation better.
       
-      let interval = user.user_screen_access_regulation_application.rechecking_interval.as_standard_duration();
+      let interval = user.user_screen_access_regulation_application.checking_interval.as_standard_duration();
       drop(integration);
       scheduler.add_delayed_operation(
         ScreenAccessRegulationAsyncOperation::TerminateSession(user_id), 

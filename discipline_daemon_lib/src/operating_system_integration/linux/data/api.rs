@@ -2,14 +2,14 @@ use serde::{Deserialize, Serialize};
 use crate::api::Context;
 use super::*;
 
-pub struct AddToManagedUsers {
+pub struct ManageUser {
   user_identification_method: UserIdentificationMethod,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AddToManagedUsersReturn {
+pub enum ManageUserReturn {
   NoSuchUser,
-  AlreadyAdded,
+  AlreadyManaged,
   InternalError,
   Success,
   // Success(UserPublicRepr),
@@ -17,52 +17,34 @@ pub enum AddToManagedUsersReturn {
 
 fn manage_user(
   context: &Context,
-  operation: AddToManagedUsers,
+  operation: ManageUser,
   integration: &mut Data,
 ) 
-  -> AddToManagedUsersReturn
+  -> ManageUserReturn
 {
   if integration.is_user_managed(&operation.user_identification_method) {
-    return AddToManagedUsersReturn::AlreadyAdded;
+    return ManageUserReturn::AlreadyManaged;
   }
 
   let user_info = retrieve_user_info(operation.user_identification_method);
-  let (user_id, user_name, user_password) = match user_info {
+  let user_info = match user_info {
     RetrieveUserInfoReturn::Error => {
-      return AddToManagedUsersReturn::InternalError;
+      return ManageUserReturn::InternalError;
     }
     RetrieveUserInfoReturn::NoSuchUser => {
-      return AddToManagedUsersReturn::InternalError;
+      return ManageUserReturn::InternalError;
     }
-    RetrieveUserInfoReturn::Success { user_id, user_name, user_password } => {
-      
-    }
-  };
-
-  let operating_system_user_id = match OperatingSystemUserId::from_username(&self.operating_system_user_name) {
-    Ok(value) => {
-      value
-    }
-    Err(error) => {
-      daemon.log_internal_error(error);
-      return Outcome::InternalError;
+    RetrieveUserInfoReturn::Success(user_info) => {
+      user_info
     }
   };
 
-
-  if daemon.state.users.iter()
-    .any(|user| user.operating_system_user_id == operating_system_user_id)
-  {
-    return Outcome::OperatingSystemUserWithGivenIdIsAlreadyManaged;
-  }
-
-  let user = User {
-    id: self.user_id.unwrap_or_else(Uuid::new_v4),
-    name: self.user_name,
-    operating_system_user_id: operating_system_user_id,
-    operating_system_user_name: self.operating_system_user_name,
-    operating_system_user_password: self.operating_system_user_password,
-    screen_access_regulation: user_screen_access_regulation::Regulation::new(Vec::new()),
+  let user = UserInfo {
+    user_id: user_info.user_id,
+    user_name: user_info.user_name,
+    user_password: user_info.user_password,
+    user_screen_access_regulation: screen_access_regulation::Regulation::new(Vec::new()),
+    user_screen_access_regulation_application: screen_access_regulation_application::UserScreenAccessRegulationApplicationData::default(),
   };
 
   if let Err(error) = db::add_user(&daemon.database, &user) {
@@ -71,7 +53,7 @@ fn manage_user(
   }
 
   daemon.state.users.push(user.clone());
-  Outcome::Success(user.into_public())
+  ManageUserReturn::Success(user.into_public())
 }
 
 pub enum Operation {

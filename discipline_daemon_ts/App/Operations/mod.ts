@@ -1,1 +1,0 @@
-export * as GetData from "./GetData/mod.ts"

@@ -1,7 +1,0 @@
-[package]
-name = "discipline_daemon"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-discipline_daemon_lib = { path = "../discipline_daemon_lib" }

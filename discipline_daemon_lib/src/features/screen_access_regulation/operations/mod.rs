@@ -2,7 +2,7 @@ use serde::{
   Serialize, Deserialize,
 };
 
-use crate::database::screen_access_regulation_policy_collection as policy_db;
+use crate::database::screen_access_regulation_policy_integration as policy_db;
 use crate::database::screen_access_regulation_rule_integration as rule_db;
 use crate::database::user_collection as user_db;
 // use crate::database::app_collection as app_db;

@@ -4,12 +4,13 @@ use std::mem::MaybeUninit;
 use std::process::Command;
 use super::*;
 
+pub struct RetrievedUserInfo {
+  pub user_id: OperatingSystemUserId,
+  pub user_name: OperatingSystemUserName, 
+  pub user_password: OperatingSystemUserPassword
+}
 pub enum RetrieveUserInfoReturn {
-  Success { 
-    user_id: OperatingSystemUserId,
-    user_name: OperatingSystemUserName, 
-    user_password: OperatingSystemUserPassword
-  },
+  Success(RetrievedUserInfo),
   NoSuchUser,
   Error,
 }
@@ -125,11 +126,11 @@ pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> Retri
       return RetrieveUserInfoReturn::Error;
     };
 
-    RetrieveUserInfoReturn::Success { 
+    RetrieveUserInfoReturn::Success(RetrievedUserInfo { 
       user_id,
       user_name, 
       user_password,
-    }
+    })
   }
 }
 
@@ -238,11 +239,11 @@ pub fn retrieve_user_info_given_user_name(user_name: OperatingSystemUserName) ->
       return RetrieveUserInfoReturn::Error;
     };
 
-    RetrieveUserInfoReturn::Success { 
+    RetrieveUserInfoReturn::Success(RetrievedUserInfo { 
       user_id, 
       user_name,
       user_password,
-    }
+    })
   }
 }
 

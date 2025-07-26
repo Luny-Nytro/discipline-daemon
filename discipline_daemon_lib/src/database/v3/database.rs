@@ -1,14 +1,15 @@
 use std::path::PathBuf;
 use rusqlite::Connection;
 use super::implementation::*;
+use super::*;
 use crate::*;
 
 pub struct Database {
   pub connection: Connection,
-  pub app: AppCollection,
-  pub user: UserCollection,
-  pub user_screen_access_regulation_rule: UserScreenAccessRuleCollection,
-  pub user_screen_access_regulation_policy: UserScreenAccessPolicyCollection,
+  pub common: AppCollection,
+  pub operating_system_integration_linux_user: implementation::operating_system_integration_linux_user::UserCollection,
+  pub screen_access_regulation_rule: implementation::screen_access_regulation_policy_integration::RuleCollection,
+  pub screen_access_regulation_policy: implementation::screen_access_regulation_rule_integration::PolicyCollection,
 }
 
 impl Database {
@@ -35,13 +36,13 @@ impl Database {
 
     let database = Database {
       connection,
-      app: AppCollection::new(
+      common: AppCollection::new(
         "App".into(), 
         "Id".into(), 
         "UserScreenAccessRegulationPrivatePassword".into(), 
         "UserScreenAccessRegulationApplingInterval".into(),
       ),
-      user: UserCollection::new(
+      operating_system_integration_linux_user: UserCollection::new(
         "Users".into(), 
         "Id".into(), 
         "UserName".into(), 
@@ -51,10 +52,10 @@ impl Database {
         "UserScreenAccessRegulationIsApplyingEnabled".into(), 
         "UserScreenAccessRegulationIsUserScreenAccessBlocked".into(),
       ),
-      user_screen_access_regulation_policy: UserScreenAccessPolicyCollection::new(
+      screen_access_regulation_policy: UserScreenAccessPolicyCollection::new(
         "UserScreenAccessRegulationPolicies".into()
       ),
-      user_screen_access_regulation_rule: UserScreenAccessRuleCollection::new(
+      screen_access_regulation_rule: UserScreenAccessRuleCollection::new(
         "UserScreenAccessRegulationRules".into(), 
         "Id".into(), 
         "UserId".into(), 
@@ -70,7 +71,7 @@ impl Database {
     app_collection::write_define(&database, &mut definitions);
     // user_collection::write_define(&database, &mut definitions);
     screen_access_regulation_rule_integration::write_define(&database, &mut definitions);
-    screen_access_regulation_policy_collection::write_define(&database, &mut definitions);
+    screen_access_regulation_policy_integration::write_define(&database, &mut definitions);
 
     database.execute(definitions.as_str())?;
 
