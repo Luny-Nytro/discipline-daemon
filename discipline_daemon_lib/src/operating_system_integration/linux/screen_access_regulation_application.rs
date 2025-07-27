@@ -85,11 +85,12 @@ pub enum UserScreenAccessRegulationApplictionStatus {
 }
 
 pub enum ScreenAccessRegulationAsyncOperation {
-  CheckAll,
-  CheckOne(UserId),
-  AllowLogin(UserId),
-  BlockLogin(UserId),
+  // CheckAll,
+  Check(UserId),
   TerminateSession(UserId),
+  KillSession(UserId),
+  // UpdateAfterBlockingScreenAccess,
+  // UpdateAfterAllowingScreenAccess,
   // KillSession(OperatingSystemUserId),
 }
 
@@ -115,7 +116,7 @@ impl ScreenAccessRegulationAsyncOperation {
       ScreenAccessRegulationAsyncOperation::BlockLogin(user_id) => {
         execute_block_login(user_id, scheduler, integration);
       }
-      ScreenAccessRegulationAsyncOperation::CheckOne(user_id) =>{
+      ScreenAccessRegulationAsyncOperation::ApplyRegulation(user_id) =>{
         execute_check_one(user_id, scheduler, integration);
       }
       ScreenAccessRegulationAsyncOperation::TerminateSession(user_id) => {
@@ -154,7 +155,7 @@ fn execute_check_all(
         match action {
           Action::Allow => {
             scheduler.add_delayed_operation(
-              ScreenAccessRegulationAsyncOperation::CheckOne(user.user_id), 
+              ScreenAccessRegulationAsyncOperation::ApplyRegulation(user.user_id), 
               user.user_screen_access_regulation_application.application_interval.as_standard_duration(),
             );
           }
@@ -188,7 +189,7 @@ fn execute_check_all(
           }
           Action::Block => {
             scheduler.add_delayed_operation(
-              ScreenAccessRegulationAsyncOperation::CheckOne(user.user_id), 
+              ScreenAccessRegulationAsyncOperation::ApplyRegulation(user.user_id), 
               user.user_screen_access_regulation_application.application_interval.as_standard_duration(),
             );
           }
@@ -230,7 +231,7 @@ fn execute_check_one(
       match action {
         Action::Allow => {
           scheduler.add_delayed_operation(
-            ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
+            ScreenAccessRegulationAsyncOperation::ApplyRegulation(user_id), 
             user.user_screen_access_regulation_application.application_interval.as_standard_duration(),
           );
         }
@@ -264,7 +265,7 @@ fn execute_check_one(
         }
         Action::Block => {
           scheduler.add_delayed_operation(
-            ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
+            ScreenAccessRegulationAsyncOperation::ApplyRegulation(user_id), 
             user.user_screen_access_regulation_application.application_interval.as_standard_duration(),
           );
         }
@@ -307,7 +308,7 @@ fn execute_allow_login(
       // TODO: Update the database, too.
       user.user_screen_access_regulation_application.application_status = UserScreenAccessRegulationApplictionStatus::LoginBlocked;
       scheduler.add_delayed_operation(
-        ScreenAccessRegulationAsyncOperation::CheckOne(user_id),
+        ScreenAccessRegulationAsyncOperation::ApplyRegulation(user_id),
         user.user_screen_access_regulation_application.application_interval.as_standard_duration(),
       );
     }
@@ -405,7 +406,7 @@ fn execute_terminate_session(
       let interval = user.user_screen_access_regulation_application.application_interval.as_standard_duration();
       drop(integration);
       scheduler.add_delayed_operation(
-        ScreenAccessRegulationAsyncOperation::CheckOne(user_id), 
+        ScreenAccessRegulationAsyncOperation::ApplyRegulation(user_id), 
         interval,
       );
     }
