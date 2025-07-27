@@ -1,5 +1,6 @@
+use crate::operating_system_integration::UserId;
 use crate::screen_access_regulation::*;
-use super::screen_access_regulation_rule_integration::NormalizedRule;
+use super::screen_access_regulation_rule::NormalizedRule;
 use crate::{Uuid, CountdownTimer, Duration, DateTime};
 use super::*;
 
@@ -33,7 +34,7 @@ pub struct PolicyFields {
 pub struct NormalizedPolicy {
   pub(super) id: Uuid,
   pub(super) name: PolicyName,
-  pub(super) user_id: Uuid,
+  pub(super) user_id: UserId,
   pub(super) is_enabled: bool,
   pub(super) protection_duration: Duration,
   pub(super) protection_remaining_duration: Duration,
@@ -271,7 +272,8 @@ pub fn retrieve_all_policies(database: &Database) -> Result<Vec<NormalizedPolicy
   let mut code = DatabaseCode::new();
   write_retrieve_all_policies(database, &mut code);
 
-  let mut statement = database.connection.prepare(code.as_str()).map_err(|error| 
+  let connection = database.connection.lock().unwrap();
+  let mut statement = connection.prepare(code.as_str()).map_err(|error| 
     GenericError::new("")
   )?;
   let mut iterator = statement.query(()).map_err(|error| 

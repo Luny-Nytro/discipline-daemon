@@ -20,7 +20,7 @@ pub struct OperationScheduler {
 
 impl OperationScheduler {
   pub fn new(
-    operating_system_integration_data: Arc<Mutex<Data>>,
+    operating_system_integration_data: Arc<Mutex<OperatingSystemIntegrationData>>,
   ) -> Arc<Self> {
     let scheduler = Arc::new(OperationScheduler {
       condvar: Condvar::new(),

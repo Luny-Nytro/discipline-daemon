@@ -1,10 +1,10 @@
 use crate::GenericError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OperatingSystemUserPassword(String);
+pub struct UserPassword(String);
 
-impl OperatingSystemUserPassword {
-  pub fn new(password: String) -> Option<OperatingSystemUserPassword> {
+impl UserPassword {
+  pub fn new(password: String) -> Option<UserPassword> {
     if password.is_empty() {
       None
     } else {
@@ -12,7 +12,7 @@ impl OperatingSystemUserPassword {
     }
   }
 
-  pub fn new_or_generic_error(password: String) -> Result<OperatingSystemUserPassword, GenericError> {
+  pub fn new_or_generic_error(password: String) -> Result<UserPassword, GenericError> {
     if password.is_empty() {
       Err(
         GenericError::new("creating an OperatingSystemPassword")
@@ -27,7 +27,7 @@ impl OperatingSystemUserPassword {
     &self.0
   }
 
-  pub fn generate_random_password() -> OperatingSystemUserPassword {
+  pub fn generate_random_password() -> UserPassword {
     use rand::{distr::Uniform, Rng};
 
     let mut rng = rand::rng();
@@ -37,15 +37,15 @@ impl OperatingSystemUserPassword {
       .map(|_| rng.sample(&letters) as char)
       .collect();
 
-    OperatingSystemUserPassword(password)
+    UserPassword(password)
   }
 }
 
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-  use super::OperatingSystemUserPassword;
+  use super::UserPassword;
   
-  impl Serialize for OperatingSystemUserPassword {
+  impl Serialize for UserPassword {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
       S: Serializer,
@@ -54,13 +54,13 @@ mod serde_impl {
     }
   }
   
-  impl<'de> Deserialize<'de> for OperatingSystemUserPassword {
+  impl<'de> Deserialize<'de> for UserPassword {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
       D: Deserializer<'de>,
     {
       let password = String::deserialize(deserializer)?;
-      match OperatingSystemUserPassword::new(password) {
+      match UserPassword::new(password) {
         Some(value) => {
           Ok(value)
         }

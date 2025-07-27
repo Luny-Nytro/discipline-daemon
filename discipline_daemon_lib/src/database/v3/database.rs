@@ -1,20 +1,19 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::{Arc, Mutex}};
 use rusqlite::Connection;
-use super::implementation::*;
 use super::*;
 use crate::*;
 
 pub struct Database {
-  pub connection: Connection,
-  pub common: AppCollection,
+  pub connection: Arc<Mutex<Connection>>,
+  pub operating_system_integration_linux_data: implementation::operating_system_integration_linux_data::DataCollection,
   pub operating_system_integration_linux_user: implementation::operating_system_integration_linux_user::UserCollection,
-  pub screen_access_regulation_rule: implementation::screen_access_regulation_policy_integration::RuleCollection,
-  pub screen_access_regulation_policy: implementation::screen_access_regulation_rule_integration::PolicyCollection,
+  pub screen_access_regulation_rule: implementation::screen_access_regulation_rule::RuleCollection,
+  pub screen_access_regulation_policy: implementation::screen_access_regulation_policy::PolicyCollection,
 }
 
 impl Database {
   pub fn open(
-    database_directory_path: PathBuf,
+    database_directory_path: &PathBuf,
   ) -> 
     Result<Self, GenericError> 
   {
@@ -35,43 +34,48 @@ impl Database {
     })?;
 
     let database = Database {
-      connection,
-      common: AppCollection::new(
-        "App".into(), 
-        "Id".into(), 
-        "UserScreenAccessRegulationPrivatePassword".into(), 
-        "UserScreenAccessRegulationApplingInterval".into(),
-      ),
-      operating_system_integration_linux_user: UserCollection::new(
-        "Users".into(), 
-        "Id".into(), 
-        "UserName".into(), 
-        "OperatingSystemUserId".into(), 
-        "OperatingSystemUserName".into(), 
-        "OperatingSystemUserPassword".into(), 
-        "UserScreenAccessRegulationIsApplyingEnabled".into(), 
-        "UserScreenAccessRegulationIsUserScreenAccessBlocked".into(),
-      ),
-      screen_access_regulation_policy: UserScreenAccessPolicyCollection::new(
-        "UserScreenAccessRegulationPolicies".into()
-      ),
-      screen_access_regulation_rule: UserScreenAccessRuleCollection::new(
-        "UserScreenAccessRegulationRules".into(), 
-        "Id".into(), 
-        "UserId".into(), 
-        "PolicyId".into(), 
-        "ActivatorEnumType".into(), 
-        "ActivatorEnumData1".into(), 
-        "ActivatorEnumData2".into(), 
-        "Position".into(),
-      )
+      connection: Arc::new(Mutex::new(connection)),
+      operating_system_integration_linux_data: 
+        implementation
+        ::operating_system_integration_linux_data
+        ::DataCollection
+        ::new("OperatingSystemIntegrationLinuxData".into()),
+
+      operating_system_integration_linux_user: 
+        implementation
+        ::operating_system_integration_linux_user
+        ::UserCollection
+        ::new("OperatingSystemIntegrationLinuxUsers".into()),
+
+      screen_access_regulation_policy: 
+        implementation
+        ::screen_access_regulation_policy
+        ::PolicyCollection
+        ::new("ScreenAccessRegulationPolicies".into()),
+
+      screen_access_regulation_rule: 
+        implementation
+        ::screen_access_regulation_rule
+        ::RuleCollection
+        ::new("ScreenAccessRegulationRules".into()),
     };
 
     let mut definitions = DatabaseCode::new();
-    app_collection::write_define(&database, &mut definitions);
-    // user_collection::write_define(&database, &mut definitions);
-    screen_access_regulation_rule_integration::write_define(&database, &mut definitions);
-    screen_access_regulation_policy_integration::write_define(&database, &mut definitions);
+    implementation
+      ::operating_system_integration_linux_data
+      ::write_define(&database, &mut definitions);
+
+    implementation
+      ::operating_system_integration_linux_user
+      ::write_define(&database, &mut definitions);
+
+    implementation
+      ::screen_access_regulation_policy
+      ::write_define(&database, &mut definitions);
+
+    implementation
+      ::screen_access_regulation_rule
+      ::write_define(&database, &mut definitions);
 
     database.execute(definitions.as_str())?;
 
@@ -85,7 +89,7 @@ impl Database {
       return Ok(());
     }
 
-    self.connection.execute_batch(code).map_err(|error|
+    self.connection.lock().unwrap().execute_batch(code).map_err(|error|
       GenericError::new("execute sql code")
         .add_attachment("error", error.to_string())
         .add_attachment("code", code)

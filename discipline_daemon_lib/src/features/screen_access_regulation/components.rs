@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::{
-  CountdownTimer, DaemonMutex, DateTime, Duration, GenericError, 
+  CountdownTimer, DateTime, Duration, GenericError, 
   TimeRange, Uuid, Weekday, WeekdayRange
 };
 
@@ -217,13 +217,11 @@ pub enum Action {
 #[derive(Debug, Clone)]
 pub struct Regulation {
   pub(super) policies: Vec<Policy>,
-  pub(super) is_regulation_enabled: bool,
 }
 
 impl Default for Regulation {
   fn default() -> Self {
     Self {
-      is_regulation_enabled: false,
       policies: Vec::new(),
     }
   }
@@ -233,19 +231,13 @@ impl Regulation {
   pub fn new(policies: Vec<Policy>) -> Self {
     Self {
       policies,
-      is_regulation_enabled: false,
     }
   }
   
   pub fn from_fields(policies: Vec<Policy>) -> Self {
     Self {
       policies,
-      is_regulation_enabled: todo!(),
     }
-  }
-
-  pub fn is_regulation_enabled(&self) -> bool {
-    self.is_regulation_enabled
   }
   
   fn are_some_policies_effective(&mut self, now: DateTime) -> bool {
@@ -257,7 +249,7 @@ impl Regulation {
   }
 
   pub fn calculate_action(&mut self, now: DateTime) -> Action {
-    if self.is_regulation_enabled && self.are_some_policies_effective(now) {
+    if self.are_some_policies_effective(now) {
       Action::Block
     } else {
       Action::Allow

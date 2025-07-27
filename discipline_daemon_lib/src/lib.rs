@@ -1,5 +1,5 @@
 mod api;
-pub use api::{IsRemoteProcedureCall, IntoPublic};
+pub use api::IntoPublic;
 
 use uuid::Uuid;
 
@@ -9,7 +9,7 @@ pub use operating_system_integration::*;
 // mod memory_management;
 
 pub mod utility;
-pub use utility::GenericError;
+pub use utility::{GenericError, InternalErrorLogger};
 
 pub mod database;
 pub use database::Database;
@@ -27,5 +27,5 @@ pub use chronic::*;
 pub mod features;
 pub use features::*;
 
-// pub mod daemon;
-// pub use daemon::*;
+pub mod daemon;
+pub use daemon::*;

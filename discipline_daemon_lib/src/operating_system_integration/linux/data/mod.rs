@@ -1,7 +1,6 @@
 mod data;
 pub use data::*;
 
-mod api;
-pub use api::*;
+pub mod api;
 
 use super::*;

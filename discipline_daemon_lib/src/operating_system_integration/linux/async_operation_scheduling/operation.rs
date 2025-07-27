@@ -15,7 +15,9 @@ pub enum AsyncOperation {
 impl AsyncOperation {
   pub fn execute(
     self, 
-    operatin_system_integration_data: Arc<Mutex<Data>>,
+    operatin_system_integration_data: Arc<Mutex<OperatingSystemIntegrationData>>,
     scheduler: Arc<OperationScheduler>
-  ) {}
+  ) {
+    
+  }
 }

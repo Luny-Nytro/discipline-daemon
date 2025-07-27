@@ -1,3 +1,4 @@
+use crate::operating_system_integration::UserId;
 use crate::*;
 use crate::screen_access_regulation::*;
 use super::*;
@@ -156,7 +157,7 @@ fn deserialize_rule(
 #[derive(Debug, Clone)]
 pub struct NormalizedRule {
   pub(super) id: Uuid,
-  pub(super) user_id: Uuid,
+  pub(super) user_id: UserId,
   pub(super) policy_id: Uuid,
   pub(super) activator: RuleActivator,
   pub(super) position: usize,
@@ -179,29 +180,7 @@ pub struct RuleCollection {
 impl RuleCollection {
   pub fn new(
     collection_name: String,
-    rule_id: String,
-    rule_user_id: String,
-    rule_policy_id: String,
-    rule_activator_enum_type: String,
-    rule_activator_enum_data_1: String,
-    rule_activator_enum_data_2: String,
-    rule_position: String,
   ) -> Self {
-    Self {
-      name: collection_name,
-      fields: RuleFields {
-        id: rule_id,
-        user_id: rule_user_id,
-        policy_id: rule_policy_id,
-        activator_enum_type: rule_activator_enum_type,
-        activator_enum_data_1: rule_activator_enum_data_1,
-        activator_enum_data_2: rule_activator_enum_data_2,
-        position: rule_position,
-      }
-    }
-  }
-
-  pub(super) fn new_with_descriptive_field_names(collection_name: String) -> Self {
     Self {
       name: collection_name,
       fields: RuleFields {
@@ -391,7 +370,8 @@ pub fn retrieve_all_rules(database: &Database) -> Result<Vec<NormalizedRule>, Ge
   let mut code = DatabaseCode::new();
   write_retrieve_all_rules(database, &mut code);
 
-  let mut statement = database.connection.prepare(&code.as_ref()).map_err(|error| 
+  let connection = database.connection.lock().unwrap();
+  let mut statement = connection.prepare(&code.as_ref()).map_err(|error| 
     GenericError::new("retrieving all user screen access regulation rules")
       .add_error("failed to prepare statement")
       .add_attachment("code", code.as_ref())

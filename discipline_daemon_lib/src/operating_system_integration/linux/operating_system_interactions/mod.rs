@@ -5,9 +5,9 @@ use std::process::Command;
 use super::*;
 
 pub struct RetrievedUserInfo {
-  pub user_id: OperatingSystemUserId,
-  pub user_name: OperatingSystemUserName, 
-  pub user_password: OperatingSystemUserPassword
+  pub user_id: UserId,
+  pub user_name: UserName, 
+  pub user_password: UserPassword
 }
 pub enum RetrieveUserInfoReturn {
   Success(RetrievedUserInfo),
@@ -15,7 +15,7 @@ pub enum RetrieveUserInfoReturn {
   Error,
 }
 
-pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> RetrieveUserInfoReturn {
+pub fn retrieve_user_info_given_user_id(user_id: UserId) -> RetrieveUserInfoReturn {
   unsafe {
     // The user information (including name and other stuff) will eventually
     // be stored here.
@@ -112,14 +112,14 @@ pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> Retri
 
     let user_information = user_information.assume_init();
 
-    let Some(user_name) = OperatingSystemUserName::new(
+    let Some(user_name) = UserName::new(
       CStr::from_ptr(user_information.pw_name)
         .to_string_lossy().into_owned()
     ) else {
       return RetrieveUserInfoReturn::Error;
     };
 
-    let Some(user_password) = OperatingSystemUserPassword::new(
+    let Some(user_password) = UserPassword::new(
       CStr::from_ptr(user_information.pw_passwd)
         .to_string_lossy().into_owned()
     ) else {
@@ -134,7 +134,7 @@ pub fn retrieve_user_info_given_user_id(user_id: OperatingSystemUserId) -> Retri
   }
 }
 
-pub fn retrieve_user_info_given_user_name(user_name: OperatingSystemUserName) -> RetrieveUserInfoReturn {
+pub fn retrieve_user_info_given_user_name(user_name: UserName) -> RetrieveUserInfoReturn {
   unsafe {
     // The user information (including name and other stuff) will eventually
     // be stored here.
@@ -230,9 +230,9 @@ pub fn retrieve_user_info_given_user_name(user_name: OperatingSystemUserName) ->
     }
     
     let user_information = user_information.assume_init();
-    let user_id = OperatingSystemUserId::new(user_information.pw_uid);
+    let user_id = UserId::new(user_information.pw_uid);
 
-    let Some(user_password) = OperatingSystemUserPassword::new(
+    let Some(user_password) = UserPassword::new(
       CStr::from_ptr(user_information.pw_passwd)
         .to_string_lossy().into_owned()
     ) else {
@@ -260,8 +260,8 @@ pub fn retrieve_user_info(user_identification_method: UserIdentificationMethod) 
 
 // TODO: Use pam
 pub fn change_user_password(
-  username: &OperatingSystemUserName,
-  new_password: &OperatingSystemUserPassword,
+  username: &UserName,
+  new_password: &UserPassword,
 ) -> Result<(), GenericError> {
   let mut chpasswd = Command::new("chpasswd").spawn().map_err(|error| {
     GenericError::new("Change operating system user password")
@@ -317,7 +317,7 @@ pub fn change_user_password(
 
 // TODO: Use kernel interfaces and systemd loginctl dbus api
 pub fn terminate_user_session(
-  username: &OperatingSystemUserName,
+  username: &UserName,
 ) -> Result<(), GenericError> {
   let username = username.as_ref();
 

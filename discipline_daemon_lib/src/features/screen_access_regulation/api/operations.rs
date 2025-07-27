@@ -1,54 +1,58 @@
 use std::fmt::Debug;
+use crate::api::{Context, IntoPublic};
 use super::*;
 
-pub trait ExecuteOperationContext {
-  fn database(&self) -> &Database;
-  fn internal_logger(&self) -> &impl InternalLogger;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Locator {
+
 }
 
-pub trait InternalLogger {
-  fn log(&self, value: impl Debug);
+pub enum LocateError {
+
+}
+
+impl Locator {
+  pub fn locate(&self, context: &Context) -> &mut Regulation {
+    todo!()
+  }
 }
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePolicy {
-  user_id: Uuid,
+  locator: Locator,
   policy_creator: PolicyCreator
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CreatePolicyReturn {
+  Location(),
   ReachedMaximumPolicesAllowed,
   Success(PolicyPublicRepr),
   InternalError,
 }
 
-fn create_policy(
-  context: impl ExecuteOperationContext,
-  operation: CreatePolicy,
-  regulation: &mut Regulation,
-) 
-  -> CreatePolicyReturn
-{
-  if regulation.reached_maximum_polices_allowed() {
-    return CreatePolicyReturn::ReachedMaximumPolicesAllowed;
+impl CreatePolicy {
+  pub fn create_policy(self, context: Context) -> CreatePolicyReturn {
+    if regulation.reached_maximum_polices_allowed() {
+      return CreatePolicyReturn::ReachedMaximumPolicesAllowed;
+    }
+
+    let now = DateTime::now();
+    let policy = self.policy_creator.create(now);
+
+    if let Err(error) = policy_db::add_policy(
+      context.database(), 
+      &policy, 
+      &self.user_id
+    ) {
+      context.log_internal_error(error);
+      return CreatePolicyReturn::InternalError;
+    }
+
+    regulation.add_policy(policy.clone());
+    CreatePolicyReturn::Success(policy.into_public())
   }
-
-  let now = DateTime::now();
-  let policy = operation.policy_creator.create(now);
-
-  if let Err(error) = policy_db::add_policy(
-    context.database(), 
-    &policy, 
-    &operation.user_id
-  ) {
-    context.internal_logger().log(error);
-    return CreatePolicyReturn::InternalError;
-  }
-
-  regulation.add_policy(policy.clone());
-  CreatePolicyReturn::Success(policy.into_public())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,7 +69,7 @@ pub enum DeletePolicyReturn {
 }
 
 fn delete_policy(
-  context: impl ExecuteOperationContext,
+  context: Context,
   operation: DeletePolicy,
   regulation: &mut Regulation,
 ) 
@@ -84,7 +88,7 @@ fn delete_policy(
     context.database(), 
     &operation.policy_id,
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return DeletePolicyReturn::InternalError;
   }
 
@@ -107,7 +111,7 @@ pub enum UpdatePolicyNameReturn {
 }
 
 fn update_policy_name(
-  context: impl ExecuteOperationContext,
+  context: Context,
   operation: UpdatePolicyName,
   regulation: &mut Regulation,
 ) 
@@ -122,7 +126,7 @@ fn update_policy_name(
     &operation.policy_id, 
     &operation.new_name,
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return UpdatePolicyNameReturn::InternalError;
   }
 
@@ -147,7 +151,7 @@ pub enum IncreasePolicyProtectionReturn {
 
 
 fn increase_policy_protection(
-  context: impl ExecuteOperationContext,
+  context: Context,
   operation: IncreasePolicyProtection,
   regulation: &mut Regulation,
 ) 
@@ -174,7 +178,7 @@ fn increase_policy_protection(
     &operation.policy_id, 
     new_remaining_duration,
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return IncreasePolicyProtectionReturn::InternalError;
   }
 
@@ -199,7 +203,7 @@ pub enum CreateRuleReturn {
 }
 
 fn create_rule(
-  context: impl ExecuteOperationContext,
+  context: Context,
   CreateRule { policy_id, rule_creator }: CreateRule,
   regulation: &mut Regulation
 ) 
@@ -225,7 +229,7 @@ fn create_rule(
     &policy_id, 
     policy.rules_number(),
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return CreateRuleReturn::InternalError;
   }
 
@@ -249,7 +253,7 @@ pub enum DeleteRuleReturn {
 }
 
 fn delete_rule(
-  context: impl ExecuteOperationContext,
+  context: Context,
   DeleteRule { rule_id, policy_id }: DeleteRule,
   regulation: &mut Regulation,
 ) 
@@ -271,7 +275,7 @@ fn delete_rule(
   }
 
   if let Err(error) = rule_db::delete_rule(context.database(), &rule_id) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return DeleteRuleReturn::InternalError;
   }
 
@@ -302,7 +306,7 @@ pub enum UpdateRuleActivatorTimeRangeReturn {
 // This is crucial for safety to prevent the app user from accidently 
 // blocking himself outside of his account forever or most of the time.
 fn update_rule_activator_time_range(
-  context: impl ExecuteOperationContext,
+  context: Context,
   operation: UpdateRuleActivatorTimeRange,
   regulation: &mut Regulation,
 ) 
@@ -329,7 +333,7 @@ fn update_rule_activator_time_range(
     &operation.rule_id,
     &operation.new_time_range,
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return UpdateRuleActivatorTimeRangeReturn::InternalError;
   }
 
@@ -360,7 +364,7 @@ pub enum UpdateRuleActivatorWeekdayRangeReturn {
 // blocking himself outside of his account forever or most of the time.
 
 fn update_rule_activator_weekday_range(
-  context: impl ExecuteOperationContext,
+  context: Context,
   operation: UpdateRuleActivatorWeekdayRange,
   regulation: &mut Regulation,
 ) 
@@ -387,10 +391,31 @@ fn update_rule_activator_weekday_range(
     &operation.rule_id, 
     &operation.new_weekday_range,
   ) {
-    context.internal_logger().log(error);
+    context.log_internal_error(error);
     return UpdateRuleActivatorWeekdayRangeReturn::InternalError;
   }
 
   *weekday_range = operation.new_weekday_range;
   UpdateRuleActivatorWeekdayRangeReturn::Success
 }
+
+pub enum Operation {
+  CreatePolicy(CreatePolicy),
+  DeletePolicy(DeletePolicy),
+  UpdatePolicyName(UpdatePolicyName),
+  IncreasePolicyProtection(IncreasePolicyProtection),
+  CreateRule(CreateRule),
+  DeleteRule(DeleteRule),
+  UpdateRuleActivatorTimeRange(UpdateRuleActivatorTimeRange),
+  UpdateRuleActivatorWeekdayRange(UpdateRuleActivatorWeekdayRange),
+}
+
+pub enum OperationReturn {
+
+}
+
+// pub fn execute(
+//   context: Context,
+//   operation: Operation,
+//   regulation: &mut Regulation,
+// ) -> 

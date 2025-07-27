@@ -2,115 +2,97 @@ use crate::{operating_system_integration::*, screen_access_regulation};
 use crate::chronic::Duration;
 use super::*;
 
-impl SerializableScalarValue for OperatingSystemUserId {
+impl SerializableScalarValue for UserId {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {
     context.write_u32(self.as_raw());
   }
 }
 
-impl DeserializableScalarValue for OperatingSystemUserId {
+impl DeserializableScalarValue for UserId {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_u32()
-      .map(OperatingSystemUserId::new)
+      .map(UserId::new)
       .map_err(|error|
         error.change_context("deserializing an OperatingSystemUserId")
       )
   }
 }
 
-impl SerializableScalarValue for OperatingSystemUserName {
+impl SerializableScalarValue for UserName {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {
     context.write_string(self.as_ref());
   }
 }
 
-impl DeserializableScalarValue for OperatingSystemUserName {
+impl DeserializableScalarValue for UserName {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value.as_string()
-      .and_then(OperatingSystemUserName::new_or_generic_error)
+      .and_then(UserName::new_or_generic_error)
       .map_err(|error|
         error.change_context("deserializing an OperatingSystemUsername")
       )
   }
 }
 
-impl SerializableScalarValue for OperatingSystemUserPassword {
+impl SerializableScalarValue for UserPassword {
   fn serialize(&self, context: &mut SerializeScalarValueContext) {
     context.write_string(self.as_ref());
   }
 }
 
-impl DeserializableScalarValue for OperatingSystemUserPassword {
+impl DeserializableScalarValue for UserPassword {
   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
     value
       .as_string()
-      .and_then(OperatingSystemUserPassword::new_or_generic_error)
+      .and_then(UserPassword::new_or_generic_error)
       .map_err(|error|
         error.change_context("deserializing an OperatingSystemPassword")
       )
   }
 }
 
-// impl SerializableScalarValue for UserName {
-//   fn serialize(&self, context: &mut SerializeScalarValueContext) {
-//     context.write_string(self.as_ref());
-//   }
-// }
-
-// impl DeserializableScalarValue for UserName {
-//   fn deserialize(value: ScalarValue) -> Result<Self, GenericError> {
-//       value
-//       .as_string()
-//       .and_then(UserName::new)
-//       .map_err(|error| error.change_context("deserializing UserName"))
-//   }
-// }
-
 pub struct UserSchema {
-  id: String,
   user_id: String,
   user_name: String,
   user_password: String,
   user_screen_access_regulation_application_enabled: String,
   user_screen_access_regulation_application_login_blocked: String,
   user_screen_access_regulation_application_check_interval: String,
-  // user_internet_access_regulation_application_enabled: String,
-  // user_internet_access_regulation_application_blocked: String,
-  // user_internet_access_regulation_application_check_interval: String,
 }
 
 pub struct NormalizedUser {
-  id: Uuid,
-  user_id: OperatingSystemUserId,
-  user_name: OperatingSystemUserName,
-  user_password: OperatingSystemUserPassword,
+  user_id: UserId,
+  user_name: UserName,
+  user_password: UserPassword,
   user_screen_access_regulation_application_enabled: bool,
   user_screen_access_regulation_application_login_blocked: bool,
   user_screen_access_regulation_application_check_interval: Duration,
 }
 
-pub fn denormalize_user(
-  normalized_user: NormalizedUser,
-  user_screen_access_regulation_policies: &Vec<screen_access_regulation_policy_integration::NormalizedPolicy>,
-  user_screen_access_regulation_rules: &Vec<screen_access_regulation_rule_integration::NormalizedRule>,
-) -> UserInfo {
-  let policies = user_screen_access_regulation_policies
-    .iter()
-    .filter(|policy| policy.user_id == normalized_user.user_id)
-    .cloned()
-    .map(|policy| policy.denormalize(user_screen_access_regulation_rules))
-    .collect();
-  
-  UserInfo {
-    user_id: normalized_user.user_id,
-    user_name: normalized_user.user_name,
-    user_password: normalized_user.user_password,
-    user_screen_access_regulation: screen_access_regulation::Regulation::from_fields(policies),
-    user_screen_access_regulation_application: screen_access_regulation_application::UserScreenAccessRegulationApplicationData::from_fields(
-      normalized_user.user_screen_access_regulation_application_enabled, 
-      normalized_user.user_screen_access_regulation_application_login_blocked, 
-      normalized_user.user_screen_access_regulation_application_check_interval, 
-    )
+impl NormalizedUser {
+  pub fn denormalize(
+    self,
+    user_screen_access_regulation_policies: &Vec<screen_access_regulation_policy::NormalizedPolicy>,
+    user_screen_access_regulation_rules: &Vec<screen_access_regulation_rule::NormalizedRule>,
+  ) -> UserInfo {
+    let policies = user_screen_access_regulation_policies
+      .iter()
+      .filter(|policy| policy.user_id == self.user_id)
+      .cloned()
+      .map(|policy| policy.denormalize(user_screen_access_regulation_rules))
+      .collect();
+    
+    UserInfo {
+      user_id: self.user_id,
+      user_name: self.user_name,
+      user_password: self.user_password,
+      user_screen_access_regulation: screen_access_regulation::Regulation::from_fields(policies),
+      user_screen_access_regulation_application: screen_access_regulation_application::UserScreenAccessRegulationApplicationData::from_fields(
+        self.user_screen_access_regulation_application_enabled, 
+        self.user_screen_access_regulation_application_login_blocked, 
+        self.user_screen_access_regulation_application_check_interval, 
+      )
+    }
   }
 }
 
@@ -195,7 +177,7 @@ pub fn write_define(database: &Database, code: &mut DatabaseCode) {
   code.write(" INTEGER NOT NULL) STRICT, WITHOUT ROWID;");
 }
 
-pub fn write_add_user(database: &Database, code: &mut DatabaseCode, user: &User) {
+pub fn write_add_user(database: &Database, code: &mut DatabaseCode, user: &UserInfo) {
   let collection = collection(database);
 
   code.write("INSERT INTO ");
@@ -211,13 +193,13 @@ pub fn write_add_user(database: &Database, code: &mut DatabaseCode, user: &User)
   code.write(");");
 }
 
-pub fn add_user(database: &Database, user: &User) -> Result<(), GenericError> {
+pub fn add_user(database: &Database, user: &UserInfo) -> Result<(), GenericError> {
   let mut draft = DatabaseCode::new();
   write_add_user(database, &mut draft, user);
   database.execute(draft.as_str())
 }
 
-pub fn write_delete_user(database: &Database, code: &mut DatabaseCode, user_id: OperatingSystemUserId) {
+pub fn write_delete_user(database: &Database, code: &mut DatabaseCode, user_id: UserId) {
   let collection = collection(database);
 
   code.write("DELETE FROM ");
@@ -229,7 +211,7 @@ pub fn write_delete_user(database: &Database, code: &mut DatabaseCode, user_id: 
   code.write(";");
 }
 
-pub fn delete_user(database: &Database, user_id: OperatingSystemUserId) -> Result<(), GenericError> {
+pub fn delete_user(database: &Database, user_id: UserId) -> Result<(), GenericError> {
   let mut draft = DatabaseCode::new();
   write_delete_user(database, &mut draft, user_id);
   database.execute(draft.as_str())
@@ -285,7 +267,7 @@ pub fn write_user_screen_access_regulation_application_enabled(
 
 pub fn update_user_screen_access_regulation_application_enabled(
   database: &Database,
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
   new_value: bool,
 ) -> Result<(), GenericError> {
   let mut draft = UserUpdateDraft::new();
@@ -306,7 +288,7 @@ pub fn write_update_user(
   database: &Database, 
   database_update_draft: &mut DatabaseCode, 
   user_update_draft: &UserUpdateDraft, 
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
 ) {
   let Some(updates) = user_update_draft.draft.updates() else {
     return;
@@ -332,7 +314,7 @@ pub fn write_update_user(
 pub fn commit_user_update_draft(
   database: &Database,
   user_update_draft: &UserUpdateDraft,
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
 ) -> Result<(), GenericError> {
   if user_update_draft.draft.is_empty() {
     return Ok(())
@@ -348,8 +330,9 @@ pub fn retrieve_all(database: &Database) -> Result<Vec<NormalizedUser>, GenericE
 
   let mut code = DatabaseCode::new();
   write_retrieve_all(database, &mut code);
-
-  let mut statement = database.connection.prepare(&code.code).map_err(|error| 
+  
+  let connection = database.connection.lock().unwrap();
+  let mut statement = connection.prepare(&code.code).map_err(|error| 
     GenericError::new("")
   )?;
 

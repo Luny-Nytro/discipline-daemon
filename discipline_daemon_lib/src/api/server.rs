@@ -1,7 +1,115 @@
+use std::marker::PhantomData;
+use std::net::{Ipv4Addr, SocketAddrV4};
+use std::rc::Rc;
+use std::sync::Arc;
+use std::thread::{spawn, JoinHandle};
 use serde::{de::DeserializeOwned, Serialize};
 use tiny_http::{Header, Method, Request, Response, Server};
-use crate::{find_operation_type, DaemonMutex, IsRemoteProcedureCall};
 use super::*;
+
+pub struct Api {
+  thread: Option<JoinHandle<()>>
+}
+
+impl Api {
+  pub fn new(daemon: Arc<Daemon>) -> Result<Self, GenericError> {
+    let address = SocketAddrV4::new(
+      Ipv4Addr::LOCALHOST, 
+      daemon.configuration().api_tcp_port(),
+    );
+    
+    let server = BasicHttpServer::new(
+      &address, 
+      move |incoming| {
+        find_operation_type! {
+          incoming.id(),
+          |Operation| {
+            let operation = incoming.operation::<Operation>()?;
+            let operation_return = operation.execute(&* daemon);
+            Ok(operation_return)
+          }
+          else {
+            ()
+          }
+        }
+      }
+    );
+
+    // let server = match Server::http(&address) {
+    //   Ok(server) => {
+    //     server
+    //   }
+    //   Err(error) => {
+    //     return Err(
+    //       GenericError::new("Initializing discipline api")
+    //         .add_error("failed to start api http server")
+    //         .add_attachment("address", address.to_string())
+    //         .add_attachment("error", error.to_string())
+    //     )
+    //   }
+    // };
+
+    let thread = spawn(move || {
+      for mut operation in server.incoming_requests() {
+        operation.respond_with(respond(
+          Arc::clone(&daemon), 
+          &mut operation,
+        ));
+      }
+    });
+
+    Ok(Self {
+      thread: Some(thread)
+    })
+  }
+}
+
+fn respond(daemon: Rc<Daemon>, request: &mut Request) -> ResponseCreator {
+  find_operation_type!(
+    request.url(), 
+    |Operation| {
+      match question.body_as::<Operation>() {
+        Ok(operation) => ResponseCreator::json(operation.execute(daemon)),
+        Err(response) => response
+      }
+    }
+    else {
+      ResponseCreator::NotFound
+    }
+  )
+}
+
+pub struct BasicHttpServer<T> {
+  __moon: PhantomData<T>
+}
+
+
+pub struct IncomingOperation {
+
+}
+
+impl IncomingOperation {
+  pub fn id(&self) -> &str {
+    todo!()
+  }
+
+  pub fn operation<T>(self) -> Result<T, GenericError> {
+    todo!()
+  }
+}
+
+impl<T> BasicHttpServer<T> 
+where 
+  T: Fn(IncomingOperation) -> Result<impl Serialize, GenericError>
+{
+  fn new(
+    address: &SocketAddrV4,
+    handler: T
+  ) -> Result<Self, GenericError> {
+    todo!()
+  }
+}
+
 
 // 4 KB
 const MAX_QUESTION_PAYLOAD_SIZE: usize = 4096; 
@@ -156,61 +264,4 @@ impl QuestionMethods for Request {
       }
     }
   }
-}
-
-fn respond(daemon_mutex: DaemonMutex, question: &mut Request) -> ResponseCreator {
-  find_operation_type!(
-    question.url(), 
-    |Operation| {
-      let operation = match question.body_as::<Operation>() {
-        Ok(operation) => operation,
-        Err(response) => return response
-      };
-
-      let Ok(mut daemon_guard) = daemon_mutex.lock() else {
-        return ResponseCreator::InternalServerError;
-      };
-
-      let daemon = &mut *daemon_guard;
-
-      ResponseCreator::json(operation.execute(daemon))
-    }
-    else {
-      ResponseCreator::NotFound
-    }
-  )
-}
-
-pub fn run(daemon_mutex: DaemonMutex) {
-  println!("moon: run http server is just called");
-  
-  let address = {
-    let Ok(daemon) = daemon_mutex.lock() else {
-      return;
-    };
-
-    daemon.http_server_address.clone()
-  };
-  
-  let server = match Server::http(&address) {
-    Ok(server) => {
-      println!("Discipline.Server.RunHTTPServer: Server running on {address}");
-      server
-    }
-    Err(error) => {
-      eprintln!("Discipline.Server.RunHTTPServer: {error}");
-      return;
-    }
-  };
-
-  for mut question in server.incoming_requests() {
-    let response_creator = respond(daemon_mutex.clone(), &mut question);
-    question.respond_with(response_creator);
-  }
-}
-
-pub fn launch_thread(daemon_mutex: DaemonMutex) -> std::thread::JoinHandle<()> {
-  std::thread::spawn(|| {
-    run(daemon_mutex)
-  })
 }

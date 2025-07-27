@@ -35,7 +35,6 @@ impl IntoPublic for PolicyPublicRepr {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegulationPublicRepr {
   policies: Vec<PolicyPublicRepr>,
-  is_regulation_enabled: bool,
 }
 
 impl IntoPublic for Regulation {
@@ -44,7 +43,6 @@ impl IntoPublic for Regulation {
   fn into_public(self) -> Self::Output {
     RegulationPublicRepr {
       policies: self.policies.into_public(),
-      is_regulation_enabled: self.is_regulation_enabled,
     }
   }
 }

@@ -1,8 +1,8 @@
 use serde::Serialize;
-use crate::{Daemon};
+// use crate::{Daemon};
 
-pub trait IsRemoteProcedureCall {
-  type Outcome: Serialize;
+// pub trait IsRemoteProcedureCall {
+//   type Outcome: Serialize;
 
-  fn execute(self, daemon: &mut Daemon) -> Self::Outcome;
-}
+//   fn execute(self, daemon: &mut Daemon) -> Self::Outcome;
+// }

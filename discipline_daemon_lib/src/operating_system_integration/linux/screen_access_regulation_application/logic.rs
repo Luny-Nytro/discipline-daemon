@@ -9,21 +9,34 @@ use super::*;
 //       such as "pkill", "loginctl terminate-session" or just covering the screen after login in.
 
 pub struct CommonScreenAccessRegulationApplicationData {
-  blocked_user_password: OperatingSystemUserPassword,
+  blocked_user_password: UserPassword,
 }
 
 impl CommonScreenAccessRegulationApplicationData {
   pub fn new() -> Self {
     Self {
-      blocked_user_password: OperatingSystemUserPassword::generate_random_password()
+      blocked_user_password: UserPassword::generate_random_password()
     }
+  }
+
+  pub fn from_fields(
+    blocked_user_password: UserPassword,
+  ) -> Self {
+    Self {
+      blocked_user_password
+    }
+  }
+
+  pub fn blocked_user_password(&self) -> &UserPassword {
+    &self.blocked_user_password
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct UserScreenAccessRegulationApplicationData {
-  status: UserScreenAccessRegulationApplictionStatus,
-  enabled: bool,
-  checking_interval: Duration,
+  pub(super) status: UserScreenAccessRegulationApplictionStatus,
+  pub(super) enabled: bool,
+  pub(super) checking_interval: Duration,
 }
 
 impl Default for UserScreenAccessRegulationApplicationData {
@@ -63,6 +76,7 @@ impl UserScreenAccessRegulationApplicationData {
   }
 }
 
+#[derive(Debug, Clone)]
 pub enum UserScreenAccessRegulationApplictionStatus {
   Unknown,
   LoginAllowed,
@@ -72,10 +86,10 @@ pub enum UserScreenAccessRegulationApplictionStatus {
 
 pub enum ScreenAccessRegulationAsyncOperation {
   CheckAll,
-  CheckOne(OperatingSystemUserId),
-  AllowLogin(OperatingSystemUserId),
-  BlockLogin(OperatingSystemUserId),
-  TerminateSession(OperatingSystemUserId),
+  CheckOne(UserId),
+  AllowLogin(UserId),
+  BlockLogin(UserId),
+  TerminateSession(UserId),
   // KillSession(OperatingSystemUserId),
 }
 
@@ -89,7 +103,7 @@ impl ScreenAccessRegulationAsyncOperation {
   pub fn execute(
     self, 
     scheduler: Arc<OperationScheduler>,
-    integration: Arc<Mutex<Data>>,
+    integration: Arc<Mutex<OperatingSystemIntegrationData>>,
   ) {
     match self {
       ScreenAccessRegulationAsyncOperation::CheckAll => {
@@ -113,7 +127,7 @@ impl ScreenAccessRegulationAsyncOperation {
 
 fn execute_check_all(
   scheduler: Arc<OperationScheduler>,
-  integration: Arc<Mutex<Data>>,
+  integration: Arc<Mutex<OperatingSystemIntegrationData>>,
 ) {
   let now = DateTime::now();
   let mut integration = integration.lock().unwrap();
@@ -185,9 +199,9 @@ fn execute_check_all(
 }
 
 fn execute_check_one(
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
   scheduler: Arc<OperationScheduler>,
-  integration: Arc<Mutex<Data>>,
+  integration: Arc<Mutex<OperatingSystemIntegrationData>>,
 ) {
   let mut integration = integration.lock().unwrap();
 
@@ -260,9 +274,9 @@ fn execute_check_one(
 }
 
 fn execute_allow_login(
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
   scheduler: Arc<OperationScheduler>,
-  integration: Arc<Mutex<Data>>,
+  integration: Arc<Mutex<OperatingSystemIntegrationData>>,
 ) {
   let (user_name, user_blocked_password) = {
     let integration = integration.lock().unwrap();
@@ -311,9 +325,9 @@ fn execute_allow_login(
 }
 
 fn execute_block_login(
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
   scheduler: Arc<OperationScheduler>,
-  integration: Arc<Mutex<Data>>,
+  integration: Arc<Mutex<OperatingSystemIntegrationData>>,
 ) {
   let (user_name, user_password) = {
     let integration = integration.lock().unwrap();
@@ -362,9 +376,9 @@ fn execute_block_login(
 }
 
 fn execute_terminate_session(
-  user_id: OperatingSystemUserId,
+  user_id: UserId,
   scheduler: Arc<OperationScheduler>,
-  integration: Arc<Mutex<Data>>,
+  integration: Arc<Mutex<OperatingSystemIntegrationData>>,
 ) {
   let user_name = {
     let integration = integration.lock().unwrap();

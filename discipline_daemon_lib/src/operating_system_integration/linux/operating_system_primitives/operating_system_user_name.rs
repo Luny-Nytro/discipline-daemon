@@ -1,10 +1,15 @@
-
 use crate::GenericError;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OperatingSystemUserName(String);
+// pub enum UserNameValidityCheckReturn {
+//   TooShort,
+//   TooLong,
+//   BadBeginning.
+// }
 
-impl OperatingSystemUserName {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserName(String);
+
+impl UserName {
   pub fn validate_linux_username(username: &String) -> Result<(), GenericError> {
     if username.len() < 1 || 32 < username.len() {
       return Err(
@@ -85,7 +90,7 @@ impl OperatingSystemUserName {
     true
   }
 
-  pub fn new(username: String) -> Option<OperatingSystemUserName> {
+  pub fn new(username: String) -> Option<UserName> {
     if Self::is_valid_linux_username(&username) {
       Some(Self(username))
     } else {
@@ -93,7 +98,7 @@ impl OperatingSystemUserName {
     }
   }
 
-  pub fn new_or_generic_error(username: String) -> Result<OperatingSystemUserName, GenericError> {
+  pub fn new_or_generic_error(username: String) -> Result<UserName, GenericError> {
     Self::validate_linux_username(&username)?;
     Ok(Self(username))
   }
@@ -127,9 +132,9 @@ impl OperatingSystemUserName {
 
 mod serde_impl {
   use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
-  use super::OperatingSystemUserName;
+  use super::UserName;
   
-  impl Serialize for OperatingSystemUserName {
+  impl Serialize for UserName {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
       S: Serializer,
@@ -138,13 +143,13 @@ mod serde_impl {
     }
   }
   
-  impl<'de> Deserialize<'de> for OperatingSystemUserName {
+  impl<'de> Deserialize<'de> for UserName {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
       D: Deserializer<'de>,
     {
       let username = String::deserialize(deserializer)?;
-      match OperatingSystemUserName::new(username) {
+      match UserName::new(username) {
         Some(value) => {
           Ok(value)
         }
@@ -158,10 +163,10 @@ mod serde_impl {
 
 mod display_impl {
   use std::fmt;
-  use super::OperatingSystemUserName;
+  use super::UserName;
 
 
-  impl fmt::Display for OperatingSystemUserName {
+  impl fmt::Display for UserName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       write!(f, "{}", self.0)
     }
