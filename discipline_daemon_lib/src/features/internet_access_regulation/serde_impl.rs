@@ -1,7 +1,7 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
-use super::UserName;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+use super::PolicyName;
 
-impl Serialize for UserName {
+impl Serialize for PolicyName {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
     S: Serializer,
@@ -10,12 +10,13 @@ impl Serialize for UserName {
   }
 }
 
-impl<'de> Deserialize<'de> for UserName {
+impl<'de> Deserialize<'de> for PolicyName {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
     D: Deserializer<'de>,
   {
-    UserName::new(String::deserialize(deserializer)?)
+    let username = String::deserialize(deserializer)?;
+    PolicyName::new(username)
       .map_err(|error| Error::custom(format!("{error:?}")))
   }
 }

@@ -9,6 +9,8 @@ pub struct UserInfo {
   pub user_password: UserPassword,
   pub user_screen_access_regulation: crate::screen_access_regulation::Regulation,
   pub user_screen_access_regulation_application: screen_access_regulation_application::UserScreenAccessRegulationApplicationData,
+  pub user_internet_access_regulation: crate::internet_access_regulation::Regulation,
+  pub user_internet_access_regulation_application: internet_access_regulation_application::UserInternetAccessRegulationApplicationData,
 }
 
 pub struct OperatingSystemIntegrationData {

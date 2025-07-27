@@ -9,7 +9,8 @@ use super::*;
 
 
 pub enum AsyncOperation {
-  ScreenAccessRegulationApplication(screen_access_regulation_application::ScreenAccessRegulationAsyncOperation)
+  ScreenAccessRegulationApplication(screen_access_regulation_application::ScreenAccessRegulationAsyncOperation),
+  InternetAccessRegulationApplication(internet_access_regulation_application::InternetAccessRegulationAsyncTask),
 }
 
 impl AsyncOperation {

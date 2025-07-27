@@ -157,9 +157,11 @@ impl Policy {
   pub fn protector(&self) -> &CountdownTimer {
     &self.protector
   }
+
   pub fn protector_mut(&mut self) -> &mut CountdownTimer {
     &mut self.protector
   }
+  
   pub fn is_enabled(&self) -> bool {
     self.is_effective
   }

@@ -3,6 +3,8 @@ use std::ffi::CStr;
 use std::mem::MaybeUninit;
 use std::process::Command;
 use super::*;
+mod networking;
+pub use networking::*;
 
 pub struct RetrievedUserInfo {
   pub user_id: UserId,

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use crate::database::operating_system_integration_linux_user as user_db;
 use super::*;
@@ -45,7 +46,7 @@ pub enum ManageUserReturn {
 }
 
 impl ManageUser {
-  pub fn execute(self, daemon: &Daemon) -> ManageUserReturn {
+  pub fn execute(self, daemon: Arc<Daemon>) -> ManageUserReturn {
     let mut data = match daemon.operating_system_integration().lock_data() {
       Ok(data) => {
         data
@@ -105,7 +106,7 @@ pub enum UnmanageUserReturn {
 }
 
 impl UnmanageUser {
-  pub fn execute(self, daemon: &Daemon) -> UnmanageUserReturn {
+  pub fn execute(self, daemon: Arc<Daemon>) -> UnmanageUserReturn {
     let mut data = match daemon.operating_system_integration().lock_data() {
       Ok(data) => {
         data
