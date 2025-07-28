@@ -1,3 +1,14 @@
+pub mod logic {
+  pub use crate::chronic;
+  pub use crate::chronic::*;
+  pub use crate::features::internet_access_regulation;
+  pub use crate::features::screen_access_regulation;
+}
+
+pub mod error {
+  pub use crate::utility::{GenericError, InternalErrorLogger};
+}
+
 mod api;
 pub use api::IntoPublic;
 

@@ -1,5 +1,8 @@
 use crate::operating_system_integration;
 
+pub struct OperationSpec {
+  
+}
 pub static OPERATING_SYSTEM_INTEGRATION_MANAGE_USER: &'static str =
   "OperatingSystemIntegrationManageUser";
 

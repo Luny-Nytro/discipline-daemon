@@ -1,9 +1,6 @@
 use super::*;
 use std::process::Command;
 
-// TODO: Write functions that allow and block netowking by enabling and disabling NetworkManager
-
-
 pub fn block_inbound_network_traffic_for_user(
   user_id: &UserId,
   user_name: &UserName,

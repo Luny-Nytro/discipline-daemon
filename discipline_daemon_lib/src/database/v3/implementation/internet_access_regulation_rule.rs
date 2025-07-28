@@ -1,5 +1,5 @@
 use crate::operating_system_integration::UserId;
-use crate::logic::screen_access_regulation::*;
+use crate::logic::internet_access_regulation::*;
 use crate::*;
 use super::*;
 
@@ -197,7 +197,7 @@ impl RuleCollection {
 }
 
 fn collection(database: &Database) -> &RuleCollection {
-  &database.screen_access_regulation_rule
+  &database.internet_access_regulation_rule
 }
 
 pub fn write_define(database: &Database, code: &mut DatabaseCode) {
@@ -230,7 +230,7 @@ pub fn write_add_rule(
   policy_id: &Uuid,
   position: usize,
 ) {
-  let collection = &database.screen_access_regulation_rule;
+  let collection = &database.internet_access_regulation_rule;
 
   draft.write("UPDATE ");
   draft.write(&collection.name);
@@ -286,7 +286,7 @@ pub(super) fn write_delete_rules_of_user(
   draft: &mut DatabaseCode, 
   user_id: &Uuid,
 ) {
-  let collection = &database.screen_access_regulation_rule;
+  let collection = &database.internet_access_regulation_rule;
 
   draft.write("DELETE FROM ");
   draft.write(&collection.name);
@@ -302,7 +302,7 @@ pub(super) fn write_delete_rules_of_policy(
   draft: &mut DatabaseCode, 
   policy_id: &Uuid,
 ) {
-  let collection = &database.screen_access_regulation_rule;
+  let collection = &database.internet_access_regulation_rule;
 
   draft.write("DELETE FROM ");
   draft.write(&collection.name);
@@ -322,7 +322,7 @@ pub fn write_delete_rule(
   rule_id: &Uuid,
   rule_position: usize,
 ) {
-  let collection = &database.screen_access_regulation_rule;
+  let collection = &database.internet_access_regulation_rule;
 
   draft.write("DELETE FROM ");
   draft.write(&collection.name);
@@ -372,13 +372,13 @@ pub fn retrieve_all_rules(database: &Database) -> Result<Vec<NormalizedRule>, Ge
 
   let connection = database.connection.lock().unwrap();
   let mut statement = connection.prepare(&code.as_ref()).map_err(|error| 
-    GenericError::new("retrieving all user screen access regulation rules")
+    GenericError::new("retrieving all user internet access regulation rules")
       .add_error("failed to prepare statement")
       .add_attachment("code", code.as_ref())
       .add_attachment("sqlite error", error.to_string())
   )?;
   let mut iterator = statement.query(()).map_err(|error| 
-    GenericError::new("retrieving all user screen access regulation rules")
+    GenericError::new("retrieving all user internet access regulation rules")
       .add_error("failed to run query code")
       .add_attachment("code", code.as_ref())
       .add_attachment("sqlite error", error.to_string())
@@ -386,7 +386,7 @@ pub fn retrieve_all_rules(database: &Database) -> Result<Vec<NormalizedRule>, Ge
   let mut rules = Vec::new();
   loop {
     let item = iterator.next().map_err(|error| 
-      GenericError::new("retrieving all user screen access regulation rules")
+      GenericError::new("retrieving all user internet access regulation rules")
       .add_error("retreiving the next item of sqlite iterator")
       .add_attachment("code", code.as_ref())
       .add_attachment("sqlite error", error.to_string())
@@ -412,7 +412,7 @@ impl RuleUpdateDraft {
 }
 
 pub fn write_activator(database: &Database, draft: &mut RuleUpdateDraft, new_value: &RuleActivator) {
-  let fields = &database.screen_access_regulation_rule.fields;
+  let fields = &database.internet_access_regulation_rule.fields;
 
   match new_value {
     RuleActivator::AllTheTime => {
@@ -436,7 +436,7 @@ pub fn write_activator(database: &Database, draft: &mut RuleUpdateDraft, new_val
 }
 
 pub fn write_activator_weekday(database: &Database, draft: &mut RuleUpdateDraft, new_value: &Weekday) {
-  let fields = &database.screen_access_regulation_rule.fields;
+  let fields = &database.internet_access_regulation_rule.fields;
 
   draft.draft.write_scalar(&fields.activator_enum_type, &RuleActivatorType::OnWeekday);
   draft.draft.write_scalar(&fields.activator_enum_data_1, new_value);
@@ -449,7 +449,7 @@ pub fn update_activator_weekday_range(database: &Database, rule_id: &Uuid, new_v
 }
 
 pub fn write_activator_time_range(database: &Database, draft: &mut RuleUpdateDraft, new_value: &TimeRange) {
-  let fields = &database.screen_access_regulation_rule.fields;
+  let fields = &database.internet_access_regulation_rule.fields;
 
   draft.draft.write_scalar(&fields.activator_enum_type, &RuleActivatorType::InTimeRange);
   draft.draft.write_u32(&fields.activator_enum_data_1, new_value.from_as_timestamp());
@@ -463,7 +463,7 @@ pub fn update_activator_time_range(database: &Database, rule_id: &Uuid, new_valu
 }
 
 pub fn write_activator_weekday_range(database: &Database, draft: &mut RuleUpdateDraft, new_value: &WeekdayRange) {
-  let fields = &database.screen_access_regulation_rule.fields;
+  let fields = &database.internet_access_regulation_rule.fields;
 
   draft.draft.write_scalar(&fields.activator_enum_type, &RuleActivatorType::InWeekdayRange);
   draft.draft.write_u32(&fields.activator_enum_data_1, new_value.from_as_timestamp());

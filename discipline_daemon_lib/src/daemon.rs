@@ -2,7 +2,6 @@ use clap::{Parser, command};
 use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 use crate::{GenericError, InternalErrorLogger};
 use crate::database::Database;
 use crate::operating_system_integration::OperatingSystemIntegration;
@@ -32,6 +31,9 @@ impl Configuration {
   }
 }
 
+// TODO: Rename to DaemonData
+// TODO: Create Daemon struct that is just Daemon(Arc<DaemonData>)
+// TODO: Make other code just use the new Daemon, instead.
 pub struct Daemon {
   dropped: AtomicBool,
   database: Database,
@@ -56,8 +58,8 @@ impl Daemon {
       dropped: AtomicBool::new(false),
       database,
       configuration,
+      internal_error_logger: InternalErrorLogger::new(),
       operating_system_integration,
-      internal_error_logger: InternalErrorLogger::new()
     })
   }
 

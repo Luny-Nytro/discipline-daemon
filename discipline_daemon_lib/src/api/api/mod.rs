@@ -1,4 +1,5 @@
 mod operations;
+pub use operations::*;
 
 use std::fmt::Debug;
 use crate::Database;

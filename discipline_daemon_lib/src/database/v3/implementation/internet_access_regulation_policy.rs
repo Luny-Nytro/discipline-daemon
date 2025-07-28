@@ -1,6 +1,6 @@
 use crate::operating_system_integration::UserId;
-use crate::logic::screen_access_regulation::*;
-use super::screen_access_regulation_rule::NormalizedRule;
+use crate::logic::internet_access_regulation::*;
+use super::internet_access_regulation_rule::NormalizedRule;
 use crate::{Uuid, CountdownTimer, Duration, DateTime};
 use super::*;
 
@@ -134,7 +134,7 @@ impl PolicyCollection {
 
 
 pub fn write_define(database: &Database, code: &mut DatabaseCode) {
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   code.write("CREATE TABLE IF NOT EXISTS "); 
   code.write(&collection.name); 
@@ -162,7 +162,7 @@ pub fn write_add_policy(
   user_id: &Uuid,
   position: usize,
 ) {
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   draft.write("UPDATE ");
   draft.write(&collection.name);
@@ -184,7 +184,7 @@ pub fn write_add_policy(
   draft.write("INSERT INTO ");
   draft.write(&collection.name);
   let mut context = SerializeCompoundValueContext::new();
-  serialize_policy(&mut context, policy, user_id, position, &database.screen_access_regulation_policy.fields);
+  serialize_policy(&mut context, policy, user_id, position, &database.internet_access_regulation_policy.fields);
   draft.write("(");
   draft.write(&context.column_names);
   draft.write(") VALUES (");
@@ -211,7 +211,7 @@ pub fn write_delete_policy(
   policy_id: &Uuid,
   position: usize,
 ) {
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   draft.write("DELETE FROM ");
   draft.write(&collection.name);
@@ -249,7 +249,7 @@ pub fn delete_policy(
 }
 
 pub fn write_delete_policies_of_user(database: &Database, draft: &mut DatabaseCode, user_id: &Uuid) {
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   draft.write("DELETE FROM ");
   draft.write(&collection.name);
@@ -261,7 +261,7 @@ pub fn write_delete_policies_of_user(database: &Database, draft: &mut DatabaseCo
 }
 
 pub fn write_retrieve_all_policies(database: &Database, code: &mut DatabaseCode) {
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   code.write("SELECT * FROM ");
   code.write(&collection.name);
@@ -288,7 +288,7 @@ pub fn retrieve_all_policies(database: &Database) -> Result<Vec<NormalizedPolicy
       return Ok(rules);
     };
     let mut context = DeserializeCompoundValueContext(item);
-    rules.push(deserialize_policy(&mut context, &database.screen_access_regulation_policy.fields)?);
+    rules.push(deserialize_policy(&mut context, &database.internet_access_regulation_policy.fields)?);
   }
 }
 
@@ -305,7 +305,7 @@ impl PolicyUpdateDraft {
 }
 
 pub fn write_name(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &PolicyName) {
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.name, new_value);
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.name, new_value);
 }
 
 pub fn update_name(database: &Database, policy_id: &Uuid, new_value: &PolicyName) -> Result<(), GenericError> {
@@ -315,13 +315,13 @@ pub fn update_name(database: &Database, policy_id: &Uuid, new_value: &PolicyName
 }
 
 pub fn enabled_condition(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &CountdownTimer) {
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_duration, &new_value.duration());
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_remaining_duration, &new_value.remaining_duration());
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_previous_synchronization_time, &new_value.previous_synchronization_time());
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_duration, &new_value.duration());
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_remaining_duration, &new_value.remaining_duration());
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_previous_synchronization_time, &new_value.previous_synchronization_time());
 }
 
 pub fn write_enabled_duration(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &Duration) {
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_duration, new_value);
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_duration, new_value);
 }
 
 pub fn update_enabled_duration(database: &Database, policy_id: &Uuid, new_value: Duration) -> Result<(), GenericError> {
@@ -331,11 +331,11 @@ pub fn update_enabled_duration(database: &Database, policy_id: &Uuid, new_value:
 }
 
 pub fn write_remaining_enabled_duration(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &Duration) {
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_remaining_duration, new_value);
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_remaining_duration, new_value);
 }
 
 pub fn write_previous_synchronization_time(database: &Database, draft: &mut PolicyUpdateDraft, new_value: &DateTime) {
-  draft.draft.write_scalar(&database.screen_access_regulation_policy.fields.protection_previous_synchronization_time, new_value);
+  draft.draft.write_scalar(&database.internet_access_regulation_policy.fields.protection_previous_synchronization_time, new_value);
 }
 
 // pub fn write_update_policy(database: &Database, database_update_draft: &mut DatabaseCode, policy_update_draft: &PolicyUpdateDraft, policy_id: &Uuid) {
@@ -343,7 +343,7 @@ pub fn write_previous_synchronization_time(database: &Database, draft: &mut Poli
 //     return;
 //   };
 
-//   let collection = &database.user_screen_access_regulation_policy;
+//   let collection = &database.user_internet_access_regulation_policy;
 
 //   database_update_draft.write("UPDATE FROM ");
 //   database_update_draft.write(&collection.name);
@@ -361,7 +361,7 @@ pub fn write_update_policy(database: &Database, database_update_draft: &mut Data
     return;
   };
 
-  let collection = &database.screen_access_regulation_policy;
+  let collection = &database.internet_access_regulation_policy;
 
   database_update_draft.write("UPDATE ");
   database_update_draft.write(&collection.name);

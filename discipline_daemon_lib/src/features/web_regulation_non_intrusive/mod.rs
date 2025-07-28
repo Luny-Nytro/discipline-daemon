@@ -7,6 +7,8 @@
 /// 
 /// This method is limited.
 
+// TODO: Allow the user to specify a limit for how many times they are allowed to access specified domains in a specified duraion.
+
 // use std::net::TcpListener;
 
 // use httparse::{Request, Status};

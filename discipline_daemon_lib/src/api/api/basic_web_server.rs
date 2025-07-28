@@ -94,6 +94,13 @@ fn respond_with(request: Request, response_creator: ResponseCreator) {
   }
 }
 
+fn deserialize_body_as_2<T: serde::de::DeserializeOwned>(request: &mut Request) -> Result<T, GenericError>{
+  serde_json::de::from_reader(request.as_reader())
+    .map_err(|error|
+      GenericError::new("")
+    )
+}
+
 fn deserialize_body_as<T>(request: &mut Request) -> Result<T, ResponseCreator>
 where
   T: DeserializeOwned,
@@ -151,7 +158,7 @@ pub struct IncomingOperation<'a> {
 
 impl<'a> IncomingOperation<'a> {
   pub fn try_as<T: DeserializeOwned>(self) -> Result<T, ServerError> {
-    match deserialize_body_as(self.request) {
+    match deserialize_body_as_2(self.request) {
       Ok(value) => {
         Ok(value)
       }
@@ -197,7 +204,7 @@ impl BasicHttpServer {
           request: &mut request,
         };
 
-        let n = match handler(uri, incoming) {
+        let server_return = match handler(uri, incoming) {
           Ok(x) => {
             x
           }
@@ -207,7 +214,9 @@ impl BasicHttpServer {
           }
         };
 
-        match
+        match server_return {
+          
+        }
       }
     });
 

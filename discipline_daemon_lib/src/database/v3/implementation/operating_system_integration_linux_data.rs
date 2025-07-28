@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::operating_system_integration::*;
+use crate::operating_system_integration as os;
 use crate::*;
 use super::*;
 
@@ -12,21 +13,30 @@ static ID_FIELD_VALUE: u8 = 0;
 
 pub struct NormalizedData {
   id: u8,
-  screen_access_regulation_application_blocked_user_password: UserPassword,
+  screen_access_regulation_integration_blocked_state_password: UserPassword,
 }
 
 impl NormalizedData {
   pub fn initial() -> Self {
     NormalizedData { 
       id: ID_FIELD_VALUE, 
-      screen_access_regulation_application_blocked_user_password: UserPassword::generate_random_password()
+      screen_access_regulation_integration_blocked_state_password: UserPassword::generate_random_password()
     }
   }
 
-  pub fn denormalize(self, users: HashMap<UserId, UserInfo>) -> OperatingSystemIntegrationData {
+  pub fn denormalize(
+    self, 
+    users: HashMap<UserId, User>,
+  ) -> OperatingSystemIntegrationData {
     OperatingSystemIntegrationData {
       users,
-      screen_access_regulation_application_common_info: screen_access_regulation_application::CommonScreenAccessRegulationApplicationData::new()
+      screen_access_regulation_integration: os
+        ::screen_access_regulation
+        ::CrossUserInfo
+        ::from_fields(
+          self.screen_access_regulation_integration_blocked_state_password,
+        )
+      // screen_access_regulation_application_common_info: screen_access_regulation_application::CommonScreenAccessRegulationApplicationData::new()
     }
   }
 }
@@ -37,7 +47,7 @@ fn serialize(
   data: &OperatingSystemIntegrationData,
 ) {
   context.write_u8(&schema.id, ID_FIELD_VALUE);
-  context.write_scalar(&schema.screen_access_regulation_application_blocked_user_password, data.screen_access_regulation_application_common_info.blocked_user_password());
+  context.write_scalar(&schema.screen_access_regulation_application_blocked_user_password, data.screen_access_regulation_integration.blocked_state_password());
 }
 
 fn deserialize(
@@ -48,7 +58,7 @@ fn deserialize(
 {
   Ok(NormalizedData { 
     id: context.deserializable_scalar(&schema.id)?, 
-    screen_access_regulation_application_blocked_user_password: context.deserializable_scalar(&schema.screen_access_regulation_application_blocked_user_password)?
+    screen_access_regulation_integration_blocked_state_password: context.deserializable_scalar(&schema.screen_access_regulation_application_blocked_user_password)?
   })
 }
 
@@ -96,7 +106,7 @@ fn write_initialize_item(database: &Database, code: &mut DatabaseCode) -> Normal
   let data = NormalizedData::initial();
   let mut context = SerializeCompoundValueContext::new();
   context.write_u8(&collection.data_schema.id, ID_FIELD_VALUE);
-  context.write_scalar(&collection.data_schema.screen_access_regulation_application_blocked_user_password, &data.screen_access_regulation_application_blocked_user_password);
+  context.write_scalar(&collection.data_schema.screen_access_regulation_application_blocked_user_password, &data.screen_access_regulation_integration_blocked_state_password);
 
   code.write(" (");
   code.write(&context.column_names);
@@ -157,6 +167,14 @@ pub fn retrieve(database: &Database) -> Result<OperatingSystemIntegrationData, G
 
   let normalized_user_screen_access_regulation_policies = 
     screen_access_regulation_policy
+    ::retrieve_all_policies(database)?;
+  
+  let normalized_user_internet_access_regulation_rules = 
+    internet_access_regulation_rule
+    ::retrieve_all_rules(database)?;
+
+  let normalized_user_internet_access_regulation_policies = 
+    internet_access_regulation_policy
     ::retrieve_all_policies(database)?;    
 
   
@@ -165,6 +183,8 @@ pub fn retrieve(database: &Database) -> Result<OperatingSystemIntegrationData, G
     let denormalized_user = normalized_user.denormalize(
       &normalized_user_screen_access_regulation_policies, 
       &normalized_user_screen_access_regulation_rules,
+      &normalized_user_internet_access_regulation_policies,
+      &normalized_user_internet_access_regulation_rules,
     );
 
     denormalized_users.insert(denormalized_user.user_id, denormalized_user);

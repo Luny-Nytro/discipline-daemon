@@ -1,17 +1,14 @@
-mod async_operation_scheduling;
-use async_operation_scheduling::*;
+mod utilities;
+pub use utilities::*;
 
-mod operating_system_primitives;
-pub use operating_system_primitives::*;
+mod operating_system;
+pub use operating_system::*;
 
-mod operating_system_interactions;
-use operating_system_interactions::*;
+mod integration;
+pub use integration::{
+  OperatingSystemIntegrationData,
+  OperatingSystemIntegration,
+  users::User,
+};
 
-mod users;
-pub use users::{OperatingSystemIntegration, OperatingSystemIntegrationData, UserInfo};
-
-pub mod screen_access_regulation_application;
-pub mod internet_access_regulation_application;
-
-
-use crate::*;
+pub use integration::*;
