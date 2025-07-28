@@ -1,6 +1,3 @@
-- create the api server
-- create route handlers in the server
-- limit the server request payload size
 - add the ability to blur images matched by condition
 - add the ability to block images matched by condition
 - add the ability to match images using NSFW image classifiers

@@ -24,7 +24,7 @@ Discipline must never crush under any circumstances so all modules in the '/db' 
   - Limiting the number of items a store may store.
   - Limiting the depth of all Objs so that no Obj becomes too big.
 
-# Prevent websites from download content
+# Prevent websites from downloading content
 Create a rule feature to that prevents websites to download files on the client.
 
 # Feature: Block css image uris

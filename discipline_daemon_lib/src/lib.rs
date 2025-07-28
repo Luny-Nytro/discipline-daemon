@@ -15,7 +15,12 @@ pub use api::IntoPublic;
 use uuid::Uuid;
 
 mod operating_system_integration;
-pub use operating_system_integration::*;
+pub use operating_system_integration::{
+  User,
+  UserId,
+  UserName,
+  UserPassword,
+};
 
 // mod memory_management;
 

@@ -67,9 +67,9 @@ impl CountdownTimer {
     }
   }
 
-  pub fn synchronize_and_write_updates(&mut self, now: DateTime) {
+  // pub fn synchronize_and_write_updates(&mut self, now: DateTime) {
 
-  }
+  // }
 }
 
 // impl TimeSynchronizeListener for CountdownTimer {
