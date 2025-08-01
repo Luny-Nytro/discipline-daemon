@@ -16,7 +16,16 @@ impl CountdownTimer {
       previous_synchronization_time: now,
     }
   }
-
+  
+  pub fn new_without_now(duration: Duration) -> Self {
+    Self {
+      duration,
+      remaining_duration: duration,
+      // Use a None here
+      previous_synchronization_time: DateTime::now(),
+    }
+  }
+  
   pub fn from_fields(
     duration: Duration,
     remaining_duration: Duration,

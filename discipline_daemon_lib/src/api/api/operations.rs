@@ -1,29 +1,5 @@
+
 use crate::operating_system_integration;
-
-pub struct OperationSpec {
-  
-}
-pub static OPERATING_SYSTEM_INTEGRATION_MANAGE_USER: &'static str =
-  "OperatingSystemIntegrationManageUser";
-
-pub type OperatingSystemIntegrationManageUser = operating_system_integration::api::ManageUser;
-
-pub static OPERATING_SYSTEM_INTEGRATION_UNMANAGE_USER: &'static str =
-  "OperatingSystemIntegrationUnmanageUser";
-
-pub type OperatingSystemIntegrationUnmanageUser = operating_system_integration::api::UnmanageUser;
-
-pub static OPERATING_SYSTEM_INTEGRATION_SCREEN_ACCESS_REGULUATION_APPLICATION_ENABLE: &'static str =
-  "OperatingSystemIntegrationScreenAccessRegulationApplicationEnable";
-
-pub type OperatingSystemIntegrationScreenAccessRegulationApplicationEnable =
-  operating_system_integration::api::EnableScreenAccessRegulationApplication;
-
-pub static OPERATING_SYSTEM_INTEGRATION_SCREEN_ACCESS_REGULATION_APPLICATION_DISABLE: &'static str =
-  "OperatingSystemIntegrationScreenAccessRegulationApplicationDisable";
-
-pub type OperatingSystemIntegrationScreenAccessRegulationApplicationDisable =
-  operating_system_integration::api::DisableScreenAccessRegulationApplication;
 
 #[macro_use]
 #[macro_export]

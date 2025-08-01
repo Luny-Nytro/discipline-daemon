@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::IntoPublic;
-use super::{Policy, Regulation, Rule, RuleActivator};
+use crate::api::IntoPublic;
+use crate::logic::screen_access_regulation::*;
 
 pub type RuleActivatorPublicRepr = RuleActivator;
 

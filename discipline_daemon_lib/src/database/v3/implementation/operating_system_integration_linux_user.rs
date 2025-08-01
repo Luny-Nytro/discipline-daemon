@@ -210,7 +210,7 @@ fn serialize_user(
   );
   context.write_scalar(
     &schema.user_screen_access_regulation_application_enabled, 
-    &user.user_screen_access_regulation_integration.enabled(),
+    &user.user_screen_access_regulation_integration.application_enabled(),
   );
   context.write_scalar(
     &schema.user_screen_access_regulation_application_status, 
@@ -431,6 +431,44 @@ pub fn update_screen_access_regulation_application_status(
 ) -> Result<(), GenericError> {
   let mut draft = UserUpdateDraft::new();
   write_screen_access_regulation_application_status(database, &mut draft, new_value);
+  commit_user_update_draft(database, &draft, user_id)
+}
+
+pub fn write_user_internet_access_regulation_application_enabled(
+  database: &Database,
+  draft: &mut UserUpdateDraft,
+  new_value: bool,
+) {
+  let collection = collection(database);
+  draft.draft.write_scalar(&collection.user_schema.user_internet_access_regulation_application_enabled, &new_value);
+}
+
+pub fn update_user_internet_access_regulation_application_enabled(
+  database: &Database,
+  user_id: UserId,
+  new_value: bool,
+) -> Result<(), GenericError> {
+  let mut draft = UserUpdateDraft::new();
+  write_user_internet_access_regulation_application_enabled(database, &mut draft, new_value);
+  commit_user_update_draft(database, &draft, user_id)
+}
+
+pub fn write_internet_access_regulation_application_status(
+  database: &Database, 
+  draft: &mut UserUpdateDraft,
+  new_value: os::internet_access_regulation::ApplicationStatus,
+) {
+  let collection = collection(database);
+  draft.draft.write_scalar(&collection.user_schema.user_internet_access_regulation_application_status, &new_value);
+}
+
+pub fn update_internet_access_regulation_application_status(
+  database: &Database, 
+  user_id: UserId,
+  new_value: os::internet_access_regulation::ApplicationStatus,
+) -> Result<(), GenericError> {
+  let mut draft = UserUpdateDraft::new();
+  write_internet_access_regulation_application_status(database, &mut draft, new_value);
   commit_user_update_draft(database, &draft, user_id)
 }
 

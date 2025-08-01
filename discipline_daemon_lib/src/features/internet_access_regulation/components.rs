@@ -100,10 +100,10 @@ impl PolicyName {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Policy {
   pub(super) id: Uuid,
-  pub(super) name: PolicyName,
+  pub name: PolicyName,
   pub(super) rules: Vec<Rule>,
   pub(super) is_effective: bool,
-  pub(super) protector: CountdownTimer,
+  pub protector: CountdownTimer,
 }
 
 impl Policy {
@@ -197,15 +197,15 @@ impl Policy {
     self.rules.iter().any(|rule| rule.is_effective(now))
   } 
 
-  pub(super) fn reached_maximum_rules_allowed(&self) -> bool {
+  pub fn reached_maximum_rules_allowed(&self) -> bool {
     self.rules.len() >= MAXIMUM_RULE_NUMBER
   }
 
-  pub(super) fn rules_number(&self) -> usize {
+  pub fn rules_number(&self) -> usize {
     self.rules.len()
   }
 
-  pub(super) fn add_rule(&mut self, rule: Rule) {
+  pub fn add_rule(&mut self, rule: Rule) {
     self.rules.push(rule);
   }
 }
@@ -218,7 +218,7 @@ pub enum Action {
 
 #[derive(Debug, Clone)]
 pub struct Regulation {
-  pub(super) policies: Vec<Policy>,
+  pub policies: Vec<Policy>,
 }
 
 impl Default for Regulation {

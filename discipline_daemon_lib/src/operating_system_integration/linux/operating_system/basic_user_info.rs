@@ -247,3 +247,14 @@ pub fn retrieve_user_info_given_user_name(user_name: UserName) -> RetrieveUserIn
     })
   }
 }
+
+pub fn retrieve_user_info(user_identification_method: UserIdentificationMethod) -> RetrieveUserInfoReturn {
+  match user_identification_method {
+    UserIdentificationMethod::Id(user_id) => {
+      retrieve_user_info_given_user_id(user_id)
+    }
+    UserIdentificationMethod::Name(user_name) => {
+      retrieve_user_info_given_user_name(user_name)
+    }
+  }
+}

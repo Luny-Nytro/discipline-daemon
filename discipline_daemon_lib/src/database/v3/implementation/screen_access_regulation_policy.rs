@@ -195,7 +195,7 @@ pub fn write_add_policy(
 pub fn add_policy(
   database: &Database,
   policy: &Policy,
-  user_id: &Uuid,
+  user_id: UserId,
   // position: usize,
 ) -> Result<(), GenericError> {
   todo!()

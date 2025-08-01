@@ -5,4 +5,6 @@ pub use v3::{
   operating_system_integration_linux_user,
   screen_access_regulation_policy,
   screen_access_regulation_rule,
+  internet_access_regulation_policy,
+  internet_access_regulation_rule,
 };

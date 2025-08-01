@@ -1,24 +1,47 @@
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use crate::Daemon;
+use crate::logic;
+use crate::api::IntoPublic;
+use crate::operating_system_integration::{
+  UserId, UserName, UserPassword, User,
+  UserIdentificationMethod,
+  retrieve_user_info, RetrieveUserInfoReturn,
+};
+use crate::operating_system_integration as os;
+
 use crate::database::operating_system_integration_linux_user as user_db;
-use super::*;
+use super::super::super::implementations;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserPublicRepr {
   user_id: UserId,
+  
   user_name: UserName,
+  
   // TODO: Should we keep the password private?
   user_password: UserPassword,
-  screen_access_regulation: 
-    screen_access_regulation
-    ::RegulationPublicRepr,  
-  user_screen_access_regulation_application: 
-    screen_access_regulation_application
-    ::api
-    ::UserScreenAccessRegulationApplicationDataPublicRepr,
+
+  user_screen_access_regulation_logic: implementations
+    ::screen_access_regulation
+    ::RegulationPublicRepr,
+
+  user_screen_access_regulation_integration: implementations
+    ::operating_system_integration_linux
+    ::screen_access_regulation
+    ::UserSpecificInfoPublicRepr,
+
+  user_internet_access_regulation_logic: implementations
+    ::internet_access_regulation
+    ::RegulationPublicRepr,
+
+  user_internet_access_regulation_integration: implementations
+    ::operating_system_integration_linux
+    ::internet_access_regulation
+    ::UserSpecificInfoPublicRepr,
 }
 
-impl IntoPublic for UserInfo {
+impl IntoPublic for User {
   type Output = UserPublicRepr;
 
   fn into_public(self) -> Self::Output {
@@ -26,8 +49,10 @@ impl IntoPublic for UserInfo {
       user_id: self.user_id,
       user_name: self.user_name,
       user_password: self.user_password,
-      screen_access_regulation: self.user_screen_access_regulation.into_public(),
-      user_screen_access_regulation_application: self.user_screen_access_regulation_application.into_public(),
+      user_screen_access_regulation_logic: self.user_screen_access_regulation_logic.into_public(),
+      user_screen_access_regulation_integration: self.user_screen_access_regulation_integration.into_public(),
+      user_internet_access_regulation_logic: self.user_internet_access_regulation_logic.into_public(),
+      user_internet_access_regulation_integration: self.user_internet_access_regulation_integration.into_public(),
     }
   }
 }
@@ -67,19 +92,33 @@ impl ManageUser {
         return ManageUserReturn::InternalError;
       }
       RetrieveUserInfoReturn::NoSuchUser => {
-        return ManageUserReturn::InternalError;
+        return ManageUserReturn::NoSuchUser;
       }
       RetrieveUserInfoReturn::Success(user_info) => {
         user_info
       }
     };
 
-    let user = UserInfo {
+    let user = User {
       user_id: user_info.user_id,
       user_name: user_info.user_name,
       user_password: user_info.user_password,
-      user_screen_access_regulation: screen_access_regulation::Regulation::new(Vec::new()),
-      user_screen_access_regulation_application: screen_access_regulation_application::UserScreenAccessRegulationApplicationData::default(),
+      user_screen_access_regulation_logic: logic
+        ::screen_access_regulation
+        ::Regulation
+        ::new(Vec::new()),
+      user_screen_access_regulation_integration: os
+        ::screen_access_regulation
+        ::UserSpecificInfo
+        ::new(),
+      user_internet_access_regulation_logic: logic
+        ::internet_access_regulation
+        ::Regulation
+        ::new(Vec::new()),
+      user_internet_access_regulation_integration: os
+        ::internet_access_regulation
+        ::UserSpecificInfo
+        ::new(),
     };
 
     if let Err(error) = user_db::add_user(daemon.database(), &user) {
@@ -102,6 +141,7 @@ pub enum UnmanageUserReturn {
   AlreadyNotManaged,
   InternalError,
   SomeScreenAccessRegulationPoliciesAreStillEnabled,
+  SomeInternetAccessRegulationPoliciesAreStillEnabled,
   Success,
 }
 
@@ -121,8 +161,12 @@ impl UnmanageUser {
       return UnmanageUserReturn::AlreadyNotManaged;
     };
 
-    if user.user_screen_access_regulation.are_some_policies_enabled() {
+    if user.user_screen_access_regulation_logic.are_some_policies_enabled() {
       return UnmanageUserReturn::SomeScreenAccessRegulationPoliciesAreStillEnabled;
+    }
+
+    if user.user_internet_access_regulation_logic.are_some_policies_enabled() {
+      return UnmanageUserReturn::SomeInternetAccessRegulationPoliciesAreStillEnabled;
     }
 
     if let Err(error) = user_db::delete_user(

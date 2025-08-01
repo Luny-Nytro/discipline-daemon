@@ -1,0 +1,10 @@
+- create a feature that makes it annoy to use the device by 
+  - making the screen grayscale
+  - disabling sound or making it very low
+  - making internet very slow 
+  - bluring videos 
+  - creating random funny objects and letting move across the screen on top of everything else
+
+- Let the user create regulations using DevicePolicyManager if the underlying os is android
+
+- Let the user create regulations for other devices running android using Android Management API.

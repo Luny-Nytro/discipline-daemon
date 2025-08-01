@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::*;
 use crate::logic::chronic::{DateTime, Duration};
 use crate::logic::internet_access_regulation::Action;
@@ -17,7 +19,7 @@ pub struct CrossUserInfo {}
 
 impl CrossUserInfo {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ApplicationStatus {
   Unknown,
   Blocked,
@@ -28,7 +30,7 @@ pub enum ApplicationStatus {
 pub struct UserSpecificInfo {
   application_status: ApplicationStatus,
   application_interval: Duration,
-  application_enabled: bool,
+  pub application_enabled: bool,
 }
 
 impl UserSpecificInfo {

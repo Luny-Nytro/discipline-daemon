@@ -1,11 +1,16 @@
-// /// Allow the user to specify conditions for when to block access
-// /// to specified web domains.
-// /// 
-// /// Use a proxy server to achive that.
-// /// 
-// /// This method is non-intrusive: We don't read the user's encrypted web traffic.
-// /// 
-// /// This method is limited.
+// TODO: Add support for gRPC by 
+// - creating an inspector
+// - allowing the user to assign names to numerical method and field ids 
+// - letting the user try to interpret binary vectors as various data types.
+
+// // Allow the user to specify conditions for when to block access
+// // to specified web domains.
+// // 
+// // Use a proxy server to achive that.
+// // 
+// // This method is non-intrusive: We don't read the user's encrypted web traffic.
+// // 
+// // This method is limited.
 
 // // TODO: Allow the user to specify a limit for how many times they are allowed to access specified domains in a specified duraion.
 

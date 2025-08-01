@@ -37,9 +37,9 @@ impl OperatingSystemIntegrationData {
   // pub fn is_user_managed_given_name(&self, user_name: &UserName) -> bool {
   //   todo!()
   // }
-  // pub fn is_user_managed(&self, user_identification_method: &UserIdentificationMethod) -> bool {
-  //   todo!()
-  // }
+  pub fn is_user_managed(&self, user_identification_method: &UserIdentificationMethod) -> bool {
+    todo!()
+  }
   // pub fn find_user_index(&self, user_id: &Uuid) -> Option<usize> {
   //   self.users.iter().position(|user| user.id == *user_id)
   // }
