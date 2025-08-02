@@ -98,7 +98,7 @@ impl Request {
     deserialize_body(self)
   }
   
-  fn respond_with_http_success<T: Serialize>(self, value: T) {
+  pub fn respond_with_http_success<T: Serialize>(self, value: T) {
     let Ok(value) = serde_json::to_vec_pretty(&value) else {
       self.respond_with_http_internal_server_error();
       // TODO: Log error.
@@ -144,6 +144,12 @@ impl Request {
   }
 
   pub fn respond_with_http_bad_request(self) {
+    if let Err(error) = self.req.respond(tiny_http::Response::empty(400)) {
+      eprintln!("Discipline.Server.RespondWithBadRequest: {error}");
+    }
+  }
+
+  pub fn respond_with_http_bad_request_and_message(self, message: String) {
     if let Err(error) = self.req.respond(tiny_http::Response::empty(400)) {
       eprintln!("Discipline.Server.RespondWithBadRequest: {error}");
     }

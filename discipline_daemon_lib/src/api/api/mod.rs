@@ -8,7 +8,7 @@ mod into_public;
 pub use into_public::IntoPublic;
 
 mod basic_web_server;
-use basic_web_server::BasicHttpServer;
+use basic_web_server::WebServer;
 
 mod operations;
 pub use operations::*;

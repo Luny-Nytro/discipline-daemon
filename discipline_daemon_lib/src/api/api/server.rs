@@ -11,151 +11,9 @@ use super::*;
 
 use serde::Deserialize;
 use serde::{de::DeserializeOwned, Serialize};
-use tiny_http::{Header, Request, Response};
 use url::Url;
 use std::thread::{spawn, JoinHandle};
-
-// 4 KB
-const MAXIMUM_HTTP_REQUEST_BODY_SIZE: usize = 4096;
-
-pub enum ResponseCreator {
-  Json(Vec<u8>),
-  BadRequest,
-  PayloadTooLarge,
-  InternalServerError,
-  NotFound,
-}
-
-impl ResponseCreator {
-  fn json<T>(value: T) -> ResponseCreator
-  where
-    T: Serialize,
-  {
-    match serde_json::to_vec_pretty(&value) {
-      Ok(value) => ResponseCreator::Json(value),
-      Err(error) => {
-        eprintln!("Discipline.Server.Respond.SerializeOutgoingOperationOutcome: {error}");
-        ResponseCreator::InternalServerError
-      }
-    }
-  }
-}
-
-fn respond_with_not_found(request: Request) {
-  if let Err(error) = request.respond(Response::empty(404)) {
-    eprintln!("Discipline.Server.RespondWithNotFound: {error}");
-  }
-}
-
-fn respond_with_payload_too_large(request: Request) {
-  if let Err(error) = request.respond(Response::empty(413)) {
-    eprintln!("Discipline.Server.RespondeWithPayloodTooLarge: {error}");
-  }
-}
-
-fn respond_with_bad_request(request: Request) {
-  if let Err(error) = request.respond(Response::empty(400)) {
-    eprintln!("Discipline.Server.RespondWithBadRequest: {error}");
-  }
-}
-
-fn respond_with_internal_server_error(request: Request) {
-  if let Err(error) = request.respond(Response::empty(500)) {
-    eprintln!("Discipline.Server.RespondWithInternalServerError: {error}");
-  }
-}
-
-fn respond_with_json(request: Request, data: Vec<u8>) {
-  let data_length = data.len();
-  let response = Response::from_data(data)
-    .with_status_code(200)
-    .with_header(Header::from_bytes(b"Content-Type", b"application/json").unwrap())
-    .with_header(
-      Header::from_bytes(b"Content-Length", data_length.to_string().as_bytes()).unwrap(),
-    );
-
-  if let Err(error) = request.respond(response) {
-    eprintln!("Discipline.Server.RespondWithData: {error}");
-  }
-}
-
-fn respond_with(request: Request, response_creator: ResponseCreator) {
-  match response_creator {
-    ResponseCreator::BadRequest => {
-      respond_with_bad_request(request);
-    }
-    ResponseCreator::InternalServerError => {
-      respond_with_internal_server_error(request);
-    }
-    ResponseCreator::Json(json) => {
-      respond_with_json(request, json);
-    }
-    ResponseCreator::NotFound => {
-      respond_with_not_found(request);
-    }
-    ResponseCreator::PayloadTooLarge => {
-      respond_with_payload_too_large(request);
-    }
-  }
-}
-
-fn deserialize_body_as_2<T: serde::de::DeserializeOwned>(request: &mut Request) -> Result<T, GenericError>{
-  serde_json::de::from_reader(request.as_reader())
-    .map_err(|error|
-      GenericError::new("")
-    )
-}
-
-fn deserialize_body_as<T>(request: &mut Request) -> Result<T, ResponseCreator>
-where
-  T: DeserializeOwned,
-{
-  // Read in 0.5 KB chunks.
-  let mut buffer = vec![0u8; 512];
-  // May hold a maximum of 4 KB worth of data.
-  let mut payload: Vec<u8> = Vec::new();
-  // Total number of bytes read into `payload`.
-  let mut body_size = 0;
-  let payload_reader = request.as_reader();
-
-  loop {
-    let chunk_size = match payload_reader.read(&mut buffer) {
-      Ok(chunk_size) => {
-        chunk_size
-      }
-      Err(error) => {
-        eprintln!("Discipline.Server.Respond.ReadIncomingPayload: {error}");
-        return Err(ResponseCreator::InternalServerError);
-      }
-    };
-
-    if chunk_size == 0 {
-      break;
-    }
-
-    body_size += chunk_size;
-    if body_size > MAXIMUM_HTTP_REQUEST_BODY_SIZE {
-      eprintln!("Discipline.Server.Respond.QuestionPayloadTooLarge.");
-      return Err(ResponseCreator::PayloadTooLarge);
-    }
-
-    payload.extend_from_slice(&buffer[..chunk_size]);
-  }
-
-  match serde_json::from_slice(&payload) {
-    Ok(value) => {
-      Ok(value)
-    }
-    Err(error) => {
-      if let Ok(payload) = String::from_utf8(payload) {
-        eprintln!("Discipline.Server.Respond.DeserializeIncomingOperation: \nError: {error}.\nPayload: {payload}.");
-      } else {
-        eprintln!("Discipline.Server.Respond.DeserializeIncomingOperation: \nError: {error}");
-      }
-      Err(ResponseCreator::BadRequest)
-    }
-  }
-}
+use super::WebServer;
 
 pub struct Api {
   server_thread: Option<JoinHandle<()>>,
@@ -173,33 +31,27 @@ impl Api {
       specifications: HashMap::new(),
     });
     
-    let server = tiny_http::Server::http(address).map_err(|error|
-      GenericError::new("running an http server")
-        .add_attachment("address", address.to_string())
-    )?;
+    let server = WebServer::new(address)?;
 
     let thread = spawn(move || {
       // TODO: Make sure "incoming_requests()" doesn't panic.
-      for mut request in server.incoming_requests() {
-        let Ok(url) = request.url().parse::<Url>() else {
-          // TODO: Add a message "malformed url"
-          respond_with_bad_request(request);
+
+      loop {
+        let Ok(request) = server.recieve() else {
           continue;
         };
 
-        let query_pairs: HashMap<Cow<str>, Cow<str>> = url.query_pairs().collect();
-
-        match url.path() {
+        match request.url().path() {
           "/Api/ExecuteOperation" => {
-            if query_pairs.len() != 1 {
+            if request.query_parameters().len() != 1 {
               // TODO: Add error message "Expected exactly one query parameter"
-              respond_with_bad_request(request);
+              request.respond_with_http_bad_request();
               continue;
             }
 
-            let Some(operation_id) = query_pairs.get("operation_id") else {
+            let Some(operation_id) = request.query_parameters().get("operation_id") else {
               // TODO: Add error message "Expected an 'operation_id' parameter"
-              respond_with_bad_request(request);
+              request.respond_with_http_bad_request();
               continue;
             };
 
@@ -207,21 +59,17 @@ impl Api {
               .specifications
               .get(operation_id.as_ref()) else 
             {
-              let operation_return = GenericOpertionReturn::unknown_operation();
-              let Some(serialized_operation_return) = serialize_operation_return(operation_return) else {
-                respond_with_internal_server_error(request);
-                continue;
-              };
-            
-              respond_with_json(request, serialized_operation_return);
+              request.respond_with_http_success(GenericOpertionReturn::unknown_operation());
               continue;
             };
 
             let serialized_operation = SerializedOperation { request: &mut request };
+            
             let operation_retrun = operation_specification.execute(
               serialized_operation, 
               Arc::clone(&daemon),
             );
+
             let Some(serialized_operation_retrn) = ser
 
           }
@@ -230,27 +78,6 @@ impl Api {
           }
           _ => {
             respond_with_not_found(request);
-          }
-        }
-
-
-        let server_return = match handler(uri, incoming) {
-          Ok(server_return) => {
-            server_return
-          }
-          Err(error) => {
-            respond_with_internal_server_error(request);
-            eprintln!("Discipline.Api.BasicWebServer: Error: {:?}", error.generic_error);
-            continue;
-          }
-        };
-
-        match server_return {
-          BasicWebServerReturn::NoSuchOperation => {
-            respond_with_not_found(request);
-          }
-          BasicWebServerReturn::OperationReturn(data) => {
-            respond_with_json(request, data);
           }
         }
       }
